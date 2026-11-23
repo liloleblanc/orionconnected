@@ -41,8 +41,12 @@ of the list cards, at 1680x1050:
 - how to get there beside a train mark: the data names a kind (`link`: **Free {LINE} train**,
   `hotelsTrainFree`; `ride`: **{LINE} to {STOP}** and **{MIN} min · every {EVERY} min**, `hotelsRideTo` and
   `hotelsRideTime`), and the line, its stop and its figures are data (`hub.areas.<area>.transit`), never words
-  of the store. Toronto: the airport's free Link train (to Viscount station, where the Alt Hotel is) and the
-  UP Express to Union, 28 minutes, every 15 (its operator's own pages, read 2026-11-22);
+  of the store, each read on its operator's own page; a way there that could not be read there stays in the
+  checked file with `verified: false` and the reason in its note, and the build step leaves it off its page.
+  Toronto: downtown, the UP Express to Union, 28 minutes, every 15 (upexpress.com, read 2026-11-22); near the
+  airport, none: the airport's Link train is held, since its operator's own site, torontopearson.com, is
+  blocked, and the pages that were read (Alt Hotel's own) show it reaching only Viscount station, where the
+  Alt Hotel is, not the other airport hotels;
 - on a page that shows a verified shuttle mark, the legend of the mark (`hotelShuttle`) beside a bus mark;
 - on a page with no card hotel, the place of a partner hotel in a dashed frame: **Partner hotel** and
   **Placement available** (`hotelsPartnerSlot`, `hotelsPlacement`), one line a language. It also shows on the
@@ -57,7 +61,7 @@ of the list cards, at 1680x1050:
   18 px floor drops its note before it is cut;
 - how many more the scan code lists (`hotelsMoreAirport`, `hotelsMoreDowntown`, a label form in the languages
   whose plural would change with the figure) and **Scan for the full list**, with **Scan** (`hotelsScan`) at the
-  right;
+  right; nothing more to list, the invitation alone;
 - the navy foot: **Free guest information · no endorsement** (`hotelsNoEndorse`), one line a language.
 
 The faces are the board's own, AC Nord Display (the heading, the area, the way there, the names) and AC Nord
@@ -65,7 +69,9 @@ Text (everything else), declared by `css/font.css`, which the gate loads before 
 Chinese and Arabic take the script faces of the board. Nothing is under 18 px at 1680x1050.
 
 A hub counts only as the city a flight goes to, never as one of its stops: a flight through Toronto to
-Vancouver shows the Vancouver card, not Toronto's hotels (`cityFor`). Billy Bishop (YTZ) is not given the
+Vancouver shows the Vancouver card, not Toronto's hotels (`cityFor`), and a flight through Toronto to a city the
+board has no name for shows nothing (`findCity`). A hub with no area open to three hotels on the day shows its
+"Hotels in Toronto" card instead, whose code opens the list in the app. Billy Bishop (YTZ) is not given the
 Toronto list: its passengers are downtown already, and a page near Pearson would mislead them. The phone app
 needs nothing new: once the city is in `CITIES` it lists both areas, and the scan code of each page opens its
 area.
@@ -166,7 +172,7 @@ copy of each, `fids-current/data/hotels/<code>.json` (about 10 KB instead of abo
 every gate with a flight to the city fetches it): only the hotels that are listed, and only the
 fields the cards and the phone app read (id, name, area, address line, telephone, website,
 season, shuttle mark, drive, logo; the marks of the foot; for a hub city also the street of each hotel,
-`card: true` on its card hotels and its hub block: the province and, for each area, the kind of the way there,
+`card: true` on its card hotels and its hub block: the province and, for each area whose way there is verified, its kind,
 its mark, the line, the stop and the figures, without their sources). `node scripts/hotels/build-runtime.js`
 makes the slim copies from the checked files (`--check` only compares), and
 `tests/hotel-list-cards.test.js` holds the two to agree: the same bytes, the same hotels on the
@@ -200,7 +206,7 @@ the city listing alone); for Toronto, the hotels' own sites and brand property p
 two card hotels), the UP Express pages (upexpress.com) for the train, and Destination Toronto's hotel listing
 (stay.destinationtoronto.com, a host of its own beside the blocked www.destinationtoronto.com, answered
 normally; whether it counts as the official tourism site is recorded in the file's `unverified` for a person to
-confirm, with the six facts that rest on it alone);
+confirm: until then the five hotels and the one telephone that rest on it alone are held, `listed: false`);
 OpenStreetMap (positions in Moncton and Charlottetown, and of the Riverside Resort near Fredericton, ODbL, "© OpenStreetMap contributors"); the OSRM public router on
 OpenStreetMap roads for the drive distances to the resorts. A search index was used only for
 some brand-hotel postal codes, which are marked `verified: false` (postal codes are not shown).

@@ -226,6 +226,8 @@
 .hlc-hub-go .hlc-ico{ width:calc(40 * var(--hlc-px)); height:calc(28 * var(--hlc-px)); padding-inline-end:calc(12 * var(--hlc-px)); }
 .hlc-hub-line{ font-weight:700; color:var(--hlc-navy); }
 .hlc--hub .hlc-hub-legend{ font-size:calc(20 * var(--hlc-px)); }
+/* a page whose every shuttle mark gave way with its line's note (the fitter): no legend */
+.hlc--hub .hlc-hub-legend.hlc-hub-legend--off{ display:none; }
 /* the place of a partner hotel: a dashed frame, a line for each language */
 .hlc-hub-slot{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:0; margin-top:calc(8 * var(--hlc-px));
   padding:calc(6 * var(--hlc-px)) calc(18 * var(--hlc-px)); border:calc(2 * var(--hlc-px)) dashed rgba(20,32,60,.22); border-radius:calc(8 * var(--hlc-px)); }
@@ -244,13 +246,14 @@
 .hlc--hub .hlc-name{ font-size:calc(25 * var(--hlc-px)); font-weight:700; line-height:1.15; }
 .hlc--hub .hlc-info{ font-size:calc(18 * var(--hlc-px)); font-weight:400; }
 /* the lines: as tall as the page leaves them, the name at the left, the note at the right */
-.hlc-hub-rows{ flex:1 1 0; min-height:0; display:flex; flex-direction:column; padding:0 0 calc(2 * var(--hlc-px)); }
+/* (room under how many more, above the navy foot: a stacked pair of lines never runs into the band) */
+.hlc-hub-rows{ flex:1 1 0; min-height:0; display:flex; flex-direction:column; padding:0 0 calc(10 * var(--hlc-px)); }
 .hlc-hub-row{ flex:1 1 0; min-height:0; display:flex; align-items:center; border-bottom:var(--hlc-px) solid rgba(184,146,58,.42); }
 .hlc-hub-row .hlc-name{ flex:1 1 auto; min-width:0; }
 .hlc-hub-note{ flex:0 0 auto; margin-inline-start:auto; padding-inline-start:calc(16 * var(--hlc-px)); font-size:calc(18 * var(--hlc-px)); font-weight:400; color:var(--hlc-soft); }
 .hlc-hub-note .hlc-mark{ width:1.5em; height:1.5em; margin:0; vertical-align:-0.35em; }
 .hlc--hub .hlc-drop .hlc-hub-note{ display:none; }
-.hlc-hub-more{ flex:1 1 0; display:flex; align-items:center; gap:calc(16 * var(--hlc-px)); }
+.hlc-hub-more{ flex:1.3 1 0; display:flex; align-items:center; gap:calc(16 * var(--hlc-px)); }
 /* no room for how many more and the invitation, even stacked: the invitation goes (the word beside
    the code still says it) */
 .hlc--hub .hlc-drop .hlc-hub-cut{ display:none; }

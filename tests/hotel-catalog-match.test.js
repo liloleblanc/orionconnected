@@ -45,6 +45,16 @@ test('the street only with a figure in it; the name without the booking-system p
   assert.equal(M.cleanName('Novo - Fairmont Royal York'), 'Fairmont Royal York');
 });
 
+test('a row with no distance has none (never 0 km), and a name is its set of words, each counted once', () => {
+  const rows = M.rowsOf({ results: [{ distance: null, hotel: { id: 'X' } }, { distance: '', hotel: { id: 'Y' } }, { hotel: { id: 'Z' } },
+    { distance: '1.5', hotel: { id: 'S' } }, { distance: 2.25, hotel: { id: 'N' } }, { distance: 'far', hotel: { id: 'F' } }] });
+  assert.deepEqual(rows.map((r) => [r.id, r.distance]), [['X', null], ['Y', null], ['Z', null], ['S', 1.5], ['N', 2.25], ['F', null]]);
+  assert.equal(M.sameName('Grand Grand Hotel', 'Grand Hotel', 'Toronto'), true, 'a word twice is the same word');
+  assert.equal(M.sameName('Grand Grand Hotel', 'Grand Palace Hotel', 'Toronto'), false, 'a word of the other name missing');
+  assert.equal(M.sameName('Royal York', 'Fairmont Royal York', 'Toronto'), false);
+  assert.equal(M.sameName('The Hotel', 'Hotel', 'Toronto'), false, 'no word of its own: never the same');
+});
+
 test('one query a point, at the area limit of the cards\' own rule, through the board\'s proxy', () => {
   const q = M.queries(DOC);
   assert.deepEqual(q.map((x) => [x.area, x.point, x.radius]), [['airport', 'airport', 6], ['downtown', 'centre', 3]]);

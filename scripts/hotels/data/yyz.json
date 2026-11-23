@@ -33,7 +33,7 @@
      "kind": "link",
      "icon": "train",
      "line": "Link",
-     "verified": true,
+     "verified": false,
      "source": "https://www.germainhotels.com/en/alt-hotel/toronto-airport/contact",
      "evidence": "\"The hotel is located directly outside Viscount station.\" \"This station is the last stop of the Link Train, a complimentary airport transportation service\" \"that runs every 4 to 8 minutes, 24h hours a day.\"",
      "checked": "2026-11-22",
@@ -47,7 +47,7 @@
        "evidence": "\"Take the free 24-hour Link train to travel between the hotel, the economy parking lot, and airport terminals.\""
       }
      ],
-     "note": "Terminals 1 and 3 from the operator of the UP Express; free, 24 h and every 4 to 8 minutes from Alt Hotel’s own pages, not from the train’s operator (the airport, whose site torontopearson.com is blocked, needs a person). No readable page lists the three stops in order. No general hotel-shuttle pick-up point is verified: shuttle pick-up stays per hotel."
+     "note": "Held (verified false), so the build step leaves it off the airport page: the hub rule asks for each fact on the operator’s own page, and the operator of the Link train, the airport (torontopearson.com), is blocked, needs a person. Read only: Terminals 1 and 3 from the operator of the UP Express; free, 24 h and every 4 to 8 minutes from Alt Hotel’s own pages. Those pages also show the train reaching only Viscount station, where the Alt Hotel is (its last stop), not the other airport hotels: a line for the whole area would read as a free train to all of them. A person who reads the operator’s page decides whether it comes back, and whether it belongs to the area or to the Alt Hotel alone. No readable page lists the three stops in order. No general hotel-shuttle pick-up point is verified: shuttle pick-up stays per hotel."
     }
    },
    "downtown": {
@@ -81,14 +81,14 @@
  "notes": {
   "verified_definition": "verified true = read directly on 2026-11-22 on at least one official page: the hotel’s own site, its brand property page (including the Accor pages all.accor.com and Four Seasons’ own press room for the hotel), or the official tourism booking listing of Destination Toronto (stay.destinationtoronto.com, see unverified), and no official page read says otherwise; the quote is the page’s own words. Where one official page alone gives a fact, the hotel’s notes say so (one page is enough, as in the other cities). verified false = not read (403, a bot wall, a JS shell or no answer), on no official page, only on an owner group’s portfolio site (Easton’s, Manga, Silver Hotel Group: not one of the four official sources), or official pages that disagree: the note says which. OpenStreetMap only found the hotels (scripts/hotels/find-candidates.js); its positions are kept for the area distances, with its credit, and no fact rests on it alone. Each fact was checked twice: a first pass and an adversarial re-check, then a second pass on the hotels held back.",
   "postal_note": "Postal codes are not shown on the cards. A postal code is marked verified true only where two official pages agree. Where the pages disagree (Kimpton Saint George, The Sutton Place, The Beverley) or none prints one, it is left empty or marked verified false.",
-  "shuttle_note": "shuttle.mark true = the card shows the shuttle mark, only where the hotel’s own page says so (the airport’s own page, torontopearson.com, is blocked): Sandman Signature Toronto Airport and Mississauga (free, 24 hours), Best Western Premier Toronto Airport Carlingview (free, 24/7, its brand page) and Woodbine Hotel and Suites (PAID, \"a nominal fee\"). A shuttle named only on the tourism listing (Hyatt Place) or an owner group’s site (Fairfield, TownePlace) is not marked. The Alt Hotel uses the airport’s free Link train, not a shuttle (hub.areas.airport). shuttle.offered is true / false / null (unknown), shuttle.terms what the page says to do, shuttle.evidence the words read.",
-  "season_note": "season.year_round true = open all year. season.verified true only where a page says so in words (Fairmont Royal York \"Available all year-round\"; Windsor Arms tea rooms \"every day of the year\"). Everywhere else no page says year-round: year_round true is the city-hotel default (verified false), recorded with the page that shows the hotel taking bookings or running round the clock and no closure (season.note quotes it), as Chateau Bedford in yhz.json. Kimpton Saint George and Four Seasons Hotel Toronto rest on the default with no such line beyond their booking buttons or opening date.",
+  "shuttle_note": "shuttle.mark true = the card shows the shuttle mark, only where the hotel’s own page says so (the airport’s own page, torontopearson.com, is blocked): Sandman Signature Toronto Airport and Mississauga (free, 24 hours), and Woodbine Hotel and Suites (PAID, \"a nominal fee\"; held, still trading?). Best Western Premier Toronto Airport Carlingview names a free 24/7 shuttle on a brand page that answered 403 (excluded, blocked). A shuttle named only on the tourism listing (Hyatt Place) or an owner group’s site (Fairfield, TownePlace) is not marked. The Alt Hotel uses the airport’s free Link train, not a shuttle (hub.areas.airport, held: its operator’s page is blocked). shuttle.offered is true / false / null (unknown), shuttle.terms what the page says to do, shuttle.evidence the words read.",
+  "season_note": "season.year_round true = open all year. season.verified true only where a page says in words that the hotel is open all year: no Toronto page does. Two pages say \"all year\" of something else, kept in season.note as support only: Fairmont Royal York’s offers block (\"Available all year-round\", of an offer) and Windsor Arms’ tea rooms (\"every day of the year\"). Everywhere year_round true is the city-hotel default (verified false), recorded with the page that shows the hotel taking bookings or running round the clock and no closure (season.note quotes it), as Chateau Bedford in yhz.json. Kimpton Saint George and Four Seasons Hotel Toronto rest on the default with no such line beyond their booking buttons or opening date.",
   "sources": [
    "Hotels’ own sites and brand property pages, read directly with WebFetch on 2026-11-22 (each fact’s source names the page)",
    "Accor: all.accor.com property pages A551 and 0931, read directly; the Accor catalog response (catalog/v1/hotels, the feed of the board’s Accor pages) beside them for the Novotel position",
    "Destination Toronto hotel booking listings, stay.destinationtoronto.com (each listing page read directly; see unverified)",
    "UP Express (upexpress.com) and Alt Hotel’s own pages for the transit lines of hub",
-   "OpenStreetMap via the Overpass API (ODbL): credit \"© OpenStreetMap contributors\". Candidates only (scripts/hotels/find-candidates.js, skeleton dated 2026-11-23): positions for the area distances, cited only beside an official page"
+   "OpenStreetMap via the Overpass API (ODbL): credit \"© OpenStreetMap contributors\". Candidates only (scripts/hotels/find-candidates.js, skeleton dated 2026-11-23 UTC, the evening of 2026-11-22 in Toronto): positions for the area distances, cited only beside an official page"
   ]
  },
  "excluded": [
@@ -112,6 +112,15 @@
    "reason": "Blocked, needs a person: bestwestern.com (HTTP 403); not confirmed. Leads only (OpenStreetMap or search snippets, not facts): 5503 Eglinton Avenue West, Toronto M9C 5K5, +1-416-620-1234.",
    "source": "https://www.openstreetmap.org/way/34084532",
    "read": "https://www.bestwestern.com/en_US/book/hotels-in-toronto/best-western-plus-travel-hotel-toronto-airport/propertyCode.66086.html"
+  },
+  {
+   "id": "best-western-premier-toronto",
+   "name": "Best Western Premier Toronto Airport Carlingview Hotel",
+   "address": "135 Carlingview Drive, Toronto",
+   "kind": "blocked",
+   "reason": "Blocked, needs a person: bestwestern.com answered HTTP 403 on the first pass, and again on a review on 2026-11-22. A read of the same page that got through in between is not counted: a 403 is a block, as for the two other Best Western hotels. Leads only, not facts, from that read: 135 Carlingview Drive, Toronto, Ontario, M9W 5E7; (416) 637-7000; \"24/7 Airport Shuttle to UP Express\", \"with complimentary shuttle service\"; identity by position only (the OpenStreetMap way has a name only, on Carlingview Drive); the page carries \"Best Western is now part of WorldHotels.\" (from January 2027).",
+   "source": "https://www.openstreetmap.org/way/810800505",
+   "read": "https://www.bestwestern.com/en-us/book/hotel/toronto/best-western-premier-toronto-airport-carlingview-hotel/66121"
   },
   {
    "id": "comfort-hotel",
@@ -2148,11 +2157,11 @@
  ],
  "unverified": [
   "An AI model is never the source of a hotel, an address or a telephone. A page that answers 403, a robot block or a captcha: record \"blocked, needs a person\" in the note and leave the field unverified; never read it another way.",
-  "stay.destinationtoronto.com (Destination Toronto’s hotel booking site, \"Powered by Ripe\") was first used here, in the second pass. It is a separate host from www.destinationtoronto.com (known blocked); it answered normally and nothing was bypassed. A person should agree that it counts as the official tourism site: Park Hyatt, Hyatt Regency, Shangri-La, Revery and Hyatt Place rest on it alone, the Sutton Place telephone too. If it does not count, those six move to held. It lists 79 properties and may settle many of the blocked hotels below.",
-  "Brand pages that refuse automated readers: marriott.com, hilton.com, ihg.com, choicehotels.com, hyatt.com, shangri-la.com, omnihotels.com, fourseasons.com (403); bestwestern.com only some of the time; visitmississauga.ca serves an empty JS shell; torontopearson.com is blocked. Every hotel resting on them alone is in excluded with the page a person should read (kind \"blocked\").",
+  "stay.destinationtoronto.com (Destination Toronto’s hotel booking site, \"Powered by Ripe\") was first used here, in the second pass. It is a separate host from www.destinationtoronto.com (known blocked); it answered normally and nothing was bypassed. A person should agree that it counts as the official tourism site: Park Hyatt, Hyatt Regency, Shangri-La, Revery and Hyatt Place rest on it alone, the Sutton Place telephone too. Until a person agrees, those six are held (listed false, the reason in each); if it counts, they are listed again, and if not, they move to excluded. It lists 79 properties and may settle many of the blocked hotels below.",
+  "Brand pages that refuse automated readers: marriott.com, hilton.com, ihg.com, choicehotels.com, hyatt.com, shangri-la.com, omnihotels.com, fourseasons.com (403); bestwestern.com (a 403 at times only, counted as a block: Best Western Premier Toronto Airport Carlingview is excluded on it); visitmississauga.ca serves an empty JS shell; torontopearson.com is blocked. Every hotel resting on them alone is in excluded with the page a person should read (kind \"blocked\").",
   "Owner group portfolio sites (eastonsgroup.com, mangahotels.com, silverhotelgroup.com) are not one of the four official sources: the Fairfield Inn & Suites and the TownePlace Suites are held back on them, and the Four Points, Element and Embassy Suites are excluded. A person decides whether they count.",
-  "Held back, facts on a page but a question open: the Alexandra Hotel (is it trading?), The Beverley Hotel (the Sonder listing’s name and telephone), the Hampton Inn & Suites at 300 Jarvis Street (open or closed?), the Fairfield and the TownePlace (owner sites only).",
-  "Listed on a judgement a person may revisit: Best Western Premier Toronto Airport Carlingview (identity by position; \"Best Western is now part of WorldHotels.\" from January 2027); Woodbine Hotel and Suites (a stale own site, the banquet hall’s 2026 site names it current; its shuttle is paid); Four Seasons Hotel Toronto (its press room, not the booking page, and a telephone from a June 2025 press release); The Hazelton (toll-free telephone only); The Rex (a small hotel above a jazz bar); SoHo Hotel Toronto (a \"TOOR Hotel SoHo\" opening banner on another site).",
+  "Held back, facts on a page but a question open: the Alexandra Hotel and Woodbine Hotel and Suites (are they trading?), the six that rest on the tourism booking listing (above), The Beverley Hotel (the Sonder listing’s name and telephone), the Hampton Inn & Suites at 300 Jarvis Street (open or closed?), the Fairfield and the TownePlace (owner sites only).",
+  "Listed on a judgement a person may revisit: Four Seasons Hotel Toronto (its press room, not the booking page, and a telephone from a June 2025 press release); The Hazelton (toll-free telephone only); The Rex (a small hotel above a jazz bar); SoHo Hotel Toronto (a \"TOOR Hotel SoHo\" opening banner on another site).",
   "Nearby hotels are not checked: a hub city’s pages show the airport and downtown only (excluded, kind \"nearby_not_checked\"). Destination resorts beyond 30 km are not searched.",
   "Logos: the two Accor files already in the repository (Fairmont Royal York, Novotel), and the brand files the other lists already use (Alt Hotels from yhz.json, Hyatt Place from yqm.json). No logo was downloaded for Toronto. foot_marks is empty: no Toronto or Ontario mark has been approved for the foot of the card.",
   "independent is null on the hotels of no chain brand: not established. brand, group and independent are not published: the slim copy has none of them. card, card_id and card_brand mark the two hotels of the Accor catalog (A551, 0931)."
@@ -2359,102 +2368,6 @@
    },
    "osm": "https://www.openstreetmap.org/way/34749685",
    "notes": "Manga’s head office is at 3279 Caroga Drive (search snippets); the hotel is 3299."
-  },
-  {
-   "id": "best-western-premier-toronto",
-   "name": "Best Western Premier Toronto Airport Carlingview Hotel",
-   "area": "airport",
-   "resort": false,
-   "brand": "Best Western Premier",
-   "group": "BWH Hotels",
-   "independent": false,
-   "address": {
-    "street": "135 Carlingview Drive",
-    "town": "Toronto",
-    "province": "ON",
-    "postal_code": "M9W 5E7",
-    "display": "135 Carlingview Drive, Toronto"
-   },
-   "phone": "(416) 637-7000",
-   "website": "https://www.bestwestern.com/en-us/book/hotel/toronto/best-western-premier-toronto-airport-carlingview-hotel/66121",
-   "lat": 43.678959,
-   "lng": -79.5912047,
-   "distance_km": {
-    "airport": 3.1,
-    "centre": 17
-   },
-   "area_reason": "3.1 km from the airport point (limit about 5 km, 10 % tolerance); airport wins when both apply.",
-   "season": {
-    "year_round": true,
-    "open": null,
-    "verified": false,
-    "source": "https://www.bestwestern.com/en-us/book/hotel/toronto/best-western-premier-toronto-airport-carlingview-hotel/66121",
-    "note": "Brand page, read 2026-11-22 (recheck): \"24/7 Airport Shuttle\". No season stated; a bookable property with a round-the-clock shuttle and no closure stated (city-hotel default, verified false)."
-   },
-   "shuttle": {
-    "mark": true,
-    "offered": true,
-    "verified": true,
-    "terms": "free (complimentary), 24/7, to the UP Express at the airport",
-    "source": "https://www.bestwestern.com/en-us/book/hotel/toronto/best-western-premier-toronto-airport-carlingview-hotel/66121",
-    "also": null,
-    "evidence": "Brand page, read 2026-11-22: \"daily a la carte Breakfast & 24/7 Airport Shuttle to UP Express\"; \"with complimentary shuttle service\".",
-    "checked": "2026-11-22"
-   },
-   "logo": null,
-   "logo_missing": "No logo in this pass (hub city, 2026-11-22): the name alone.",
-   "listed": true,
-   "not_listed_reason": null,
-   "verified": {
-    "name": {
-     "verified": true,
-     "source": "https://www.bestwestern.com/en-us/book/hotel/toronto/best-western-premier-toronto-airport-carlingview-hotel/66121",
-     "quote": "Best Western Premier Toronto Airport Carlingview Hotel",
-     "checked": "2026-11-22"
-    },
-    "street": {
-     "verified": true,
-     "source": "https://www.bestwestern.com/en-us/book/hotel/toronto/best-western-premier-toronto-airport-carlingview-hotel/66121",
-     "quote": "135 Carlingview Drive, Toronto, Ontario, M9W 5E7, Canada",
-     "checked": "2026-11-22"
-    },
-    "postal_code": {
-     "verified": false,
-     "source": "https://www.bestwestern.com/en-us/book/hotel/toronto/best-western-premier-toronto-airport-carlingview-hotel/66121",
-     "quote": "135 Carlingview Drive, Toronto, Ontario, M9W 5E7, Canada",
-     "note": "One official page. Not shown on the cards.",
-     "checked": "2026-11-22"
-    },
-    "phone": {
-     "verified": true,
-     "source": "https://www.bestwestern.com/en-us/book/hotel/toronto/best-western-premier-toronto-airport-carlingview-hotel/66121",
-     "quote": "(416) 637-7000",
-     "checked": "2026-11-22"
-    },
-    "website": {
-     "verified": true,
-     "source": "https://www.bestwestern.com/en-us/book/hotel/toronto/best-western-premier-toronto-airport-carlingview-hotel/66121",
-     "quote": "Best Western Premier Toronto Airport Carlingview Hotel",
-     "checked": "2026-11-22"
-    },
-    "latlng": {
-     "verified": false,
-     "source": "https://www.openstreetmap.org/way/810800505",
-     "note": "OpenStreetMap position (© OpenStreetMap contributors), for the straight-line area distances only; the hotel itself is read on its official page."
-    },
-    "season": {
-     "verified": false,
-     "source": "https://www.bestwestern.com/en-us/book/hotel/toronto/best-western-premier-toronto-airport-carlingview-hotel/66121",
-     "checked": "2026-11-22"
-    },
-    "shuttle": {
-     "verified": true,
-     "source": "https://www.bestwestern.com/en-us/book/hotel/toronto/best-western-premier-toronto-airport-carlingview-hotel/66121",
-     "checked": "2026-11-22"
-    }
-   },
-   "osm": "https://www.openstreetmap.org/way/810800505",
-   "notes": "The first pass got HTTP 403 on this page; the recheck read the same URL in full on 2026-11-22 (bestwestern.com blocks only some of the time). Identity is a location match: the OpenStreetMap way has a name only, and its point is on Carlingview Drive, where no other candidate is at number 135. A person may want to glance at it. The page carries the banner \"Best Western is now part of WorldHotels.\" (from January 2027): the brand may need a re-check then."
   },
   {
    "id": "sandman-hotel-toronto-airport",
@@ -2672,11 +2585,11 @@
    "group": "Hyatt",
    "independent": false,
    "address": {
-    "street": "29 Carlson Court",
+    "street": "29 Carlson Ct",
     "town": "Etobicoke",
     "province": "ON",
     "postal_code": "",
-    "display": "29 Carlson Court, Etobicoke"
+    "display": "29 Carlson Ct, Etobicoke"
    },
    "phone": "(416) 675-9855",
    "website": "",
@@ -2712,8 +2625,8 @@
     "trim": "inset(17.2% 0.0% 19.6% 0.0%)"
    },
    "logo_missing": null,
-   "listed": true,
-   "not_listed_reason": null,
+   "listed": false,
+   "not_listed_reason": "Held for a person’s decision: every fact rests on Destination Toronto’s booking listing (stay.destinationtoronto.com, \"Powered by Ripe\") alone, and no person has yet agreed that it counts as the official tourism site (unverified). If it counts, set listed true and run the build step; if not, the hotel moves to excluded.",
    "verified": {
     "name": {
      "verified": true,
@@ -2729,7 +2642,7 @@
      "verified": true,
      "source": "https://stay.destinationtoronto.com/property/15960/hyatt-place-toronto-airport",
      "quote": "29 Carlson Ct",
-     "note": "Town on the listing: \"Etobicoke\" (a district of the City of Toronto).",
+     "note": "Kept as printed (\"Ct\"): no page read prints the long form. Town on the listing: \"Etobicoke\" (a district of the City of Toronto).",
      "checked": "2026-11-22"
     },
     "postal_code": {
@@ -2921,8 +2834,8 @@
    },
    "logo": null,
    "logo_missing": "No logo in this pass (hub city, 2026-11-22): the name alone.",
-   "listed": true,
-   "not_listed_reason": null,
+   "listed": false,
+   "not_listed_reason": "Still trading? The hotel’s own site is stale (© 2022; its Book Now links go to an Expedia listing with April 2023 dates); only the sister banquet hall’s site (woodbinebanquet.com, © 2026) names it as a current service. Held, as the Alexandra Hotel is, until a person finds it taking bookings or confirms it is open.",
    "verified": {
     "name": {
      "verified": true,
@@ -3121,8 +3034,8 @@
    },
    "logo": null,
    "logo_missing": "No logo in this pass (hub city, 2026-11-22): the name alone.",
-   "listed": true,
-   "not_listed_reason": null,
+   "listed": false,
+   "not_listed_reason": "Held for a person’s decision: every fact rests on Destination Toronto’s booking listing (stay.destinationtoronto.com, \"Powered by Ripe\") alone, and no person has yet agreed that it counts as the official tourism site (unverified). If it counts, set listed true and run the build step; if not, the hotel moves to excluded.",
    "verified": {
     "name": {
      "verified": true,
@@ -3703,9 +3616,9 @@
    "season": {
     "year_round": true,
     "open": null,
-    "verified": true,
+    "verified": false,
     "source": "https://www.fairmont.com/royal-york-toronto/",
-    "note": "Brand page, read 2026-11-22 (first pass): \"Available all year-round\" (its offers block). The Accor page shows booking (\"See rates\", \"Check-in from 04:00 PM - Check out up to 12:00 PM\"); the catalog gives status \"OPEN\"."
+    "note": "Brand page, read 2026-11-22 (first pass): \"Available all year-round\", said in its offers block of an offer, not of the hotel: support only. The Accor page shows booking (\"See rates\", \"Check-in from 04:00 PM - Check out up to 12:00 PM\"); the catalog gives status \"OPEN\". No page says the hotel is open all year in words: the city-hotel default (verified false)."
    },
    "shuttle": {
     "mark": false,
@@ -3789,7 +3702,7 @@
      "note": "OpenStreetMap position (© OpenStreetMap contributors), for the straight-line area distances only; the hotel itself is read on its official page."
     },
     "season": {
-     "verified": true,
+     "verified": false,
      "source": "https://www.fairmont.com/royal-york-toronto/",
      "checked": "2026-11-22"
     },
@@ -4396,11 +4309,11 @@
    "group": "Hyatt",
    "independent": false,
    "address": {
-    "street": "370 King Street West",
+    "street": "370 King Street W",
     "town": "Toronto",
     "province": "ON",
     "postal_code": "",
-    "display": "370 King Street West, Toronto"
+    "display": "370 King Street W, Toronto"
    },
    "phone": "(416) 343-1234",
    "website": "",
@@ -4430,8 +4343,8 @@
    },
    "logo": null,
    "logo_missing": "No logo in this pass (hub city, 2026-11-22): the name alone.",
-   "listed": true,
-   "not_listed_reason": null,
+   "listed": false,
+   "not_listed_reason": "Held for a person’s decision: every fact rests on Destination Toronto’s booking listing (stay.destinationtoronto.com, \"Powered by Ripe\") alone, and no person has yet agreed that it counts as the official tourism site (unverified). If it counts, set listed true and run the build step; if not, the hotel moves to excluded.",
    "verified": {
     "name": {
      "verified": true,
@@ -4443,7 +4356,7 @@
      "verified": true,
      "source": "https://stay.destinationtoronto.com/property/7393/hyatt-regency-toronto",
      "quote": "370 King Street W",
-     "note": "Town on the listing: \"Toronto\".",
+     "note": "Kept as printed (\"W\"): no page read prints the long form. Town on the listing: \"Toronto\".",
      "checked": "2026-11-22"
     },
     "postal_code": {
@@ -4843,8 +4756,8 @@
    },
    "logo": null,
    "logo_missing": "No logo in this pass (hub city, 2026-11-22): the name alone.",
-   "listed": true,
-   "not_listed_reason": null,
+   "listed": false,
+   "not_listed_reason": "Held for a person’s decision: every fact rests on Destination Toronto’s booking listing (stay.destinationtoronto.com, \"Powered by Ripe\") alone, and no person has yet agreed that it counts as the official tourism site (unverified). If it counts, set listed true and run the build step; if not, the hotel moves to excluded.",
    "verified": {
     "name": {
      "verified": true,
@@ -4939,8 +4852,8 @@
    },
    "logo": null,
    "logo_missing": "No logo in this pass (hub city, 2026-11-22): the name alone.",
-   "listed": true,
-   "not_listed_reason": null,
+   "listed": false,
+   "not_listed_reason": "Held for a person’s decision: its telephone, 416-915-3770, rests on Destination Toronto’s booking listing (stay.destinationtoronto.com, \"Powered by Ripe\") alone, and no person has yet agreed that it counts as the official tourism site (unverified). The hotel’s own guest directory gives only its reservations line, 1-866-378-8866. If the listing counts, set listed true and run the build step; if not, a person decides which number to show.",
    "verified": {
     "name": {
      "verified": true,
@@ -5604,9 +5517,9 @@
    "season": {
     "year_round": true,
     "open": null,
-    "verified": true,
+    "verified": false,
     "source": "https://windsorarmshotel.com/",
-    "note": "Own page, read 2026-11-22: \"served in our historically enchanting tea rooms every day of the year.\". The page says so in words. Said of the hotel’s tea rooms, every day of the year; no closure of the hotel is stated."
+    "note": "Own page, read 2026-11-22: \"served in our historically enchanting tea rooms every day of the year.\", said of the hotel’s tea rooms, not of the hotel: support only. No closure of the hotel is stated: the city-hotel default (verified false)."
    },
    "shuttle": {
     "mark": false,
@@ -5663,7 +5576,7 @@
      "note": "OpenStreetMap position (© OpenStreetMap contributors), for the straight-line area distances only; the hotel itself is read on its official page."
     },
     "season": {
-     "verified": true,
+     "verified": false,
      "source": "https://windsorarmshotel.com/",
      "checked": "2026-11-22"
     },
@@ -5685,11 +5598,11 @@
    "group": "Hyatt",
    "independent": false,
    "address": {
-    "street": "4 Avenue Road",
+    "street": "4 Avenue Rd",
     "town": "Toronto",
     "province": "ON",
     "postal_code": "",
-    "display": "4 Avenue Road, Toronto"
+    "display": "4 Avenue Rd, Toronto"
    },
    "phone": "(416) 925-1234",
    "website": "",
@@ -5719,8 +5632,8 @@
    },
    "logo": null,
    "logo_missing": "No logo in this pass (hub city, 2026-11-22): the name alone.",
-   "listed": true,
-   "not_listed_reason": null,
+   "listed": false,
+   "not_listed_reason": "Held for a person’s decision: every fact rests on Destination Toronto’s booking listing (stay.destinationtoronto.com, \"Powered by Ripe\") alone, and no person has yet agreed that it counts as the official tourism site (unverified). If it counts, set listed true and run the build step; if not, the hotel moves to excluded.",
    "verified": {
     "name": {
      "verified": true,
@@ -5732,7 +5645,7 @@
      "verified": true,
      "source": "https://stay.destinationtoronto.com/property/7402/park-hyatt-toronto",
      "quote": "4 Avenue Rd",
-     "note": "Town on the listing: \"Toronto\".",
+     "note": "Kept as printed (\"Rd\"): no page read prints the long form. Town on the listing: \"Toronto\".",
      "checked": "2026-11-22"
     },
     "postal_code": {
@@ -5949,7 +5862,7 @@
      "verified": true,
      "source": "https://press.fourseasons.com/toronto/hotel-news/2025/summer-programming",
      "quote": "call 416 964 0411 or follow the property's official Instagram page.",
-     "note": "From the hotel’s own press release dated June 18, 2025 (the hotel-facts page has an empty phone field). 1-800-819-5053 on these pages is the corporate number.",
+     "note": "From the hotel’s own press release dated June 18, 2025 (the hotel-facts page has an empty phone field). 1-800-819-5053 on these pages is the corporate number. Accepted: the press room is the brand’s own page for the property, and no page read gives another number; the release is 17 months old on 2026-11-22, so a person may confirm the number.",
      "checked": "2026-11-22"
     },
     "website": {

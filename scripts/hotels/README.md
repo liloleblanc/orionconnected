@@ -96,7 +96,8 @@ in the app; nothing else changes.
      compare texts you fetched yourself.
    - If a page answers 403, a robot block or a captcha, write "blocked, needs a person" in the
      note and leave the field unverified. Never read the page another way (no proxy, headless
-     browser, changed user agent or cache service).
+     browser, changed user agent or cache service). A page that answered 403 once stays blocked: a
+     later read of it that gets through is not counted.
    - **Chain hotels: blocked, needs a person.** The big chains' property pages refuse automated
      readers (Marriott, Hilton, IHG, Choice and Hyatt answered 403 for Toronto on 2026-11-22, and so
      did the airport's own site, torontopearson.com). A hotel that rests on such a page alone goes in
@@ -145,7 +146,10 @@ A city with dozens of hotels near its airport and in its centre (Toronto) is add
    `ride`: "{LINE} to {STOP}", "{MIN} min · every {EVERY} min"), its `icon` (a mark of
    `HotelListCard.ICON`, `train`), the `line` (and for a ride its `stop`, `min`, `every`), each fact
    read on the operator's own page and quoted in `evidence`, with `verified`, `source` and `checked`.
-   The line and its stop are data: they are never written into the store.
+   The line and its stop are data: they are never written into the store. A way there whose operator's
+   page cannot be read (blocked, needs a person), or that serves only some of the area's hotels, stays
+   with `verified: false` and the reason in its `note`: the build step leaves it out of the slim copy,
+   and the page shows no way there (Toronto's Link train, near the airport).
 3. **Card hotels.** A hotel that takes the gold frame has `card: true`, `card_id` (its id in the
    catalog, as on its all.accor.com page) and `card_brand` (the catalog's brand code), a logo from the
    repository or an official source (listed in `fids-current/logos/hotels/list/sources.json`), and its

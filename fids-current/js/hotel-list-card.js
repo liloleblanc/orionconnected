@@ -36,14 +36,16 @@
    least HUB_MIN hotels open (one page alone is held, as a one-card list is). A page: the city and
    its province in small gold capitals, the heading in the languages of the board, its own scan
    code (app.html?hotels=<code>&area=<area>); the name of the area and the count of its hotels;
-   how to get there (the line, its stop and its minutes are data, hub.areas.<area>.transit); on a
+   how to get there (the line, its stop and its minutes are data, hub.areas.<area>.transit, only
+   where the slim copy has one: a way there not read on its operator's own page is left off); on a
    page with no card hotel, the empty place of a partner hotel; the card hotels (card true in the
    data, at most HUB_CARDS) in a fine gold frame on the cream, with their logo, name, street and
    telephone; then HUB_ROWS lines less one for each card hotel (never under HUB_ROWS_MIN), the name
    and, on the right, the shuttle mark where the shuttle is verified, else the street; the next
    lines on the next pass of the deck; how many more the scan code lists; the navy foot. The
    faces of the board, AC Nord Display and AC Nord Text (css/font.css). A hub counts only as the
-   city a flight goes to, never as one of its stops.
+   city a flight goes to, never as one of its stops (neither for its list nor for a "Hotels in"
+   card). A hub with no area open to HUB_MIN on the day shows its "Hotels in {CITY}" card instead.
 
    DATA: data/hotels/<code>.json, a slim copy a city with only the fields read here and in the
    app, made by scripts/hotels/build-runtime.js from the checked file of the city
@@ -93,6 +95,9 @@
   var HUB_ROWS = 5;
   var HUB_ROWS_MIN = 3;
   var HUB_CARDS = 2;
+  // the trim of a card hotel's logo: its four sides in per cent, top right bottom left (crops
+  // places only this form, so hubLogo takes only this form)
+  var TRIM = /^inset\(([\d.]+)% ([\d.]+)% ([\d.]+)% ([\d.]+)%\)$/;
   // The pager of the hotel cards (fids-core.js) turns a card every ten seconds.
   var VIEW_MS = 10000;
   // The smallest text of a card, in pixels of the 1680x1050 screen the stylesheet is written at.
@@ -327,7 +332,9 @@
       if (Array.isArray(legs)) {
         for (var i = legs.length - 1; i >= 0; i--) {
           var l = up(legs[i]);
-          if (l && l !== home && findName(l)) return l;
+          // a stop with a checked list is passed over: a hub city as a stop (the only one left by
+          // cityFor) is no Toronto card, as it is no Toronto list
+          if (l && l !== home && CITIES.indexOf(l) < 0 && findName(l)) return l;
         }
       }
     } catch (e) {}
@@ -339,20 +346,25 @@
   function passNow() {
     try { return Math.max(0, Number(root._gateAccorPass) || 0); } catch (e) { return 0; }
   }
+  // A hub city whose list is loaded but has no page open on the day (no area with HUB_MIN hotels
+  // open): its "Hotels in {CITY}" card instead, where the board has a name for it.
+  function hubFind(c, doc) {
+    return !!(c && doc && isHub(doc) && !shown(doc, null, tzOf(c)).length && findName(c));
+  }
   // Due on this gate: a city with a list, the list loaded and something open in it. The first
   // ask loads the list; the deck passes the slot over until it is there. A city without a list
-  // that the board has a name for: its one card.
+  // that the board has a name for, or a hub city with no page open: its one card.
   function due() {
     var c = cityFor();
     if (!c) return !!findCity();
     var doc = get(c);
     if (!doc) { load(c); return false; }
-    return shown(doc, null, tzOf(c)).length > 0;
+    return shown(doc, null, tzOf(c)).length > 0 || hubFind(c, doc);
   }
   // Ten seconds a view (a card, or a page of a hub city), the last one held four more.
   function dwellMs() {
     var c = cityFor(), doc = c ? get(c) : null;
-    if (!c && findCity()) return FIND_MS;
+    if ((!c && findCity()) || hubFind(c, doc)) return FIND_MS;
     var n = doc ? shown(doc, null, tzOf(c)).length : 1;
     return Math.max(1, n) * VIEW_MS + 4000;
   }
@@ -562,6 +574,8 @@
     try { form = new Intl.PluralRules(BS.intl(lg)).select(n); } catch (e) { form = 'other'; }
     return form === 'two' ? 'hotelsCountTwo' : form === 'few' ? 'hotelsCountFew' : form === 'many' ? 'hotelsCountMany' : 'hotelsCountOther';
   }
+  // The fine dot between two parts of one language (css: .hlc-hub-dot).
+  var DOT = '<b class="hlc-hub-dot"></b>';
   // A phrase of the store with data in it, as markup: the phrase escaped, each {FIELD} replaced by
   // its markup.
   function withData(t, fields) {
@@ -579,7 +593,9 @@
     var html = withData(w, { LINE: '<b class="hlc-hub-line">' + dataOf(t.line) + '</b>', STOP: dataOf(t.stop || '') });
     if (t.kind === 'ride' && t.min > 0 && t.every > 0) {
       var tm = BS.bs('hotelsRideTime', lg);
-      if (tm) html += '<b class="hlc-hub-dot"></b>' + withData(tm, { MIN: esc(BS.num(t.min, lg)), EVERY: esc(BS.num(t.every, lg)) });
+      // the phrase's own dot between its minutes and how often it leaves is drawn as the dot
+      // before it, so one line has one kind of dot
+      if (tm) html += DOT + withData(tm, { MIN: esc(BS.num(t.min, lg)), EVERY: esc(BS.num(t.every, lg)) }).split(' · ').join(DOT);
     }
     return html;
   }
@@ -596,21 +612,27 @@
     });
     return out.join('<b class="hlc-sep"></b>');
   }
-  // The logo of a card hotel, through <img> on the cream of its cell. Its trim (logo.trim) is cut by
-  // placing the picture inside the cell (crops), not by object-view-box: an SVG file with no width
-  // and height of its own has no natural size, and the browser ignores object-view-box on it (the
-  // Fairmont lockup). Until the picture is placed it shows whole, contained in the cell.
+  // The logo of a card hotel, through <img> on the cream of its cell. Its trim (logo.trim, the four
+  // sides in per cent, TRIM) is cut by placing the picture inside the cell (crops), not by
+  // object-view-box: an SVG file with no width and height of its own has no natural size, and the
+  // browser ignores object-view-box on it (the Fairmont lockup). Until the picture is placed it
+  // shows whole, contained in the cell. A file with its own light ground (logo.opaque) is
+  // multiplied into the cream, as on the area cards, so no box shows round it.
   function hubLogo(h) {
     var lg = h.logo && h.logo.file;
     if (!lg) return '<span class="hlc-logo hlc-logo--none"></span>';
-    var trim = /^inset\([\d.% ]+\)$/.test(String(h.logo.trim || '')) ? ' data-trim="' + h.logo.trim + '"' : '';
-    return '<span class="hlc-logo"><span class="hlc-hub-pic"><img class="hlc-img" alt="" decoding="async"' + trim + ' src="' + esc(lg) + '"></span></span>';
+    var trim = TRIM.test(String(h.logo.trim || '')) ? ' data-trim="' + esc(h.logo.trim) + '"' : '';
+    return '<span class="hlc-logo"><span class="hlc-hub-pic"><img class="hlc-img' + (h.logo.opaque ? ' hlc-img--opaque' : '') + '" alt="" decoding="async"'
+      + trim + ' src="' + esc(lg) + '"></span></span>';
   }
   // One page of a hub city: the head, the area and its count, the way there, the place of a partner
   // hotel or the card hotels, the lines of this pass and how many more, the foot.
   function hubPage(doc, c, L, o) {
     var BS = store(), city = up(doc.iata), area = c.area, hub = doc.hub || {};
     var t = (hub.areas && hub.areas[area] && hub.areas[area].transit) || null;
+    // a way there held back in the checked file (verified false) is never shown; the slim copy
+    // has none
+    if (t && t.verified === false) t = null;
     var gold = c.hotels.filter(function (h) { return h.card === true; }).slice(0, HUB_CARDS);
     var plain = c.hotels.filter(function (h) { return gold.indexOf(h) < 0; });
     var rows = page(plain, o.pass, Math.max(HUB_ROWS_MIN, HUB_ROWS - gold.length));
@@ -657,7 +679,8 @@
     var rest = pairHtml(L, function (lg) {
       var m = more > 0 ? withData(BS.bs(HUB_MORE[area], lg), { N: esc(BS.num(more, lg)) }) : '';
       var s = BS.bs('hotelListScan', lg);
-      return (m && s) ? m + '<span class="hlc-hub-cut"><b class="hlc-hub-dot"></b>' + esc(s) + '</span>' : esc(s || m);
+      // m is markup already (withData): only the invitation is escaped here
+      return (m && s) ? m + '<span class="hlc-hub-cut">' + DOT + esc(s) + '</span>' : (s ? esc(s) : m);
     }, more > 0 ? HUB_MORE[area] : 'hotelListScan');
     var scan = pairOf(L, function (lg) { return BS.bs('hotelsScan', lg); }, 'hotelsScan');
     var foot = linesOf(L, function (lg) { return BS.bs('hotelsNoEndorse', lg); }, 'hotelsNoEndorse');
@@ -759,6 +782,12 @@
       var art = el && el.querySelector ? el.querySelector('.hlc') : null;
       if (!art) return;
       var least = floorPx();
+      // the legends of the shuttle mark of a hub city, shown again before the lines are fitted
+      var legends = [];
+      try {
+        legends = Array.prototype.slice.call(art.querySelectorAll('.hlc-hub-legend'));
+        legends.forEach(function (lg) { lg.classList.remove('hlc-hub-legend--off'); });
+      } catch (e0) { legends = []; }
       Array.prototype.forEach.call(art.querySelectorAll('.hlc-fit'), function (s) {
         var box = s.parentElement;
         if (!box) return;
@@ -793,17 +822,40 @@
         // telephone after it
         if (s.scrollWidth > room() + 0.5 && box.classList.contains('hlc-info')) box.classList.add('hlc-clip');
       });
+      // a hub page whose every shuttle mark gave way with its line's note: no legend for a mark the
+      // page no longer shows
+      try {
+        legends.forEach(function (lg) {
+          var pg = lg.closest('.hlc-view');
+          if (!pg) return;
+          var left = Array.prototype.some.call(pg.querySelectorAll('.hlc-hub-row .hlc-mark'), function (mk) { return !mk.closest('.hlc-drop'); });
+          if (!left) lg.classList.add('hlc-hub-legend--off');
+        });
+      } catch (e5) {}
     } catch (e) {}
+  }
+  // The proportions of an SVG file that has no width and height of its own, where the browser
+  // gives it no natural size (Chrome gives 300 wide; another engine may give 0): the picture laid
+  // out at a known width, its height from the file's own viewBox. [0, 0] for any other file.
+  function svgSize(im) {
+    if (!/\.svg(?:[?#]|$)/i.test(String(im.getAttribute('src') || '')) || typeof im.getBoundingClientRect !== 'function') return [0, 0];
+    var keep = im.style.cssText;
+    im.style.cssText = 'position:absolute; visibility:hidden; max-width:none; max-height:none; width:100px; height:auto;';
+    var r = im.getBoundingClientRect();
+    im.style.cssText = keep;
+    return [r.width, r.height];
   }
   // The trim of each card hotel's logo (hubLogo): the trimmed part of the picture contained and
   // centred in its cell, as object-view-box would show it, from the file's own proportions once it
-  // has loaded (an SVG with no size of its own still has them); placed again whenever asked.
+  // has loaded (an SVG with no size of its own still has them, svgSize); placed again whenever
+  // asked.
   function crops(el) {
     try {
       Array.prototype.forEach.call(el.querySelectorAll('.hlc-hub-pic > img[data-trim]'), function (im) {
         var place = function () {
-          var box = im.parentElement, m = /^inset\(([\d.]+)% ([\d.]+)% ([\d.]+)% ([\d.]+)%\)$/.exec(im.getAttribute('data-trim') || '');
+          var box = im.parentElement, m = TRIM.exec(im.getAttribute('data-trim') || '');
           var W = box ? box.clientWidth : 0, H = box ? box.clientHeight : 0, nw = im.naturalWidth, nh = im.naturalHeight;
+          if (m && W > 0 && H > 0 && im.complete && !(nw > 0 && nh > 0)) { var sz = svgSize(im); nw = sz[0]; nh = sz[1]; }
           if (!m || !(W > 0) || !(H > 0) || !(nw > 0) || !(nh > 0)) return;
           var t = m[1] / 100, r = m[2] / 100, b = m[3] / 100, l = m[4] / 100, fw = 1 - l - r, fh = 1 - t - b;
           if (!(fw > 0) || !(fh > 0)) return;
@@ -813,8 +865,10 @@
           im.style.cssText = 'position:absolute; max-width:none; max-height:none; object-fit:fill; width:' + FW + 'px; height:' + FH + 'px; left:'
             + ((W - cw) / 2 - l * FW) + 'px; top:' + ((H - ch) / 2 - t * FH) + 'px;';
         };
-        if (im.complete && im.naturalWidth) place();
-        else if (!im.__hlcCrop) { im.__hlcCrop = 1; im.addEventListener('load', place); }
+        // loaded: placed now (a size-less SVG too, whose natural width may be 0); and again on a
+        // load to come
+        if (im.complete) place();
+        if (!im.__hlcCrop && typeof im.addEventListener === 'function') { im.__hlcCrop = 1; im.addEventListener('load', place); }
       });
     } catch (e) {}
   }
@@ -894,6 +948,8 @@
       // a city with a list: its cards; any other city the board names: its one card
       var html = c ? build(doc, boardPair(), { pass: passNow(), home: String(root._gateIata || ''), tz: tzOf(c) })
         : buildFind(findCity(), boardPair(), { home: String(root._gateIata || '') });
+      // a hub city with no page open on the day: its "Hotels in" card
+      if (!html && hubFind(c, doc)) html = buildFind(c, boardPair(), { home: String(root._gateIata || '') });
       if (!html) return false;
       if (el.__hlcHtml !== html || !el.querySelector(':scope > .hlc')) {
         el.innerHTML = html;
@@ -913,7 +969,8 @@
   // the logos of its card hotels, the only ones its pages show).
   function media() {
     var c = cityFor(), doc = c ? get(c) : null, out = [];
-    if (!doc) return out;
+    // (a hub city with no page open shows its "Hotels in" card: no logo)
+    if (!doc || hubFind(c, doc)) return out;
     var hub = isHub(doc);
     doc.hotels.forEach(function (h) {
       if (hub && h.card !== true) return;

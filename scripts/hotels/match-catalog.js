@@ -87,6 +87,13 @@ function positionOf(hotel) {
   }
   return null;
 }
+// The distance of a row, in km: a number, or a string of one; null where the catalog gives none
+// (Number(null) and Number('') are 0, which would read as a hotel at the point itself).
+function distanceOf(d) {
+  if (typeof d === 'number') return Number.isFinite(d) ? d : null;
+  if (typeof d === 'string' && d.trim() && Number.isFinite(Number(d))) return Number(d);
+  return null;
+}
 // The rows of one answer, each with the facts this helper compares.
 function rowsOf(answer) {
   const list = (answer && Array.isArray(answer.results)) ? answer.results : [];
@@ -99,7 +106,7 @@ function rowsOf(answer) {
       brand: String(h.brand || ''),
       status: String(h.status || ''),
       position: positionOf(h),
-      distance: Number.isFinite(Number(r && r.distance)) ? Number(r.distance) : null,
+      distance: distanceOf(r && r.distance),
       street: streetOf(h),
       phone: phoneOf(c.phonePrefix, c.phone)
     };
@@ -116,9 +123,10 @@ function nameWords(s, city) {
   const skip = new Set(['hotel', 'hotels', 'the', 'and', 'by', 'a', 'de', 'centre', 'center', 'suites', fold(city)]);
   return fold(s).split(' ').filter((w) => w.length > 1 && !skip.has(w));
 }
+// The same name: the same set of words, each word counted once ('Grand Grand Hotel' is 'Grand Hotel').
 function sameName(a, b, city) {
-  const x = nameWords(a, city), y = new Set(nameWords(b, city));
-  return x.length > 0 && x.every((w) => y.has(w)) && x.length === y.size;
+  const x = new Set(nameWords(a, city)), y = new Set(nameWords(b, city));
+  return x.size > 0 && x.size === y.size && [...x].every((w) => y.has(w));
 }
 // The queries of a hub city: one a point, the radius the area limit rounded up (the catalog's
 // radius is loose; the rows are held to the limit again).
@@ -255,6 +263,6 @@ async function main(argv) {
   return 0;
 }
 
-module.exports = { ENDPOINT, cleanName, phoneOf, streetOf, positionOf, rowsOf, queries, match, text, limitKm };
+module.exports = { ENDPOINT, cleanName, phoneOf, streetOf, positionOf, rowsOf, sameName, queries, match, text, limitKm };
 
 if (require.main === module) main(process.argv.slice(2)).then((c) => process.exit(c), (e) => { console.error(e); process.exit(1); });

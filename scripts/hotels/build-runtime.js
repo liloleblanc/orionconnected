@@ -12,8 +12,8 @@
 //                                          area, address line, telephone, website, season,
 //                                          shuttle mark, drive (a resort) and logo; the marks
 //                                          of the foot. A hub city (HotelListCard.HUBS) also
-//                                          has its hub block (the province, and the way to
-//                                          each area: kind, mark, line, stop, minutes), the
+//                                          has its hub block (the province, and the verified
+//                                          way to each area: kind, mark, line, stop, minutes), the
 //                                          street of each hotel, and card: true on its card
 //                                          hotels; no other city has any of the three
 //
@@ -29,13 +29,14 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..', '..');
 const SRC_DIR = path.join(__dirname, 'data');
 const OUT_DIR = path.join(ROOT, 'fids-current', 'data', 'hotels');
-// The cities: the one list, HotelListCard.CITIES in fids-current/js/hotel-list-card.js (the
-// gate and the phone app read the same one). Adding a city is one entry there.
-const CITIES = require(path.join(ROOT, 'fids-current', 'js', 'hotel-list-card.js')).CITIES.map((c) => String(c).toLowerCase());
-// The hub cities (two pages, near the airport and downtown): HotelListCard.HUBS, from the same
-// module, with the two areas of their pages, the ways to get there and the marks the pages have.
+// The module of the cards (fids-current/js/hotel-list-card.js), read once.
 const CARD = require(path.join(ROOT, 'fids-current', 'js', 'hotel-list-card.js'));
-const HUBS = require(path.join(ROOT, 'fids-current', 'js', 'hotel-list-card.js')).HUBS.map((c) => String(c).toLowerCase());
+// The cities: the one list, HotelListCard.CITIES (the gate and the phone app read the same one).
+// Adding a city is one entry there.
+const CITIES = CARD.CITIES.map((c) => String(c).toLowerCase());
+// The hub cities (two pages, near the airport and downtown): HotelListCard.HUBS, with the two areas
+// of their pages, the ways to get there and the marks the pages have.
+const HUBS = CARD.HUBS.map((c) => String(c).toLowerCase());
 
 // A checked file whose city is not in the list, or a city of the list with no checked file:
 // both are a city half added.
@@ -51,9 +52,11 @@ function listProblems() {
 // it anywhere else.
 //   a hub city: its hub block, with its province and, for each of the two areas, the way there
 //     (a kind the pages have words for, a mark they have, the line; a ride's stop, minutes and
-//     interval), verified with its source; hotels in the two areas only, each listed one with its
-//     street; a card hotel with its logo, its street and telephone verified, and its id in the
-//     catalog it was checked against (card_id)
+//     interval), verified with its source; or, where its operator's own page could not be read,
+//     verified false with the reason in its note (held: the slim copy leaves it out, and the page
+//     shows no way there); hotels in the two areas only, each listed one with its street; a card
+//     hotel with its logo, its street and telephone verified, and its id in the catalog it was
+//     checked against (card_id)
 //   any other city: no hub block, and no card hotel
 function hubProblems(doc) {
   const code = String(doc && doc.iata || '').toLowerCase();
@@ -75,7 +78,8 @@ function hubProblems(doc) {
     if (!Object.prototype.hasOwnProperty.call(CARD.ICON, t.icon)) out.push(w + '.icon ' + t.icon + ': a mark of HotelListCard.ICON');
     if (!t.line || typeof t.line !== 'string') out.push(w + '.line');
     if (t.kind === 'ride' && !(t.stop && Number(t.min) > 0 && Number(t.every) > 0)) out.push(w + ': a ride names its stop, its minutes and how often it leaves');
-    if (t.verified !== true || !t.source) out.push(w + ': verified, with its source');
+    if (t.verified === false) { if (!t.note) out.push(w + ': held (verified false): say why in its note'); }
+    else if (t.verified !== true || !t.source) out.push(w + ': verified, with its source');
   }
   for (const h of doc.hotels || []) {
     const w = at + ' ' + h.id;
@@ -122,11 +126,13 @@ function slimHotel(h, doc) {
 }
 
 // The hub block of a hub city, with only what its pages read: the province, and the way to each
-// area (no source, no evidence, no note: those stay in the checked file).
+// of the two areas of its pages that is verified (no source, no evidence, no note: those stay in
+// the checked file; a way there held back is left out, and its page shows none).
 function slimHub(hub) {
   const areas = {};
-  for (const [a, v] of Object.entries(hub.areas || {})) {
-    const t = (v && v.transit) || {};
+  for (const a of CARD.HUB_AREAS) {
+    const t = hub.areas && hub.areas[a] && hub.areas[a].transit;
+    if (!t || t.verified !== true) continue;
     const o = { kind: t.kind, icon: t.icon, line: t.line };
     if (t.stop) o.stop = t.stop;
     if (Number(t.min) > 0) o.min = Number(t.min);

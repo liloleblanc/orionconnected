@@ -25,7 +25,8 @@
 //   blank on that screen.
 //
 //   What is shown: the gate (its whole centre deck, turned by this check and
-//   never by the clock, every turn read in its middle, the deck again with
+//   never by the clock, every turn read in its middle, the two pages of a hub
+//   city's hotel lists under their review pin, the deck again with
 //   every card due; its three information
 //   cards each through its own ?scene= and through the turn that brings each
 //   back, which leaves it up; its standby lists (every row whole,
@@ -960,6 +961,27 @@ const CARD_CHECK = (t) => `(function (t) {
   } catch (e) { return 'error ' + e.message; }
 })(${jsWord(t)})`;
 const CARD_RESET = `(function () { try { var u = new URL(location.href); u.searchParams.delete('scene'); history.replaceState(null, '', u.toString()); } catch (e) {} })()`;
+// v24177 — A HUB CITY'S TWO PAGES (HotelListCard.HUBS, Toronto). The gate's demo flight goes to a
+// city without a list, so the deck's hotel slot is its "Hotels in" card: the review pin of the hub
+// (?hotellist=YYZ) puts the two pages in the slot, each is read in turn, and the pin comes off.
+const HUB_PIN = `new Promise(function (res) {
+  try {
+    var u = new URL(location.href); u.searchParams.set('hotellist', 'YYZ'); u.searchParams.set('scene', 'hotellist'); history.replaceState(null, '', u.toString());
+    Promise.resolve(HotelListCard.load('YYZ')).then(function (doc) {
+      try {
+        if (!doc) return res('the list of YYZ did not load');
+        var sl = _buildGateAdSlideList(), i = -1;
+        for (var k = 0; k < sl.length; k++) if (sl[k] && sl[k].type === 'hotellist') { i = k; break; }
+        if (i < 0) return res('the deck has no hotel slot under the pin (' + sl.map(function (x) { return x && x.type; }).join(',') + ')');
+        _gateAdIndex = i; window._gateAdAuthChange = true; renderGateAd(i); window._gateAdAuthChange = false;
+        var n = document.querySelectorAll('#gateAdCarousel .hlc--hub .axr-page').length;
+        res(n === 2 ? 'ok' : 'the hub slot shows ' + n + ' pages, not 2');
+      } catch (e) { window._gateAdAuthChange = false; res('error ' + e.message); }
+    }, function (e) { res('error ' + e); });
+  } catch (e) { res('error ' + e.message); }
+})`;
+const HUB_PAGE = (pg) => `(function () { var ps = document.querySelectorAll('#gateAdCarousel .hlc--hub .axr-page'); for (var k = 0; k < ps.length; k++) ps[k].classList.toggle('axr-page-on', k === ${Number(pg) | 0}); return ps.length; })()`;
+const HUB_UNPIN = `(function () { try { var u = new URL(location.href); u.searchParams.delete('hotellist'); u.searchParams.delete('scene'); history.replaceState(null, '', u.toString()); } catch (e) {} })()`;
 // 2026-10-20 — THE DECK TURNS WHEN THIS CHECK TURNS IT, AND EVERY TURN IS
 // READ. The gate's centre deck turns on its own clock (a turn at least every
 // 22 s, _restartGateAdsTimer), and for about a second of each turn the slide
@@ -1297,7 +1319,7 @@ export const SURFACES = {
   // the gate takes one language set per browser: with the one-language pair
   // scan (v24076) two sets ran past its 280 s alarm on CI's runners (twice on
   // 2026-10-21, #1074)
-  gate: { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, cards: true, states: true, feed: true, chunk: 1, alarm: 280, parallel: 2 },
+  gate: { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, hub: true, cards: true, states: true, feed: true, chunk: 1, alarm: 280, parallel: 2 },
   departures: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, chunk: 3, alarm: 240 },
   baggage: { url: (port) => `http://127.0.0.1:${port}/bids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, chunk: 3, alarm: 240 },
   // v24013 — the baggage hall board (bids5: welcome band, hall list, Moncton's
@@ -1445,6 +1467,20 @@ async function runChunk(port, name, spec, sets) {
           }
           // and its turn into the next slide, read while both are up
           await turnRead(`${type || 'slide'} ${i} turning`);
+        }
+        // a hub city's two pages, under its review pin, each read (v24177)
+        if (spec.hub) {
+          const hp = await evalv(HUB_PIN, 20000);
+          if (hp !== 'ok') problems.push(`the pages of a hub city: ${hp}`);
+          else {
+            await evalv(SETTLE(1500));
+            for (let pg = 0; pg < 2; pg++) {
+              await evalv(HUB_PAGE(pg));
+              await evalv(SETTLE(400));
+              problems.push(...await read(set, `hotellist YYZ p${pg}`));
+            }
+          }
+          await evalv(HUB_UNPIN);
         }
         await evalv(CARD_RESET);
       }
