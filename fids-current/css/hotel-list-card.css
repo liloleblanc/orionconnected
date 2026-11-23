@@ -28,7 +28,9 @@
    gold rules; how to get there beside a train mark; on a page with no card hotel, the place of a
    partner hotel in a dashed frame; the card hotels in a fine gold frame on the cream (a border
    only: never a box behind a logo), their logo on the cream with a fine rule after it; the lines,
-   the name at the left and the street or the shuttle mark at the right; how many more the scan
+   the name at the left and at the right how the hotel is reached from the terminals (a train mark
+   and its stop or terminal, v24178, with its legend above the lines), else the shuttle mark, else
+   the street; how many more the scan
    code lists; the navy foot. In the faces of the board, AC Nord Display (the heading, the area,
    the way there, the names) and AC Nord Text (everything else), declared in css/font.css, which
    the gate loads before this sheet.
@@ -253,6 +255,11 @@
 .hlc-hub-note{ flex:0 0 auto; margin-inline-start:auto; padding-inline-start:calc(16 * var(--hlc-px)); font-size:calc(18 * var(--hlc-px)); font-weight:400; color:var(--hlc-soft); }
 .hlc-hub-note .hlc-mark{ width:1.5em; height:1.5em; margin:0; vertical-align:-0.35em; }
 .hlc--hub .hlc-drop .hlc-hub-note{ display:none; }
+/* how a hotel is reached from the terminals (v24178, h.access), in place of the shuttle mark and the
+   street: the train mark, then its stop or its terminal in the ink of the names; a pair of languages
+   on one line, the thin rule between them; the legend of the mark is a line above the lines */
+.hlc-hub-way{ color:var(--hlc-navy); font-weight:500; }
+.hlc-hub-way .hlc-ico{ width:1.3em; height:1.3em; margin-inline-end:.4em; vertical-align:-0.28em; }
 .hlc-hub-more{ flex:1.3 1 0; display:flex; align-items:center; gap:calc(16 * var(--hlc-px)); }
 /* no room for how many more and the invitation, even stacked: the invitation goes (the word beside
    the code still says it) */

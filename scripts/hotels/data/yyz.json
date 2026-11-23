@@ -3,7 +3,7 @@
  "iata": "YYZ",
  "city": "Toronto",
  "province": "ON",
- "built": "2026-11-22",
+ "built": "2026-11-23",
  "about": "Guest information for the free hotel list cards of the boards (js/hotel-list-card.js) and the full list in the phone app (app.html). Facts only: name, street address, phone, website, the logo where an official one reads on the cream column. No prices, no offers. Every field keeps the source it was read from and whether it was verified.",
  "runtime": "fids-current/data/hotels/yyz.json is made from this file by scripts/hotels/build-runtime.js: only the hotels that are listed and only the fields the cards and the phone app read. Edit this file, then run the script; tests/hotel-list-cards.test.js holds the two to agree.",
  "rules": {
@@ -11,7 +11,8 @@
   "listed": "listed false = held back (the reason is given). A listed hotel is shown only while its season is open (season.year_round, or a season.open range that holds the date at the airport).",
   "shuttle": "shuttle.mark true only where the shuttle is verified on the hotel's or the airport's own page.",
   "logo": "logo.file is loaded through <img>, never inlined; opaque = the file has its own light ground (shown with a multiply blend on the cream column so the box does not show).",
-  "logo_fill": "logo.fill true = a stacked lockup whose words are small at the common logo height (62 px at 1680x1050): it may take the whole cell of the cream column, the width of the column and the height of its line. The file is shown as it is."
+  "logo_fill": "logo.fill true = a stacked lockup whose words are small at the common logo height (62 px at 1680x1050): it may take the whole cell of the cream column, the width of the column and the height of its line. The file is shown as it is.",
+  "access": "access = how a hotel of a hub city is reached from the terminals by the airport’s own train, shown at the right of its line in place of the shuttle mark and the street: kind link (its stop of the train, data: stop) or terminal (joined to a terminal: terminal, its number); line and from (the line, and the terminal it is taken from) give the legend of the page. Only where verified on the hotel’s own page or its brand property page (a person’s reading in a browser counts, with the date); the slim copy carries only the verified ones, without their sources. It claims no fare and no hours."
  },
  "points": {
   "airport": {
@@ -47,7 +48,7 @@
        "evidence": "\"Take the free 24-hour Link train to travel between the hotel, the economy parking lot, and airport terminals.\""
       }
      ],
-     "note": "Held (verified false), so the build step leaves it off the airport page: the hub rule asks for each fact on the operator’s own page, and the operator of the Link train, the airport (torontopearson.com), is blocked, needs a person. Read only: Terminals 1 and 3 from the operator of the UP Express; free, 24 h and every 4 to 8 minutes from Alt Hotel’s own pages. Those pages also show the train reaching only Viscount station, where the Alt Hotel is (its last stop), not the other airport hotels: a line for the whole area would read as a free train to all of them. A person who reads the operator’s page decides whether it comes back, and whether it belongs to the area or to the Alt Hotel alone. No readable page lists the three stops in order. No general hotel-shuttle pick-up point is verified: shuttle pick-up stays per hotel."
+     "note": "Held (verified false), so the build step leaves it off the airport page: the hub rule asks for each fact on the operator’s own page, and the operator of the Link train, the airport (torontopearson.com), is blocked, needs a person. Read only: Terminals 1 and 3 from the operator of the UP Express; free, 24 h and every 4 to 8 minutes from Alt Hotel’s own pages. Those pages also show the train reaching only Viscount station, where the Alt Hotel is (its last stop), not the other airport hotels: a line for the whole area would read as a free train to all of them. A person who reads the operator’s page decides whether it comes back, and whether it belongs to the area or to the Alt Hotel alone. No readable page lists the three stops in order. No general hotel-shuttle pick-up point is verified: shuttle pick-up stays per hotel. The Link train shows per hotel instead (access, v24178): on the line of the Alt Hotel (Viscount station, its own page) and of the Sheraton Gateway (Terminal 3, its brand page as read by a person), with one legend line, the Link train from Terminal 1. No fare and no hours are claimed."
     }
    },
    "downtown": {
@@ -79,16 +80,17 @@
  },
  "foot_marks": [],
  "notes": {
-  "verified_definition": "verified true = read directly on 2026-11-22 on at least one official page: the hotel’s own site, its brand property page (including the Accor pages all.accor.com and Four Seasons’ own press room for the hotel), or the official tourism booking listing of Destination Toronto (stay.destinationtoronto.com, see unverified), and no official page read says otherwise; the quote is the page’s own words. Where one official page alone gives a fact, the hotel’s notes say so (one page is enough, as in the other cities). verified false = not read (403, a bot wall, a JS shell or no answer), on no official page, only on an owner group’s portfolio site (Easton’s, Manga, Silver Hotel Group: not one of the four official sources), or official pages that disagree: the note says which. OpenStreetMap only found the hotels (scripts/hotels/find-candidates.js); its positions are kept for the area distances, with its credit, and no fact rests on it alone. Each fact was checked twice: a first pass and an adversarial re-check, then a second pass on the hotels held back.",
+  "verified_definition": "verified true = read directly on 2026-11-22 on at least one official page, or read by a person in a browser on 2026-11-23 on a page that refuses automated readers (method says so; seven hotels): the hotel’s own site, its brand property page (including the Accor pages all.accor.com and Four Seasons’ own press room for the hotel), or the official tourism booking listing of Destination Toronto (stay.destinationtoronto.com, see unverified), and no official page read says otherwise; the quote is the page’s own words. Where one official page alone gives a fact, the hotel’s notes say so (one page is enough, as in the other cities). verified false = not read (403, a bot wall, a JS shell or no answer), on no official page, only on a hotel group’s portfolio site (Easton’s, Manga, Silver Hotel Group: not one of the four official sources), or official pages that disagree: the note says which. OpenStreetMap only found the hotels (scripts/hotels/find-candidates.js); its positions are kept for the area distances, with its credit, and no fact rests on it alone. Each fact was checked twice: a first pass and an adversarial re-check, then a second pass on the hotels held back.",
   "postal_note": "Postal codes are not shown on the cards. A postal code is marked verified true only where two official pages agree. Where the pages disagree (Kimpton Saint George, The Sutton Place, The Beverley) or none prints one, it is left empty or marked verified false.",
-  "shuttle_note": "shuttle.mark true = the card shows the shuttle mark, only where the hotel’s own page says so (the airport’s own page, torontopearson.com, is blocked): Sandman Signature Toronto Airport and Mississauga (free, 24 hours), and Woodbine Hotel and Suites (PAID, \"a nominal fee\"; held, still trading?). Best Western Premier Toronto Airport Carlingview names a free 24/7 shuttle on a brand page that answered 403 (excluded, blocked). A shuttle named only on the tourism listing (Hyatt Place) or an owner group’s site (Fairfield, TownePlace) is not marked. The Alt Hotel uses the airport’s free Link train, not a shuttle (hub.areas.airport, held: its operator’s page is blocked). shuttle.offered is true / false / null (unknown), shuttle.terms what the page says to do, shuttle.evidence the words read.",
+  "shuttle_note": "shuttle.mark true = the card shows the shuttle mark, only where the hotel’s own page says so (the airport’s own page, torontopearson.com, is blocked): Sandman Signature Toronto Airport and Mississauga (free, 24 hours); the Element, the Four Points, the Hampton Inn & Suites and the Fairfield (free; their brand property pages, read by a person in a browser on 2026-11-23); and Woodbine Hotel and Suites (PAID, \"a nominal fee\"; held, still trading?). Best Western Premier Toronto Airport Carlingview names a free 24/7 shuttle on a brand page that answered 403 (excluded, blocked). A shuttle named only on a tourism listing (Hyatt Place; the Quality Inn, on visitmississauga.ca) or a hotel group’s site (TownePlace) is not marked. The Sheraton Gateway is joined to Terminal 3: no hotel shuttle, its access note instead. The Alt Hotel uses the airport’s free Link train, not a shuttle: its access note (Viscount station); the area-wide line stays held (hub.areas.airport: its operator’s page is blocked). shuttle.offered is true / false / null (unknown), shuttle.terms what the page says to do, shuttle.evidence the words read.",
   "season_note": "season.year_round true = open all year. season.verified true only where a page says in words that the hotel is open all year: no Toronto page does. Two pages say \"all year\" of something else, kept in season.note as support only: Fairmont Royal York’s offers block (\"Available all year-round\", of an offer) and Windsor Arms’ tea rooms (\"every day of the year\"). Everywhere year_round true is the city-hotel default (verified false), recorded with the page that shows the hotel taking bookings or running round the clock and no closure (season.note quotes it), as Chateau Bedford in yhz.json. Kimpton Saint George and Four Seasons Hotel Toronto rest on the default with no such line beyond their booking buttons or opening date.",
   "sources": [
    "Hotels’ own sites and brand property pages, read directly with WebFetch on 2026-11-22 (each fact’s source names the page)",
    "Accor: all.accor.com property pages A551 and 0931, read directly; the Accor catalog response (catalog/v1/hotels, the feed of the board’s Accor pages) beside them for the Novotel position",
    "Destination Toronto hotel booking listings, stay.destinationtoronto.com (each listing page read directly; see unverified)",
    "UP Express (upexpress.com) and Alt Hotel’s own pages for the transit lines of hub",
-   "OpenStreetMap via the Overpass API (ODbL): credit \"© OpenStreetMap contributors\". Candidates only (scripts/hotels/find-candidates.js, skeleton dated 2026-11-23 UTC, the evening of 2026-11-22 in Toronto): positions for the area distances, cited only beside an official page"
+   "OpenStreetMap via the Overpass API (ODbL): credit \"© OpenStreetMap contributors\". Candidates only (scripts/hotels/find-candidates.js, skeleton dated 2026-11-23 UTC, the evening of 2026-11-22 in Toronto): positions for the area distances, cited only beside an official page",
+   "Read by a person in a browser on 2026-11-23, on pages that refuse automated readers (marriott.com, hilton.com, and visitmississauga.ca, Mississauga’s official tourism site): the Sheraton Gateway, the Element, the Four Points, the Hampton Inn & Suites, the Fairfield and the Quality Inn, each fact with the page and the date (method). The Nu Hotel’s page would not open."
   ]
  },
  "excluded": [
@@ -153,17 +155,6 @@
    ]
   },
   {
-   "id": "quality-inn",
-   "name": "Quality Inn",
-   "kind": "blocked",
-   "reason": "Blocked, needs a person: choicehotels.com and visitmississauga.ca (empty JS shell); not confirmed. Leads only (OpenStreetMap or search snippets, not facts): a bare \"Quality Inn\" in OpenStreetMap on Airport Road; fits Choice property cn568, 6355 Airport Road, Mississauga (\"Quality Inn Toronto Airport\", formerly Comfort Inn Toronto Airport). Not quality-inn-2.",
-   "source": "https://www.openstreetmap.org/way/34749592",
-   "read": "https://www.choicehotels.com/en-ca/comfort-inn-toronto-airport-mississauga-hotel-directions-cn568",
-   "also": [
-    "https://www.visitmississauga.ca/where-to-stay/"
-   ]
-  },
-  {
    "id": "quality-inn-2",
    "name": "Quality Inn",
    "address": "5585 Ambler Drive, Mississauga",
@@ -212,18 +203,6 @@
    "reason": "Blocked, needs a person: hilton.com; not confirmed. Leads only (OpenStreetMap or search snippets, not facts): 5515 Eglinton Avenue West, +1-416-646-3000.",
    "source": "https://www.openstreetmap.org/node/4046617967",
    "read": "https://www.hilton.com/en/hotels/ytosohx-hampton-toronto-airport-corporate-centre"
-  },
-  {
-   "id": "hampton-inn-suites-by-hilton-toronto-airport",
-   "name": "Hampton Inn & Suites by Hilton Toronto Airport",
-   "address": "3279 Caroga Drive",
-   "kind": "blocked",
-   "reason": "Blocked, needs a person: hilton.com and visitmississauga.ca (empty JS shell); not confirmed. Leads only (OpenStreetMap or search snippets, not facts): the listing title \"Hampton Inn & Suites by Hilton Toronto - Airport\"; 3279 Caroga Drive.",
-   "source": "https://www.openstreetmap.org/way/34749688",
-   "read": "https://www.hilton.com/en/hotels/yyzhshx-hampton-suites-toronto-airport/",
-   "also": [
-    "https://www.visitmississauga.ca/listing/hampton-inn-suites-by-hilton-toronto-airport/"
-   ]
   },
   {
    "id": "hilton-toronto-airport-hotel-suites",
@@ -352,31 +331,6 @@
    "read": "https://www.marriott.com/en-us/hotels/yyzda-delta-hotels-toronto-airport-and-conference-centre/overview/"
   },
   {
-   "id": "element",
-   "name": "Element",
-   "address": "6257 Airport Road",
-   "kind": "blocked",
-   "reason": "Blocked, needs a person: marriott.com; not confirmed. Leads only (OpenStreetMap or search snippets, not facts): \"Element Toronto Airport\" on the hotel group’s site (not an official source), one building with the Four Points by Sheraton Toronto Airport at 6257 Airport Road, Mississauga; +1 905-678-1800 on that site.",
-   "source": "https://www.openstreetmap.org/node/12863386069",
-   "read": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
-   "also": [
-    "https://www.eastonsgroup.com/portfolio/element-toronto-airport"
-   ]
-  },
-  {
-   "id": "four-points",
-   "name": "Four Points",
-   "address": "6257 Airport Road, Mississauga",
-   "kind": "blocked",
-   "reason": "Blocked, needs a person: marriott.com; not confirmed. Leads only (OpenStreetMap or search snippets, not facts): \"Four Points by Sheraton Toronto Airport\" and an unlabelled +1 905-678-1400 on the hotel group’s site (not an official source); 6257 Airport Road, Mississauga L4V 1E4; a shuttle to the UP Express in search snippets.",
-   "source": "https://www.openstreetmap.org/way/737886649",
-   "read": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
-   "also": [
-    "https://www.eastonsgroup.com/portfolio/four-points-by-sheraton-toronto-airport",
-    "https://www.fourpointselementtoronto.com/"
-   ]
-  },
-  {
    "id": "four-points-by-sheraton-toronto-mississauga",
    "name": "Four Points by Sheraton Toronto Mississauga",
    "address": "6090 Dixie Road, Mississauga",
@@ -431,18 +385,6 @@
    "read": "https://www.marriott.com/en-us/hotels/yyzds-sheraton-toronto-airport-hotel-and-conference-centre/overview/"
   },
   {
-   "id": "sheraton-gateway-hotel-in-toronto-international-airport",
-   "name": "Sheraton Gateway Hotel in Toronto International Airport",
-   "address": "6301 Silver Dart Drive, Toronto",
-   "kind": "blocked",
-   "reason": "Blocked, needs a person: marriott.com (the vanity domain answers 301 to it) and visitmississauga.ca (empty JS shell); not confirmed. Leads only (OpenStreetMap or search snippets, not facts): 6301 Silver Dart Drive, L5P 1C4, +1-905-672-7000 (in Terminal 3).",
-   "source": "https://www.openstreetmap.org/way/96773158",
-   "read": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
-   "also": [
-    "https://www.visitmississauga.ca/listing/sheraton-gateway-hotel-in-toronto-international-airport/"
-   ]
-  },
-  {
    "id": "the-westin-toronto-airport",
    "name": "The Westin Toronto Airport",
    "address": "950 Dixon Road, Toronto",
@@ -455,7 +397,7 @@
    "id": "nu-hotel",
    "name": "Nu Hotel",
    "kind": "blocked",
-   "reason": "Blocked, needs a person: nuhoteltoronto.com (expired TLS certificate) and visitmississauga.ca (empty JS shell); not confirmed. Leads only (OpenStreetMap or search snippets, not facts): 6465 Airport Road, Mississauga L4V 1E4, (905) 612-1119, a free 24-hour shuttle. An expired certificate on the whole site may mean it is no longer kept up.",
+   "reason": "Blocked, needs a person: nuhoteltoronto.com (expired TLS certificate) and visitmississauga.ca (empty JS shell); not confirmed. Leads only (OpenStreetMap or search snippets, not facts): 6465 Airport Road, Mississauga L4V 1E4, (905) 612-1119, a free 24-hour shuttle. An expired certificate on the whole site may mean it is no longer kept up. A person tried the page in a browser on 2026-11-23: it would not open there either.",
    "source": "https://www.openstreetmap.org/node/10224698079",
    "read": "https://nuhoteltoronto.com/contact/",
    "also": [
@@ -2159,14 +2101,425 @@
   "An AI model is never the source of a hotel, an address or a telephone. A page that answers 403, a robot block or a captcha: record \"blocked, needs a person\" in the note and leave the field unverified; never read it another way.",
   "stay.destinationtoronto.com (Destination Toronto’s hotel booking site, \"Powered by Ripe\") was first used here, in the second pass. It is a separate host from www.destinationtoronto.com (known blocked); it answered normally and nothing was bypassed. A person should agree that it counts as the official tourism site: Park Hyatt, Hyatt Regency, Shangri-La, Revery and Hyatt Place rest on it alone, the Sutton Place telephone too. Until a person agrees, those six are held (listed false, the reason in each); if it counts, they are listed again, and if not, they move to excluded. It lists 79 properties and may settle many of the blocked hotels below.",
   "Brand pages that refuse automated readers: marriott.com, hilton.com, ihg.com, choicehotels.com, hyatt.com, shangri-la.com, omnihotels.com, fourseasons.com (403); bestwestern.com (a 403 at times only, counted as a block: Best Western Premier Toronto Airport Carlingview is excluded on it); visitmississauga.ca serves an empty JS shell; torontopearson.com is blocked. Every hotel resting on them alone is in excluded with the page a person should read (kind \"blocked\").",
-  "Owner group portfolio sites (eastonsgroup.com, mangahotels.com, silverhotelgroup.com) are not one of the four official sources: the Fairfield Inn & Suites and the TownePlace Suites are held back on them, and the Four Points, Element and Embassy Suites are excluded. A person decides whether they count.",
-  "Held back, facts on a page but a question open: the Alexandra Hotel and Woodbine Hotel and Suites (are they trading?), the six that rest on the tourism booking listing (above), The Beverley Hotel (the Sonder listing’s name and telephone), the Hampton Inn & Suites at 300 Jarvis Street (open or closed?), the Fairfield and the TownePlace (owner sites only).",
+  "Hotel groups’ portfolio sites (eastonsgroup.com, mangahotels.com, silverhotelgroup.com) are not one of the four official sources: the TownePlace Suites is held back on them, and the Embassy Suites is excluded. A person decides whether they count. The Fairfield Inn & Suites, the Four Points and the Element were read by a person on their Marriott pages on 2026-11-23 and are listed.",
+  "Held back, facts on a page but a question open: the Alexandra Hotel and Woodbine Hotel and Suites (are they trading?), the six that rest on the tourism booking listing (above), The Beverley Hotel (the Sonder listing’s name and telephone), the Hampton Inn & Suites at 300 Jarvis Street (open or closed?), the TownePlace (the hotel group’s site only).",
   "Listed on a judgement a person may revisit: Four Seasons Hotel Toronto (its press room, not the booking page, and a telephone from a June 2025 press release); The Hazelton (toll-free telephone only); The Rex (a small hotel above a jazz bar); SoHo Hotel Toronto (a \"TOOR Hotel SoHo\" opening banner on another site).",
   "Nearby hotels are not checked: a hub city’s pages show the airport and downtown only (excluded, kind \"nearby_not_checked\"). Destination resorts beyond 30 km are not searched.",
   "Logos: the two Accor files already in the repository (Fairmont Royal York, Novotel), and the brand files the other lists already use (Alt Hotels from yhz.json, Hyatt Place from yqm.json). No logo was downloaded for Toronto. foot_marks is empty: no Toronto or Ontario mark has been approved for the foot of the card.",
-  "independent is null on the hotels of no chain brand: not established. brand, group and independent are not published: the slim copy has none of them. card, card_id and card_brand mark the two hotels of the Accor catalog (A551, 0931)."
+  "independent is null on the hotels of no chain brand: not established. brand, group and independent are not published: the slim copy has none of them. card, card_id and card_brand mark the two hotels of the Accor catalog (A551, 0931).",
+  "Read by a person in a browser on 2026-11-23 (the Toronto checks page): seven of the blocked or held airport hotels. Six are listed on that reading (the Sheraton Gateway, the Element, the Four Points, the Hampton Inn & Suites, the Fairfield, the Quality Inn). The Nu Hotel stays excluded: its page would not open. The Quality Inn’s shuttle rests on the tourism listing alone and is not marked."
  ],
  "hotels": [
+  {
+   "id": "sheraton-gateway-hotel-in-toronto-international-airport",
+   "name": "Sheraton Gateway Hotel in Toronto International Airport",
+   "area": "airport",
+   "resort": false,
+   "brand": "Sheraton",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "6301 Silver Dart Drive",
+    "town": "Toronto",
+    "province": "ON",
+    "postal_code": "",
+    "display": "6301 Silver Dart Drive, Toronto"
+   },
+   "phone": "(905) 672-7000",
+   "website": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
+   "lat": 43.6864453,
+   "lng": -79.6197256,
+   "distance_km": {
+    "airport": 1.1,
+    "centre": 19.4
+   },
+   "area_reason": "1.1 km from the airport point (limit about 5 km, 10 % tolerance); airport wins when both apply.",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
+    "note": "Read by a person in a browser, 2026-11-23: the page shows the hotel; no page read states a season or a closure (city-hotel default, verified false)."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
+    "also": null,
+    "evidence": "Read by a person in a browser, 2026-11-23: \"Connected to Terminal 3 accessible from Terminal 1 via Airport Link Train.\" The check first recorded a free shuttle; settled on review: not a hotel shuttle. The hotel is joined to Terminal 3, and from Terminal 1 the airport’s Link train runs there: no mark. The way there is its access note.",
+    "checked": "2026-11-23"
+   },
+   "logo": null,
+   "logo_missing": "No logo in this pass (hub city, 2026-11-23): the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "Town on the same page, as the page writes it: Toronto."
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
+     "note": "Not recorded in the check (name, street, town and telephone only). Not shown on the cards.",
+     "checked": "2026-11-23"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "As read on the page: +1 905-672-7000; written in the cards’ form."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "The page the person opened: the hotel’s official page."
+    },
+    "latlng": {
+     "verified": false,
+     "source": "https://www.openstreetmap.org/way/96773158",
+     "note": "OpenStreetMap position (© OpenStreetMap contributors), for the straight-line area distances only; the hotel itself is read on its official page."
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
+     "checked": "2026-11-23"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
+     "checked": "2026-11-23"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/96773158",
+   "notes": "Read by a person in a browser on 2026-11-23 on its brand property page (marriott.com refuses automated readers): name, street, town and telephone match the page. Matches the OpenStreetMap lead (6301 Silver Dart Drive, +1-905-672-7000). In the airport itself, joined to Terminal 3.",
+   "access": {
+    "kind": "terminal",
+    "terminal": "3",
+    "line": "Link",
+    "from": "1",
+    "verified": true,
+    "source": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
+    "method": "read by a person in a browser, 2026-11-23",
+    "quote": "Connected to Terminal 3 accessible from Terminal 1 via Airport Link Train.",
+    "checked": "2026-11-23",
+    "also": [
+     {
+      "source": "https://www.upexpress.com/en/up-express-stations/pearson-station",
+      "evidence": "\"located in Terminal 1, directly adjacent to the Terminal Link Train service connecting Terminals 1 and 3.\"",
+      "checked": "2026-11-22"
+     }
+    ],
+    "note": "Joined to Terminal 3; from Terminal 1, the airport’s Link train (the brand page, as read by a person; the UP Express page names the Link train between Terminals 1 and 3). Nothing else is claimed: no fare and no hours (those would need the operator’s own page, torontopearson.com, blocked)."
+   }
+  },
+  {
+   "id": "element",
+   "name": "Element Toronto Airport",
+   "area": "airport",
+   "resort": false,
+   "brand": "Element",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "6257 Airport Road",
+    "town": "Mississauga",
+    "province": "ON",
+    "postal_code": "",
+    "display": "6257 Airport Road, Mississauga"
+   },
+   "phone": "(905) 678-1800",
+   "website": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
+   "lat": 43.6901809,
+   "lng": -79.6220081,
+   "distance_km": {
+    "airport": 1.3,
+    "centre": 19.6
+   },
+   "area_reason": "1.3 km from the airport point (limit about 5 km, 10 % tolerance); airport wins when both apply.",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
+    "note": "Read by a person in a browser, 2026-11-23: the page shows the hotel; no page read states a season or a closure (city-hotel default, verified false)."
+   },
+   "shuttle": {
+    "mark": true,
+    "offered": true,
+    "verified": true,
+    "terms": "free (as the person read the page)",
+    "source": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
+    "also": null,
+    "evidence": "Read by a person in a browser, 2026-11-23: \"Yes, Element by Marriott Toronto Airport has an airport shuttle to Toronto Pearson International Airport (YYZ).\" The person recorded the shuttle as free.",
+    "checked": "2026-11-23"
+   },
+   "logo": null,
+   "logo_missing": "No logo in this pass (hub city, 2026-11-23): the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "Town on the same page, as the page writes it: Mississauga."
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
+     "note": "Not recorded in the check (name, street, town and telephone only). Not shown on the cards.",
+     "checked": "2026-11-23"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "As read on the page: +1 905-678-1800; written in the cards’ form."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "The page the person opened: the hotel’s official page."
+    },
+    "latlng": {
+     "verified": false,
+     "source": "https://www.openstreetmap.org/node/12863386069",
+     "note": "OpenStreetMap position (© OpenStreetMap contributors), for the straight-line area distances only; the hotel itself is read on its official page."
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
+     "checked": "2026-11-23"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
+     "checked": "2026-11-23"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/12863386069",
+   "notes": "Read by a person in a browser on 2026-11-23 on its brand property page (marriott.com refuses automated readers). One building with the Four Points by Sheraton Toronto Airport at 6257 Airport Road (a two-brand building); the two hotels have telephones of their own. Matches the OpenStreetMap lead (6257 Airport Road)."
+  },
+  {
+   "id": "four-points",
+   "name": "Four Points by Sheraton Toronto Airport",
+   "area": "airport",
+   "resort": false,
+   "brand": "Four Points by Sheraton",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "6257 Airport Road",
+    "town": "Mississauga",
+    "province": "ON",
+    "postal_code": "",
+    "display": "6257 Airport Road, Mississauga"
+   },
+   "phone": "(905) 678-1400",
+   "website": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
+   "lat": 43.6903386,
+   "lng": -79.6216936,
+   "distance_km": {
+    "airport": 1.3,
+    "centre": 19.6
+   },
+   "area_reason": "1.3 km from the airport point (limit about 5 km, 10 % tolerance); airport wins when both apply.",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
+    "note": "Read by a person in a browser, 2026-11-23: the page shows the hotel; no page read states a season or a closure (city-hotel default, verified false)."
+   },
+   "shuttle": {
+    "mark": true,
+    "offered": true,
+    "verified": true,
+    "terms": "free (as the person read the page)",
+    "source": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
+    "also": null,
+    "evidence": "Read by a person in a browser, 2026-11-23: \"Yes, Four Points by Sheraton Toronto Airport has an airport shuttle to Toronto Pearson International Airport (YYZ).\" The person recorded the shuttle as free.",
+    "checked": "2026-11-23"
+   },
+   "logo": null,
+   "logo_missing": "No logo in this pass (hub city, 2026-11-23): the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "Town on the same page, as the page writes it: Mississauga."
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
+     "note": "Not recorded in the check (name, street, town and telephone only). Not shown on the cards.",
+     "checked": "2026-11-23"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "As read on the page: +1 905-678-1400; written in the cards’ form."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "The page the person opened: the hotel’s official page."
+    },
+    "latlng": {
+     "verified": false,
+     "source": "https://www.openstreetmap.org/way/737886649",
+     "note": "OpenStreetMap position (© OpenStreetMap contributors), for the straight-line area distances only; the hotel itself is read on its official page."
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
+     "checked": "2026-11-23"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
+     "checked": "2026-11-23"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/737886649",
+   "notes": "Read by a person in a browser on 2026-11-23 on its brand property page (marriott.com refuses automated readers). One building with the Element Toronto Airport at 6257 Airport Road (a two-brand building); the two hotels have telephones of their own (this one +1 905-678-1400, the number the earlier lead had seen unlabelled on the hotel group’s site). Matches the OpenStreetMap lead (6257 Airport Road, Mississauga)."
+  },
+  {
+   "id": "quality-inn",
+   "name": "Quality Inn",
+   "area": "airport",
+   "resort": false,
+   "brand": "Quality Inn",
+   "group": "Choice Hotels",
+   "independent": false,
+   "address": {
+    "street": "6355 Airport Rd.",
+    "town": "Mississauga",
+    "province": "ON",
+    "postal_code": "",
+    "display": "6355 Airport Rd., Mississauga"
+   },
+   "phone": "(905) 677-7331",
+   "website": "",
+   "lat": 43.6915034,
+   "lng": -79.6248262,
+   "distance_km": {
+    "airport": 1.3,
+    "centre": 19.9
+   },
+   "area_reason": "1.3 km from the airport point (limit about 5 km, 10 % tolerance); airport wins when both apply.",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.visitmississauga.ca/where-to-stay/",
+    "note": "Read by a person in a browser, 2026-11-23: the page shows the hotel; no page read states a season or a closure (city-hotel default, verified false)."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": true,
+    "verified": false,
+    "terms": "free (the tourism listing, as read by a person)",
+    "source": "https://www.visitmississauga.ca/where-to-stay/",
+    "also": null,
+    "evidence": "Read by a person in a browser, 2026-11-23, on the tourism listing (visitmississauga.ca, Mississauga’s official tourism site): a free shuttle; no line of the page was copied. Not marked: rules.shuttle asks for the hotel’s or the airport’s own page, and a shuttle named only on a tourism listing is not marked (as the Hyatt Place). A person who reads the hotel’s Choice page can mark it.",
+    "checked": "2026-11-23"
+   },
+   "logo": null,
+   "logo_missing": "No logo in this pass (hub city, 2026-11-23): the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.visitmississauga.ca/where-to-stay/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.visitmississauga.ca/where-to-stay/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "Town on the same page, as the page writes it: Mississauga."
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.visitmississauga.ca/where-to-stay/",
+     "note": "Not recorded in the check (name, street, town and telephone only). Not shown on the cards.",
+     "checked": "2026-11-23"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.visitmississauga.ca/where-to-stay/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "As read on the page: (905) 677-7331; written in the cards’ form."
+    },
+    "website": {
+     "verified": false,
+     "source": "https://www.choicehotels.com/en-ca/comfort-inn-toronto-airport-mississauga-hotel-directions-cn568",
+     "note": "choicehotels.com, known blocked, not read: no website shown.",
+     "checked": "2026-11-23"
+    },
+    "latlng": {
+     "verified": false,
+     "source": "https://www.openstreetmap.org/way/34749592",
+     "note": "OpenStreetMap position (© OpenStreetMap contributors), for the straight-line area distances only; the hotel itself is read on its official page."
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.visitmississauga.ca/where-to-stay/",
+     "checked": "2026-11-23"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.visitmississauga.ca/where-to-stay/",
+     "checked": "2026-11-23"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/34749592",
+   "notes": "Read by a person in a browser on 2026-11-23 on the listings of visitmississauga.ca, Mississauga’s official tourism site (it serves an empty shell to automated readers): name, street, town and telephone match the listing. Identity: the OpenStreetMap way named Quality Inn (brand Quality Inn, no address) stands on Airport Road 0.27 km north-west of number 6257 (the Element and Four Points) and 0.32 km south-east of the Nu Hotel lead at 6465, where number 6355 falls; the only other Quality Inn near the airport (quality-inn-2) is at 5585 Ambler Drive, 3.9 km away. The earlier lead read it as Choice property cn568, formerly a Comfort Inn (the slug of its old Choice page, comfort-inn-toronto-airport-mississauga; a search snippet, not a fact)."
+  },
   {
    "id": "alt-hotel",
    "name": "Alt Hotel Toronto Airport",
@@ -2205,7 +2558,7 @@
     "terms": null,
     "source": "https://www.germainhotels.com/en/alt-hotel/toronto-airport/contact",
     "also": null,
-    "evidence": "Own contact page, read 2026-11-22: \"This station is the last stop of the Link Train, a complimentary airport transportation service that runs every 4 to 8 minutes\". The airport’s Link train, not a hotel shuttle: no mark.",
+    "evidence": "Own contact page, read 2026-11-22: \"This station is the last stop of the Link Train, a complimentary airport transportation service that runs every 4 to 8 minutes\". The airport’s Link train, not a hotel shuttle: no mark. Its way there is its access note (Viscount station).",
     "checked": "2026-11-22"
    },
    "logo": {
@@ -2269,7 +2622,30 @@
     }
    },
    "osm": "https://www.openstreetmap.org/way/288106846",
-   "notes": "Directly outside Viscount station, the last stop of the free Link train to Terminals 1 and 3 (own contact page). The group name comes from the althotels.com redirect, not a printed line."
+   "notes": "Directly outside Viscount station, the last stop of the free Link train to Terminals 1 and 3 (own contact page). The group name comes from the althotels.com redirect, not a printed line.",
+   "access": {
+    "kind": "link",
+    "stop": "Viscount",
+    "line": "Link",
+    "from": "1",
+    "verified": true,
+    "source": "https://www.germainhotels.com/en/alt-hotel/toronto-airport/contact",
+    "quote": "The hotel is located directly outside Viscount station.",
+    "checked": "2026-11-23",
+    "also": [
+     {
+      "source": "https://www.germainhotels.com/en/alt-hotel/toronto-airport/contact",
+      "evidence": "\"This station is the last stop of the Link Train, a complimentary airport transportation service\" \"UP Express Pearson Airport station is 10 minutes away from the hotel by LINK train.\"",
+      "checked": "2026-11-23"
+     },
+     {
+      "source": "https://www.upexpress.com/en/up-express-stations/pearson-station",
+      "evidence": "\"located in Terminal 1, directly adjacent to the Terminal Link Train service connecting Terminals 1 and 3.\"",
+      "checked": "2026-11-22"
+     }
+    ],
+    "note": "Viscount station, the Link train’s stop at the hotel (its own contact page, read again 2026-11-23). From Terminal 1: the UP Express station is in Terminal 1 beside the Link train (upexpress.com), and the hotel’s page puts that station 10 minutes from the hotel by the Link train. The board shows the stop only: no fare and no hours."
+   }
   },
   {
    "id": "fairfield-inn-suites-by-marriott-toronto-airport",
@@ -2280,14 +2656,14 @@
    "group": "Marriott International",
    "independent": false,
    "address": {
-    "street": "3299 Caroga Dr",
+    "street": "3299 Caroga Drive",
     "town": "Mississauga",
     "province": "ON",
     "postal_code": "L4V 1A3",
-    "display": "3299 Caroga Dr, Mississauga"
+    "display": "3299 Caroga Drive, Mississauga"
    },
    "phone": "(905) 673-9800",
-   "website": "",
+   "website": "https://www.marriott.com/YYZFS",
    "lat": 43.6895281,
    "lng": -79.6072002,
    "distance_km": {
@@ -2299,56 +2675,62 @@
     "year_round": true,
     "open": null,
     "verified": false,
-    "source": "https://mangahotels.com/airport-parking/",
-    "note": "Owner group page (not one of the four official sources), read 2026-11-22: \"Each of our convenient airport locations offers 24-hour shuttle service to the nearest airport\". No season stated (city-hotel default, verified false)."
+    "source": "https://www.marriott.com/YYZFS",
+    "note": "Read by a person in a browser, 2026-11-23: the page shows the hotel; no page read states a season or a closure (city-hotel default, verified false). The hotel group’s page (mangahotels.com, read 2026-11-22) says its airport hotels run a 24-hour shuttle (support only)."
    },
    "shuttle": {
-    "mark": false,
-    "offered": null,
-    "verified": false,
-    "terms": null,
-    "source": "https://mangahotels.com/hotel-properties/",
-    "also": null,
-    "evidence": "Owner group page, read 2026-11-22: \"our free 24-hour direct shuttle service\". Not the hotel’s own or the airport’s page: no mark.",
-    "checked": "2026-11-22"
+    "mark": true,
+    "offered": true,
+    "verified": true,
+    "terms": "free (as the person read the page)",
+    "source": "https://www.marriott.com/YYZFS",
+    "also": [
+     "https://mangahotels.com/hotel-properties/"
+    ],
+    "evidence": "Read by a person in a browser, 2026-11-23: \"Yes, Fairfield by Marriott Inn & Suites Toronto Airport has an airport shuttle to Toronto Pearson International Airport (YYZ).\" The person recorded the shuttle as free.",
+    "checked": "2026-11-23"
    },
    "logo": null,
    "logo_missing": "No logo in this pass (hub city, 2026-11-22): the name alone.",
-   "listed": false,
-   "not_listed_reason": "Facts only on the hotel group’s site (mangahotels.com), which is not one of the four official sources, and the Marriott page is blocked (marriott.com/YYZFS): blocked, needs a person. List it when a person agrees the hotel group’s site counts as the hotel’s own page, or reads the Marriott page.",
+   "listed": true,
+   "not_listed_reason": null,
    "verified": {
     "name": {
-     "verified": false,
-     "source": "https://mangahotels.com/hotel-properties/",
-     "quote": "Fairfield Inn & Suites Toronto Airport",
-     "note": "Owner group site only (Manga Hotels).",
-     "checked": "2026-11-22"
+     "verified": true,
+     "source": "https://www.marriott.com/YYZFS",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "also": [
+      "https://mangahotels.com/hotel-properties/"
+     ]
     },
     "street": {
-     "verified": false,
-     "source": "https://mangahotels.com/airport-parking/",
-     "quote": "3299 Caroga Dr, Mississauga, ON L4V 1A3, Canada",
-     "note": "Owner group site only; printed \"Dr\".",
-     "checked": "2026-11-22"
+     "verified": true,
+     "source": "https://www.marriott.com/YYZFS",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "Town on the same page: Mississauga. The hotel group’s site prints \"3299 Caroga Dr\"."
     },
     "postal_code": {
      "verified": false,
      "source": "https://mangahotels.com/airport-parking/",
      "quote": "3299 Caroga Dr, Mississauga, ON L4V 1A3, Canada",
+     "note": "The hotel group’s site only. Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
-     "verified": false,
-     "source": "https://mangahotels.com/airport-parking/",
-     "quote": "905 673 9800",
-     "note": "Owner group site only.",
-     "checked": "2026-11-22"
+     "verified": true,
+     "source": "https://www.marriott.com/YYZFS",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "As read on the page: +1 905-673-9800; the hotel group’s site prints the same number (\"905 673 9800\")."
     },
     "website": {
-     "verified": false,
+     "verified": true,
      "source": "https://www.marriott.com/YYZFS",
-     "note": "marriott.com, known blocked, not fetched: no website shown.",
-     "checked": "2026-11-22"
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "The page the person opened: the hotel’s brand property page (a short address of marriott.com)."
     },
     "latlng": {
      "verified": false,
@@ -2357,17 +2739,115 @@
     },
     "season": {
      "verified": false,
-     "source": "https://mangahotels.com/airport-parking/",
-     "checked": "2026-11-22"
+     "source": "https://www.marriott.com/YYZFS",
+     "checked": "2026-11-23"
     },
     "shuttle": {
-     "verified": false,
-     "source": "https://mangahotels.com/hotel-properties/",
-     "checked": "2026-11-22"
+     "verified": true,
+     "source": "https://www.marriott.com/YYZFS",
+     "checked": "2026-11-23"
     }
    },
    "osm": "https://www.openstreetmap.org/way/34749685",
-   "notes": "Manga’s head office is at 3279 Caroga Drive (search snippets); the hotel is 3299."
+   "notes": "Held in the first pass (its facts only on the hotel group’s site, mangahotels.com, and the Marriott page blocked); listed on 2026-11-23, when a person read its brand property page, marriott.com/YYZFS, in a browser: name, street, town and telephone match the page. Search snippets put the hotel group’s head office at 3279 Caroga Drive, the Hampton Inn & Suites next door; the hotel is 3299."
+  },
+  {
+   "id": "hampton-inn-suites-by-hilton-toronto-airport",
+   "name": "Hampton Inn & Suites by Hilton Toronto Airport",
+   "area": "airport",
+   "resort": false,
+   "brand": "Hampton",
+   "group": "Hilton",
+   "independent": false,
+   "address": {
+    "street": "3279 Caroga Drive",
+    "town": "Mississauga",
+    "province": "ON",
+    "postal_code": "",
+    "display": "3279 Caroga Drive, Mississauga"
+   },
+   "phone": "(905) 671-4730",
+   "website": "https://www.hilton.com/en/hotels/yyzhshx-hampton-suites-toronto-airport/",
+   "lat": 43.6890703,
+   "lng": -79.6077784,
+   "distance_km": {
+    "airport": 2.1,
+    "centre": 18.5
+   },
+   "area_reason": "2.1 km from the airport point (limit about 5 km, 10 % tolerance); airport wins when both apply.",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.hilton.com/en/hotels/yyzhshx-hampton-suites-toronto-airport/",
+    "note": "Read by a person in a browser, 2026-11-23: the page shows the hotel; no page read states a season or a closure (city-hotel default, verified false)."
+   },
+   "shuttle": {
+    "mark": true,
+    "offered": true,
+    "verified": true,
+    "terms": "free, 24/7 (as the page says)",
+    "source": "https://www.hilton.com/en/hotels/yyzhshx-hampton-suites-toronto-airport/",
+    "also": null,
+    "evidence": "Read by a person in a browser, 2026-11-23: \"Toronto Pearson International Airport: Available, Complimentary, 24/7 Shuttle.\" The person recorded the shuttle as free.",
+    "checked": "2026-11-23"
+   },
+   "logo": null,
+   "logo_missing": "No logo in this pass (hub city, 2026-11-23): the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.hilton.com/en/hotels/yyzhshx-hampton-suites-toronto-airport/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.hilton.com/en/hotels/yyzhshx-hampton-suites-toronto-airport/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "Town on the same page, as the page writes it: Mississauga."
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.hilton.com/en/hotels/yyzhshx-hampton-suites-toronto-airport/",
+     "note": "Not recorded in the check (name, street, town and telephone only). Not shown on the cards.",
+     "checked": "2026-11-23"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.hilton.com/en/hotels/yyzhshx-hampton-suites-toronto-airport/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "As read on the page: +1 905-671-4730; written in the cards’ form."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.hilton.com/en/hotels/yyzhshx-hampton-suites-toronto-airport/",
+     "method": "read by a person in a browser, 2026-11-23",
+     "checked": "2026-11-23",
+     "note": "The page the person opened: the hotel’s official page."
+    },
+    "latlng": {
+     "verified": false,
+     "source": "https://www.openstreetmap.org/way/34749688",
+     "note": "OpenStreetMap position (© OpenStreetMap contributors), for the straight-line area distances only; the hotel itself is read on its official page."
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.hilton.com/en/hotels/yyzhshx-hampton-suites-toronto-airport/",
+     "checked": "2026-11-23"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://www.hilton.com/en/hotels/yyzhshx-hampton-suites-toronto-airport/",
+     "checked": "2026-11-23"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/34749688",
+   "notes": "Read by a person in a browser on 2026-11-23 on its brand property page (hilton.com refuses automated readers). Matches the OpenStreetMap lead (3279 Caroga Drive). Next door to the Fairfield Inn & Suites at 3299."
   },
   {
    "id": "sandman-hotel-toronto-airport",
@@ -2507,7 +2987,7 @@
     "open": null,
     "verified": false,
     "source": "https://silverhotelgroup.com/hotel/towneplace-suites-mississauga-airport-corporate-centre",
-    "note": "Owner/management group page (not one of the four official sources), read 2026-11-22. No season stated (city-hotel default, verified false)."
+    "note": "Hotel management group page (not one of the four official sources), read 2026-11-22. No season stated (city-hotel default, verified false)."
    },
    "shuttle": {
     "mark": false,
@@ -2516,7 +2996,7 @@
     "terms": null,
     "source": "https://silverhotelgroup.com/hotel/towneplace-suites-mississauga-airport-corporate-centre",
     "also": null,
-    "evidence": "Owner group page, read 2026-11-22: \"We are located less than 4 miles away from Toronto Pearson International Airport and offer a free shuttle service.\" Not the hotel’s own page, and a search snippet says the Marriott FAQ names no shuttle: a person settles it on the brand page.",
+    "evidence": "Hotel group page, read 2026-11-22: \"We are located less than 4 miles away from Toronto Pearson International Airport and offer a free shuttle service.\" Not the hotel’s own page, and a search snippet says the Marriott FAQ names no shuttle: a person settles it on the brand page.",
     "checked": "2026-11-22"
    },
    "logo": null,
@@ -2528,7 +3008,7 @@
      "verified": false,
      "source": "https://silverhotelgroup.com/hotel/towneplace-suites-mississauga-airport-corporate-centre",
      "quote": "TownePlace Suites Mississauga – Airport Corporate Centre",
-     "note": "Owner group site only (Silver Hotel Group).",
+     "note": "Hotel group site only (Silver Hotel Group).",
      "checked": "2026-11-22"
     },
     "street": {
@@ -2548,7 +3028,7 @@
      "verified": false,
      "source": "https://silverhotelgroup.com/hotel/towneplace-suites-mississauga-airport-corporate-centre",
      "quote": "1 (905) 238-9600",
-     "note": "Owner group site only.",
+     "note": "Hotel group site only.",
      "checked": "2026-11-22"
     },
     "website": {
@@ -2635,7 +3115,7 @@
      "also": [
       "https://mangahotels.com/hotel-properties/"
      ],
-     "note": "The owner-operator Manga Hotel Group lists the same name (corroboration only).",
+     "note": "Manga Hotel Group, which runs the hotel, lists the same name (corroboration only).",
      "checked": "2026-11-22"
     },
     "street": {

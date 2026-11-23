@@ -14,8 +14,10 @@
 //                                          of the foot. A hub city (HotelListCard.HUBS) also
 //                                          has its hub block (the province, and the verified
 //                                          way to each area: kind, mark, line, stop, minutes), the
-//                                          street of each hotel, and card: true on its card
-//                                          hotels; no other city has any of the three
+//                                          street of each hotel, card: true on its card hotels,
+//                                          and the verified access of a hotel (how it is reached
+//                                          from the terminals: kind, line, from, its stop or its
+//                                          terminal); no other city has any of the four
 //
 //   node scripts/hotels/build-runtime.js            writes the slim files
 //   node scripts/hotels/build-runtime.js --check    writes nothing; exit 1 when one differs
@@ -56,8 +58,11 @@ function listProblems() {
 //     verified false with the reason in its note (held: the slim copy leaves it out, and the page
 //     shows no way there); hotels in the two areas only, each listed one with its street; a card
 //     hotel with its logo, its street and telephone verified, and its id in the catalog it was
-//     checked against (card_id)
-//   any other city: no hub block, and no card hotel
+//     checked against (card_id); a hotel's access (how it is reached from the terminals by the
+//     airport's own train: a kind the pages have words for, the line and the terminal it is taken
+//     from, and its stop or its terminal) verified with its source, the date and the words read, or
+//     held (verified false) with the reason in its note
+//   any other city: no hub block, no card hotel and no access
 function hubProblems(doc) {
   const code = String(doc && doc.iata || '').toLowerCase();
   const at = 'scripts/hotels/data/' + code + '.json';
@@ -65,6 +70,7 @@ function hubProblems(doc) {
   if (!HUBS.includes(code)) {
     if (doc.hub != null) out.push(at + ' has a hub block, but ' + code.toUpperCase() + ' is not in HotelListCard.HUBS (fids-current/js/hotel-list-card.js)');
     for (const h of doc.hotels || []) if (h.card === true) out.push(at + ' ' + h.id + ': a card hotel outside a hub city');
+    for (const h of doc.hotels || []) if (h.access != null) out.push(at + ' ' + h.id + ': an access note outside a hub city');
     return out;
   }
   const hub = doc.hub;
@@ -90,7 +96,23 @@ function hubProblems(doc) {
       for (const f of ['street', 'phone']) if (!(h.verified && h.verified[f] && h.verified[f].verified === true && h.verified[f].source)) out.push(w + ': a card hotel has its ' + f + ' verified, with its source');
       if (!h.card_id) out.push(w + ': a card hotel names its id in the catalog it was checked against (card_id)');
     }
+    if (h.access != null) out.push(...accessProblems(h.access, w + ' access'));
   }
+  return out;
+}
+
+// The access of one hotel of a hub city (how it is reached from the terminals): what its line and
+// the legend of its page need, and where it was read.
+function accessProblems(a, w) {
+  const out = [];
+  if (!a || typeof a !== 'object') return [w + ': an object'];
+  if (!Object.prototype.hasOwnProperty.call(CARD.ACCESS, a.kind)) out.push(w + '.kind ' + a.kind + ': one of ' + Object.keys(CARD.ACCESS).join(', '));
+  if (!a.line || typeof a.line !== 'string') out.push(w + '.line: the line of the train (the legend)');
+  if (!/^\d+$/.test(String(a.from || ''))) out.push(w + '.from: the terminal the train is taken from (the legend)');
+  if (a.kind === 'link' && !(a.stop && typeof a.stop === 'string')) out.push(w + '.stop: a link names its stop');
+  if (a.kind === 'terminal' && !/^\d+$/.test(String(a.terminal || ''))) out.push(w + '.terminal: the number of the terminal it is joined to');
+  if (a.verified === false) { if (!a.note) out.push(w + ': held (verified false): say why in its note'); }
+  else if (a.verified !== true || !/^https?:\/\//.test(String(a.source || '')) || !a.checked || !a.quote) out.push(w + ': verified, with its source, the date and the words read (quote)');
   return out;
 }
 
@@ -111,6 +133,9 @@ function slimHotel(h, doc) {
     ? { year_round: true }
     : { year_round: false, open: (Array.isArray(s.open) ? s.open : []).map((r) => ({ from: r.from, to: r.to })) };
   out.shuttle = { mark: !!(h.shuttle && h.shuttle.mark === true) };
+  // a hub city: how the hotel is reached from the terminals, where it is verified (no source, no
+  // quote, no note: those stay in the checked file)
+  if (hub && h.access && h.access.verified === true) out.access = slimAccess(h.access);
   if (h.drive && h.drive.km) {
     out.drive = { km: h.drive.km };
     if (h.drive.credit) out.drive.credit = h.drive.credit;
@@ -123,6 +148,14 @@ function slimHotel(h, doc) {
   }
   if (h.card === true) out.card = true;
   return out;
+}
+
+// The access of a hotel, with only what its line and the legend read.
+function slimAccess(a) {
+  const o = { kind: a.kind, line: a.line, from: String(a.from) };
+  if (a.kind === 'link') o.stop = a.stop;
+  if (a.kind === 'terminal') o.terminal = String(a.terminal);
+  return o;
 }
 
 // The hub block of a hub city, with only what its pages read: the province, and the way to each
@@ -193,6 +226,6 @@ function main(argv) {
   return bad ? 1 : 0;
 }
 
-module.exports = { CITIES, HUBS, slim, slimHotel, slimHub, render, sourcePath, outPath, listProblems, hubProblems };
+module.exports = { CITIES, HUBS, slim, slimHotel, slimHub, slimAccess, accessProblems, render, sourcePath, outPath, listProblems, hubProblems };
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));
