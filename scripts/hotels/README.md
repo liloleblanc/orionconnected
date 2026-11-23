@@ -1,17 +1,28 @@
 # The hotel lists: scripts
 
 The cards and the phone app are described in `docs/licenses/hotel-list-cards.md`. This folder
-holds the checked data (`data/<code>.json`, one file a city) and two scripts:
+holds the checked data (`data/<code>.json`, one file a city) and three scripts:
 
 - `build-runtime.js` makes the slim copies the site serves (`fids-current/data/hotels/<code>.json`)
   from the checked files. `--check` only compares.
 - `find-candidates.js` is a helper for adding a city. You run it by hand, one city at a time. It
   never runs on a timer or in the worker.
+- `match-catalog.js` checks the card hotels of a hub city against the Accor catalog and prints what
+  a person should check again. You run it by hand, one hub city at a time. It never runs on a timer,
+  in the worker or on a board, and it writes nothing to `data/`.
 
 The cities that have a list are **one list**: `HotelListCard.CITIES` in
 `fids-current/js/hotel-list-card.js`. The build step, the phone app and the tests all read that
 list. The build step and `tests/hotel-list-cards.test.js` both fail when a checked file has no
 entry in the list, or an entry has no checked file.
+
+A **hub city** (`HotelListCard.HUBS`, Toronto so far) is a city of the list too big for the area cards:
+its gates show two pages, near the airport and downtown, each only when its area has at least three
+hotels open (v24177). Its checked file has a `hub` block (the province, and the way to each area), its
+hotels are in those two areas only, and its card hotels (`card: true`, with `card_id` and `card_brand`)
+take the gold frame on the downtown or airport page. The build step and the tests fail on a hub city
+without its hub block, on a hotel of a hub city outside the two areas, and on a hub block or a card
+hotel in any other city.
 
 A city that is not in the list already has a way to find a hotel: its gates show one "Hotels in
 {CITY}" card whose scan code opens a Google Maps search (and, on an Apple device, an Apple Maps
@@ -86,6 +97,13 @@ in the app; nothing else changes.
    - If a page answers 403, a robot block or a captcha, write "blocked, needs a person" in the
      note and leave the field unverified. Never read the page another way (no proxy, headless
      browser, changed user agent or cache service).
+   - **Chain hotels: blocked, needs a person.** The big chains' property pages refuse automated
+     readers (Marriott, Hilton, IHG, Choice and Hyatt answered 403 for Toronto on 2026-11-22, and so
+     did the airport's own site, torontopearson.com). A hotel that rests on such a page alone goes in
+     `excluded` with `kind: "blocked"` and, in `read`, the exact page a person should open. That person
+     reads the page in a browser, copies each fact with the page and the date into the hotel's
+     `verified` fields, moves the hotel from `excluded` into `hotels` with `listed: true`, and runs the
+     build step. Nothing reads those pages for them.
    - Do not use Google Places, Tripadvisor, Booking or Expedia: their terms forbid storing or
      caching what they show.
    - If a fact cannot be confirmed on an official page, leave it unverified. If two official
@@ -113,3 +131,42 @@ in the app; nothing else changes.
 5. **Make the slim copy.** Run `node scripts/hotels/build-runtime.js`. If you added a logo, also
    run `npm run assets:build`. Bump the version (every change under `fids-current/` needs one).
    Then run `node --test tests/hotel-list-cards.test.js tests/hotel-candidates.test.js`.
+
+## A hub city
+
+A city with dozens of hotels near its airport and in its centre (Toronto) is added as above, then:
+
+1. **Only the two areas.** Keep the hotels of `airport` and `downtown` (the cards' own rule: about 5 km
+   of the airport, about 2 km of the centre, 10 % tolerance); every nearby hotel goes in `excluded`
+   with kind `nearby_not_checked` and the reason "Hub city: the hotel pages show the airport and
+   downtown only; not checked."
+2. **The hub block**, after `points`: `region` (the province) and, for each of `airport` and
+   `downtown`, `transit` with its `kind` (`link`, the airport's own free train: "Free {LINE} train"; or
+   `ride`: "{LINE} to {STOP}", "{MIN} min · every {EVERY} min"), its `icon` (a mark of
+   `HotelListCard.ICON`, `train`), the `line` (and for a ride its `stop`, `min`, `every`), each fact
+   read on the operator's own page and quoted in `evidence`, with `verified`, `source` and `checked`.
+   The line and its stop are data: they are never written into the store.
+3. **Card hotels.** A hotel that takes the gold frame has `card: true`, `card_id` (its id in the
+   catalog, as on its all.accor.com page) and `card_brand` (the catalog's brand code), a logo from the
+   repository or an official source (listed in `fids-current/logos/hotels/list/sources.json`), and its
+   street and telephone verified on its brand property page. Field names never carry a brand of their
+   own (the module of the cards must not name one).
+4. **Add the code to `HotelListCard.HUBS`** as well as `CITIES`, then make the slim copy.
+5. **Check the card hotels against the catalog**, by hand, whenever the list is refreshed:
+
+   ```
+   node scripts/hotels/match-catalog.js YYZ           # a report to read
+   node scripts/hotels/match-catalog.js YYZ --json    # the same, as JSON
+   node scripts/hotels/match-catalog.js YYZ --save    # also keep the answers in work/ (not in git)
+   node scripts/hotels/match-catalog.js YYZ --from scripts/hotels/work/yyz-catalog.json
+   ```
+
+   It asks the catalog through the board's proxy once from the airport and once from the centre
+   (`range=0-49&sort=distance`, the radius the area's limit rounded up), keeps the OPEN rows within
+   each area (by the distance the catalog returns and by the cards' own rule on the row's position),
+   and prints: the card hotels the catalog no longer lists (gone, or not OPEN); the catalog's hotels in
+   the two areas that the file lacks as card hotels, with the entry of the file a name points to; and
+   for each card hotel found, the differences of brand, name, street (only a street with a figure in
+   it) and telephone (the digits of the catalog's prefix and number, `41/63678900` read as
+   `(416) 367-8900`). It writes nothing to `data/`: settle each difference on the hotel's own page and
+   record it with its source and date. A 403 or a block page stops it: blocked, needs a person.

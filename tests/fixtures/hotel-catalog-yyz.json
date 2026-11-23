@@ -1,0 +1,36 @@
+{
+  "_about": "A test fixture for scripts/hotels/match-catalog.js, shaped like the answers of the catalog (results[] of { hotel, distance }), keyed by the point each was asked from. Not a real answer: the two card hotels (A551, 0931) carry the facts of scripts/hotels/data/yyz.json with one difference each written in on purpose (a long street form, the catalog's broken telephone marks and a booking-system prefix); every T-numbered row is made up, to exercise one rule each.",
+  "airport": {
+    "results": [
+      { "distance": 1.8, "hotel": { "id": "T100", "name": "Test Airport Hotel One", "brand": "IBS", "status": "OPEN",
+        "localization": { "gps": { "lat": "43.6905", "lng": "-79.6110" }, "address": { "street": "100 Test Road", "city": "Mississauga" } },
+        "contact": { "phonePrefix": "+1", "phone": "905 555 0100" } } },
+      { "distance": 2.1, "hotel": { "id": "T101", "name": "Test Airport Hotel Closed", "brand": "NOV", "status": "CLOSED",
+        "localization": { "gps": { "lat": "43.6950", "lng": "-79.6050" }, "address": { "street": "200 Test Road" } },
+        "contact": { "phonePrefix": "+1", "phone": "905 555 0101" } } },
+      { "distance": 7.5, "hotel": { "id": "T102", "name": "Test Hotel Too Far", "brand": "MER", "status": "OPEN",
+        "localization": { "gps": { "lat": "43.7400", "lng": "-79.5600" }, "address": { "street": "300 Test Road" } },
+        "contact": { "phonePrefix": "+1", "phone": "416 555 0102" } } }
+    ]
+  },
+  "centre": {
+    "results": [
+      { "distance": 0.8, "hotel": { "id": "A551", "name": "Fairmont Royal York", "brand": "FAI", "status": "OPEN",
+        "localization": { "gps": { "lat": "43.6459071", "lng": "-79.3815116" }, "address": { "street": "100 Front Street West", "city": "TORONTO" } },
+        "contact": { "phonePrefix": "+1", "phone": "4163682511" } } },
+      { "distance": 1.0, "hotel": { "id": "0931", "name": "FX - Novotel Toronto Centre", "brand": "NOV", "status": "OPEN",
+        "localization": { "gps": { "lat": "43.646757", "lng": "-79.374359" }, "address": { "street": "45 The Esplanade", "city": "TORONTO" } },
+        "contact": { "phonePrefix": "+1", "phone": "41/63678900" } } },
+      { "distance": 0.4, "hotel": { "id": "T200", "name": "Test Downtown Hotel", "brand": "MER", "status": "OPEN",
+        "localization": { "gps": { "lat": "43.6500", "lng": "-79.3800" }, "address": { "line1": "1 Test Street" } },
+        "contact": { "phonePrefix": "+1", "phone": "416-555-0200" } } },
+      { "distance": 0.6, "hotel": { "id": "T201", "name": "Test Downtown Opening Soon", "brand": "SOF", "status": "PRE_OPENING",
+        "localization": { "gps": { "lat": "43.6510", "lng": "-79.3810" }, "address": { "street": "2 Test Street" } } } },
+      { "distance": 0.7, "hotel": { "id": "T202", "name": "Test Downtown No Position", "brand": "IBS", "status": "OPEN",
+        "localization": { "address": { "street": "3 Test Street" } } } },
+      { "distance": 0.5, "hotel": { "id": "T203", "name": "Hotel Victoria Toronto", "brand": "MGA", "status": "OPEN",
+        "localization": { "gps": { "lat": "43.6480", "lng": "-79.3770" }, "address": { "street": "Yonge Street" } },
+        "contact": { "phonePrefix": "+33", "phone": "142345678" } } }
+    ]
+  }
+}

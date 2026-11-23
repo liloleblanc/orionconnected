@@ -31,6 +31,20 @@
    (airportCityNameSafe_v21877, the names of every board); a code with no name, a city with a
    checked list, and a gate with no flight show no such card. Nothing anywhere else.
 
+   A HUB CITY (v24177, HUBS: Toronto): a city of CITIES too big for the area cards shows two
+   pages in the same slot instead, near the airport then downtown, each only when its area has at
+   least HUB_MIN hotels open (one page alone is held, as a one-card list is). A page: the city and
+   its province in small gold capitals, the heading in the languages of the board, its own scan
+   code (app.html?hotels=<code>&area=<area>); the name of the area and the count of its hotels;
+   how to get there (the line, its stop and its minutes are data, hub.areas.<area>.transit); on a
+   page with no card hotel, the empty place of a partner hotel; the card hotels (card true in the
+   data, at most HUB_CARDS) in a fine gold frame on the cream, with their logo, name, street and
+   telephone; then HUB_ROWS lines less one for each card hotel (never under HUB_ROWS_MIN), the name
+   and, on the right, the shuttle mark where the shuttle is verified, else the street; the next
+   lines on the next pass of the deck; how many more the scan code lists; the navy foot. The
+   faces of the board, AC Nord Display and AC Nord Text (css/font.css). A hub counts only as the
+   city a flight goes to, never as one of its stops.
+
    DATA: data/hotels/<code>.json, a slim copy a city with only the fields read here and in the
    app, made by scripts/hotels/build-runtime.js from the checked file of the city
    (scripts/hotels/data/<code>.json, which keeps the source and verified mark of every fact).
@@ -38,8 +52,9 @@
    first; names, addresses and telephones are data. LOGOS: through <img> only, never inlined
    (an SVG with a generic <style> class leaks it into the page). LOOK: css/hotel-list-card.css.
    REVIEW: ?hotellist=YYG shows that city on any gate (inert without it), with ?scene=hotellist;
-   ?hotellist=YYZ (a city without a list) shows its "Hotels in {CITY}" card; a code the board
-   has no name for is no link (the gate shows what it shows without one). */
+   ?hotellist=YYZ the two pages of a hub city; ?hotellist=YOW (a city without a list) shows its
+   "Hotels in {CITY}" card; a code the board has no name for is no link (the gate shows what it
+   shows without one). */
 (function (root, factory) {
   var api = factory(root);
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -52,7 +67,12 @@
   // and the tests read this one. A new city is its checked file (scripts/hotels/data/<code>.json),
   // its slim copy (node scripts/hotels/build-runtime.js) and one entry here; the build step and
   // the tests fail on a checked file whose city is not in this list, and on an entry without one.
-  var CITIES = ['YQM', 'YYG', 'YHZ', 'YFC'];
+  var CITIES = ['YQM', 'YYG', 'YHZ', 'YFC', 'YYZ'];
+  // The cities of CITIES whose slot shows the two pages of a hub city (near the airport, then
+  // downtown) instead of the area cards. Its checked file has a hub block (the province, and how
+  // to get to each area) and hotels in those two areas only; the build step and the tests hold
+  // both to it.
+  var HUBS = ['YYZ'];
   // The cards, in the order they take turns, and the key of the heading of each.
   var AREAS = ['airport', 'downtown', 'nearby', 'resort'];
   var HEAD = { airport: 'hotelsAirport', downtown: 'hotelsDowntown', nearby: 'hotelsNearby', resort: 'hotelsResorts' };
@@ -60,6 +80,19 @@
   // is tested first; a resort is a destination resort further out than the nearby limit).
   var RULE = { downtownKm: 2, airportKm: 5, nearbyKm: 30, tolerance: 1.1 };
   var PER_CARD = 5;
+  // A hub city: its two pages in order, the key of the name of each area and of the line of how
+  // many more the scan code lists, and the key of each way to get there (the data names a kind,
+  // never a key of the store).
+  var HUB_AREAS = ['airport', 'downtown'];
+  var HUB_HEAD = { airport: 'hotelsAreaAirport', downtown: 'hotelsAreaDowntown' };
+  var HUB_MORE = { airport: 'hotelsMoreAirport', downtown: 'hotelsMoreDowntown' };
+  var TRANSIT = { link: 'hotelsTrainFree', ride: 'hotelsRideTo' };
+  // a page only for an area with at least this many hotels open; five lines a page, one less for
+  // each card hotel above them (at most two), never under three
+  var HUB_MIN = 3;
+  var HUB_ROWS = 5;
+  var HUB_ROWS_MIN = 3;
+  var HUB_CARDS = 2;
   // The pager of the hotel cards (fids-core.js) turns a card every ten seconds.
   var VIEW_MS = 10000;
   // The smallest text of a card, in pixels of the 1680x1050 screen the stylesheet is written at.
@@ -100,7 +133,9 @@
     // the card of a city without a list (the phone beside its invitation) and the map buttons
     // of the app (the pin of a place)
     smartphone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 1.010L7 1c-1.100 0-2 .9-2 2v18c0 1.100.9 2 2 2h10c1.100 0 2-.9 2-2V3c0-1.100-.9-1.990-2-1.990zM17 19H7V5h10v14z"/></svg>',
-    pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.130 2 5 5.130 5 9c0 5.250 7 13 7 13s7-7.750 7-13c0-3.870-3.130-7-7-7zm0 9.500c-1.380 0-2.500-1.120-2.500-2.500s1.120-2.500 2.500-2.500 2.500 1.120 2.500 2.500-1.120 2.500-2.500 2.500z"/></svg>'
+    pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.130 2 5 5.130 5 9c0 5.250 7 13 7 13s7-7.750 7-13c0-3.870-3.130-7-7-7zm0 9.500c-1.380 0-2.500-1.120-2.500-2.500s1.120-2.500 2.500-2.500 2.500 1.120 2.500 2.500-1.120 2.500-2.500 2.500z"/></svg>',
+    // the way to a hub city's areas by train (the airport's own train, the train downtown)
+    train: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c-4 0-8 .5-8 4v9.500C4 17.430 5.570 19 7.500 19L6 20.500v.5h2.230l2-2H14l2 2H18v-.5L16.500 19c1.930 0 3.500-1.570 3.500-3.500V6c0-3.500-3.580-4-8-4zM7.500 17c-.83 0-1.500-.67-1.500-1.500S6.670 14 7.500 14s1.500.67 1.500 1.500S8.330 17 7.500 17zm3.500-7H6V6h5v4zm2 0V6h5v4h-5zm3.500 7c-.83 0-1.500-.67-1.500-1.500s.67-1.500 1.500-1.500 1.500.67 1.500 1.500-.67 1.500-1.500 1.500z"/></svg>'
   };
 
   function esc(s) {
@@ -200,13 +235,30 @@
     return out;
   }
   // The five lines of a card on a pass of the deck: the next five each pass, round the list,
-  // never the same hotel twice on one card.
-  function page(list, pass) {
+  // never the same hotel twice on one card. per: the lines of a page of a hub city (five, or
+  // fewer under its card hotels).
+  function page(list, pass, per) {
+    var k = Math.max(1, Math.floor(Number(per) || PER_CARD));
     var n = list.length;
-    if (n <= PER_CARD) return list.slice();
+    if (n <= k) return list.slice();
     var p = Math.max(0, Math.floor(Number(pass) || 0));
-    var start = (p * PER_CARD) % n, out = [];
-    for (var i = 0; i < PER_CARD; i++) out.push(list[(start + i) % n]);
+    var start = (p * k) % n, out = [];
+    for (var i = 0; i < k; i++) out.push(list[(start + i) % n]);
+    return out;
+  }
+  // A hub city's list: a city of HUBS whose file has its hub block.
+  function isHub(doc) {
+    return !!(doc && doc.hub && typeof doc.hub === 'object' && HUBS.indexOf(up(doc.iata)) >= 0);
+  }
+  // The views of the slot on that day: the cards of a city, or the pages of a hub city (its two
+  // areas in their order, each with at least HUB_MIN hotels open).
+  function shown(doc, date, tz) {
+    var list = cards(doc, date, tz);
+    if (!isHub(doc)) return list;
+    var out = [];
+    HUB_AREAS.forEach(function (a) {
+      list.forEach(function (c) { if (c.area === a && c.hotels.length >= HUB_MIN) out.push(c); });
+    });
     return out;
   }
 
@@ -221,8 +273,10 @@
     } catch (e) { return ''; }
   }
   // The city whose hotels a gate shows: the one its flight goes to (the last stop first, then
-  // any stop), when that city has a list. A gate with no flight of its own shows nothing. A
-  // review link names the city itself (a city without a list: none here, its card instead).
+  // any stop), when that city has a list. A hub city counts only as the city the flight goes to,
+  // never as a stop (a flight through Toronto to Vancouver is no Toronto list). A gate with no
+  // flight of its own shows nothing. A review link names the city itself (a city without a
+  // list: none here, its card instead).
   function cityFor() {
     var r = review();
     if (r) return CITIES.indexOf(r) >= 0 ? r : '';
@@ -233,7 +287,10 @@
       if (CITIES.indexOf(dest) >= 0) return dest;
       var legs = (typeof root._flightLegs === 'function') ? root._flightLegs(cf) : [];
       if (Array.isArray(legs)) {
-        for (var i = legs.length - 1; i >= 0; i--) if (CITIES.indexOf(up(legs[i])) >= 0) return up(legs[i]);
+        for (var i = legs.length - 1; i >= 0; i--) {
+          var l = up(legs[i]);
+          if (CITIES.indexOf(l) >= 0 && HUBS.indexOf(l) < 0) return l;
+        }
       }
     } catch (e) {}
     return '';
@@ -290,12 +347,13 @@
     if (!c) return !!findCity();
     var doc = get(c);
     if (!doc) { load(c); return false; }
-    return cards(doc, null, tzOf(c)).length > 0;
+    return shown(doc, null, tzOf(c)).length > 0;
   }
+  // Ten seconds a view (a card, or a page of a hub city), the last one held four more.
   function dwellMs() {
     var c = cityFor(), doc = c ? get(c) : null;
     if (!c && findCity()) return FIND_MS;
-    var n = doc ? cards(doc, null, tzOf(c)).length : 1;
+    var n = doc ? shown(doc, null, tzOf(c)).length : 1;
     return Math.max(1, n) * VIEW_MS + 4000;
   }
   // Where a city without a list is, for its map search on the phone (the scan code carries it,
@@ -423,9 +481,29 @@
     return '<span class="hlc-logo"><img class="hlc-img' + (h.logo.opaque ? ' hlc-img--opaque' : '') + (h.logo.fill === true ? ' hlc-img--fill' : '')
       + '" alt="" decoding="async"' + trim + ' src="' + esc(lg) + '"></span>';
   }
-  function line(h, L, city, BS) {
+  // The address line of a hotel, data read as written (marked so no page translator rewrites a
+  // street), with its telephone after it (tel). The same line carries any other piece
+  // of data a page shows as written: a street alone, a province, the name of a train line or its
+  // stop (dataOf).
+  function infoOf(h, tel) {
     var info = '<bdi class="hlc-addr" translate="no">' + esc(h.address && h.address.display) + '</bdi>'
-      + '<span class="hlc-tel">' + ico('phone') + '<bdi dir="ltr">' + esc(h.phone) + '</bdi></span>';
+      + (tel ? '<span class="hlc-tel">' + ico('phone') + '<bdi dir="ltr">' + esc(h.phone) + '</bdi></span>' : '');
+    return info;
+  }
+  function dataOf(s) { return infoOf({ address: { display: s } }, false); }
+  // The street of a hotel alone, with its telephone (a hub city's lines and card hotels).
+  function streetOf(h) {
+    return { address: { display: (h.address && (h.address.street || h.address.display)) || '' }, phone: h.phone };
+  }
+  // The name of a hotel, data read as written; tail inside its fitted part (the shuttle mark),
+  // rest beside it (the drive of a resort, the note of a hub line).
+  function nameOf(h, tail, rest) {
+    return ''
+      + '<div class="hlc-name"><span class="hlc-fit"><bdi translate="no">' + esc(h.name) + '</bdi>'
+      + (tail || '') + '</span>' + (rest || '') + '</div>';
+  }
+  function line(h, L, city, BS) {
+    var info = infoOf(h, true);
     // a resort: the drive from the airport, by road, after its name (a figure and its unit:
     // the card's heading says what it is)
     var drive = '';
@@ -434,8 +512,7 @@
     }
     return '<li class="hlc-row" data-hotel="' + esc(h.id) + '">' + logoCell(h)
       + '<div class="hlc-text">'
-      +   '<div class="hlc-name"><span class="hlc-fit"><bdi translate="no">' + esc(h.name) + '</bdi>'
-      +     (h.shuttle && h.shuttle.mark === true ? ico('shuttle', 'hlc-mark') : '') + '</span>' + drive + '</div>'
+      +   nameOf(h, h.shuttle && h.shuttle.mark === true ? ico('shuttle', 'hlc-mark') : '', drive)
       +   '<div class="hlc-info"><span class="hlc-fit">' + info + '</span></div>'
       + '</div></li>';
   }
@@ -470,17 +547,150 @@
       + '<div class="hlc-foot">' + legend + credit + (marks ? '<span class="hlc-marks">' + marks + '</span>' : '') + '</div>'
       + '</div>';
   }
-  // The whole slot: one card a view. o.pass (the deck's passes), o.date, o.home (the airport of
-  // the screen, for the app link).
+  // ── A HUB CITY ────────────────────────────────────────────────────────────
+  // The city of a hub page, as the gate writes it, without the airport's own name (Toronto, not
+  // Toronto · Pearson).
+  function hubCity(c, lg) {
+    var n = cityName(c, lg), cut = n.indexOf(' · ');
+    if (cut > 0) n = n.slice(0, cut);
+    n = n.trim();
+    return n !== c ? n : '';
+  }
+  // A count of hotels in one language, in its plural form (a count under two is never shown).
+  function countKey(n, lg) {
+    var BS = store(), form = 'other';
+    try { form = new Intl.PluralRules(BS.intl(lg)).select(n); } catch (e) { form = 'other'; }
+    return form === 'two' ? 'hotelsCountTwo' : form === 'few' ? 'hotelsCountFew' : form === 'many' ? 'hotelsCountMany' : 'hotelsCountOther';
+  }
+  // A phrase of the store with data in it, as markup: the phrase escaped, each {FIELD} replaced by
+  // its markup.
+  function withData(t, fields) {
+    var out = esc(t);
+    Object.keys(fields).forEach(function (k) { out = out.split('{' + k + '}').join(fields[k]); });
+    return out;
+  }
+  // How to get to an area in one language: the line (data, in bold), its stop, and for a ride its
+  // minutes and how often it leaves. '' for a kind the page has no words for.
+  function transitOf(t, lg) {
+    var BS = store(), key = TRANSIT[t && t.kind];
+    if (!key || !t.line) return '';
+    var w = BS.bs(key, lg);
+    if (!w) return '';
+    var html = withData(w, { LINE: '<b class="hlc-hub-line">' + dataOf(t.line) + '</b>', STOP: dataOf(t.stop || '') });
+    if (t.kind === 'ride' && t.min > 0 && t.every > 0) {
+      var tm = BS.bs('hotelsRideTime', lg);
+      if (tm) html += '<b class="hlc-hub-dot"></b>' + withData(tm, { MIN: esc(BS.num(t.min, lg)), EVERY: esc(BS.num(t.every, lg)) });
+    }
+    return html;
+  }
+  // One phrase given as markup, in the languages of the board: a half each, marked with its
+  // language; a half that says the same as the one before is left out.
+  function pairHtml(L, say, key) {
+    var BS = store(), out = [], seen = Object.create(null);
+    L.forEach(function (lg) {
+      var w = '';
+      try { w = say(lg) || ''; } catch (e) { w = ''; }
+      if (!w || seen[w]) return;
+      seen[w] = 1;
+      out.push(BS.half(lg, w, '', { key: key }));
+    });
+    return out.join('<b class="hlc-sep"></b>');
+  }
+  // The logo of a card hotel, through <img> on the cream of its cell. Its trim (logo.trim) is cut by
+  // placing the picture inside the cell (crops), not by object-view-box: an SVG file with no width
+  // and height of its own has no natural size, and the browser ignores object-view-box on it (the
+  // Fairmont lockup). Until the picture is placed it shows whole, contained in the cell.
+  function hubLogo(h) {
+    var lg = h.logo && h.logo.file;
+    if (!lg) return '<span class="hlc-logo hlc-logo--none"></span>';
+    var trim = /^inset\([\d.% ]+\)$/.test(String(h.logo.trim || '')) ? ' data-trim="' + h.logo.trim + '"' : '';
+    return '<span class="hlc-logo"><span class="hlc-hub-pic"><img class="hlc-img" alt="" decoding="async"' + trim + ' src="' + esc(lg) + '"></span></span>';
+  }
+  // One page of a hub city: the head, the area and its count, the way there, the place of a partner
+  // hotel or the card hotels, the lines of this pass and how many more, the foot.
+  function hubPage(doc, c, L, o) {
+    var BS = store(), city = up(doc.iata), area = c.area, hub = doc.hub || {};
+    var t = (hub.areas && hub.areas[area] && hub.areas[area].transit) || null;
+    var gold = c.hotels.filter(function (h) { return h.card === true; }).slice(0, HUB_CARDS);
+    var plain = c.hotels.filter(function (h) { return gold.indexOf(h) < 0; });
+    var rows = page(plain, o.pass, Math.max(HUB_ROWS_MIN, HUB_ROWS - gold.length));
+    var count = c.hotels.length, more = count - gold.length - rows.length;
+    var mark = rows.some(function (h) { return h.shuttle && h.shuttle.mark === true; });
+    // the head: the city and its province, the heading, the scan code of this area
+    var place = pairOf(L, function (lg) { return hubCity(city, lg); });
+    var region = hub.region ? (place ? '<b class="hlc-hub-dot"></b>' : '') + dataOf(hub.region) : '';
+    var title = pairOf(L, function (lg) { return BS.bs('hotelsWhereToStay', lg); }, 'hotelsWhereToStay');
+    // the area and how many hotels it has (a count under two is not shown)
+    var head = pairOf(L, function (lg) { return BS.bs(HUB_HEAD[area], lg); }, HUB_HEAD[area]);
+    var tally = count >= 2 ? '<div class="hlc-hub-count">' + pairOf(L, function (lg) {
+      return BS.fmt(countKey(count, lg), lg, { N: BS.num(count, lg) }, true);
+    }) + '</div>' : '';
+    // the way there, and the legend of the shuttle mark on a page that shows one
+    var go = t && ICON[t.icon] ? '<div class="hlc-hub-go hlc-pairfit">' + ico(t.icon) + '<span class="hlc-fit">'
+      + pairHtml(L, function (lg) { return transitOf(t, lg); }, TRANSIT[t.kind]) + '</span></div>' : '';
+    var legend = mark ? '<div class="hlc-hub-go hlc-hub-legend hlc-pairfit">' + ico('shuttle') + '<span class="hlc-fit">'
+      + pairOf(L, function (lg) { return BS.bs('hotelShuttle', lg); }, 'hotelShuttle') + '</span></div>' : '';
+    // the place of a partner hotel, on a page with no card hotel: a line for each language
+    var slot = '';
+    if (!gold.length) {
+      var said = Object.create(null);
+      slot = '<div class="hlc-hub-slot">' + L.map(function (lg) {
+        var a = BS.bs('hotelsPartnerSlot', lg), b = BS.bs('hotelsPlacement', lg);
+        if (!a || !b || said[a + '|' + b]) return '';
+        said[a + '|' + b] = 1;
+        return '<div class="hlc-hub-slot-l"><span class="hlc-fit">' + BS.half(lg, '<small class="hlc-hub-tag">' + esc(a)
+          + '</small><span class="hlc-hub-av">' + esc(b) + '</span>', '', { key: 'hotelsPartnerSlot' }) + '</span></div>';
+      }).join('') + '</div>';
+    }
+    // the card hotels: logo, name, street and telephone, in a fine gold frame on the cream
+    var golds = gold.length ? '<div class="hlc-hub-cards">' + gold.map(function (h) {
+      return '<div class="hlc-hub-card" data-hotel="' + esc(h.id) + '">' + hubLogo(h)
+        + '<div class="hlc-text">' + nameOf(h, '', '')
+        + '<div class="hlc-info"><span class="hlc-fit">' + infoOf(streetOf(h), true) + '</span></div></div></div>';
+    }).join('') + '</div>' : '';
+    // the lines of this pass: the name, and the shuttle mark where it is verified, else the street
+    var lines = rows.map(function (h) {
+      var note = (h.shuttle && h.shuttle.mark === true) ? ico('shuttle', 'hlc-mark') : infoOf(streetOf(h), false);
+      return '<div class="hlc-hub-row" data-hotel="' + esc(h.id) + '">' + nameOf(h, '', '<span class="hlc-hub-note">' + note + '</span>') + '</div>';
+    }).join('');
+    // how many more the scan code lists (none: the invitation alone), and the word beside the code
+    var rest = pairHtml(L, function (lg) {
+      var m = more > 0 ? withData(BS.bs(HUB_MORE[area], lg), { N: esc(BS.num(more, lg)) }) : '';
+      var s = BS.bs('hotelListScan', lg);
+      return (m && s) ? m + '<span class="hlc-hub-cut"><b class="hlc-hub-dot"></b>' + esc(s) + '</span>' : esc(s || m);
+    }, more > 0 ? HUB_MORE[area] : 'hotelListScan');
+    var scan = pairOf(L, function (lg) { return BS.bs('hotelsScan', lg); }, 'hotelsScan');
+    var foot = linesOf(L, function (lg) { return BS.bs('hotelsNoEndorse', lg); }, 'hotelsNoEndorse');
+    return '<div class="axr-page hlc-view hlc-hub' + (o.first ? ' axr-page-on' : '') + '" data-area="' + esc(area) + '">'
+      + '<div class="hlc-hub-in">'
+      +   '<div class="hlc-hub-head">'
+      +     '<div class="hlc-hub-titles">'
+      +       (place || region ? '<div class="hlc-city"><span class="hlc-fit">' + place + region + '</span></div>' : '')
+      +       '<div class="hlc-title hlc-pairfit"><span class="hlc-fit">' + title + '</span></div>'
+      +     '</div>'
+      +     '<div class="hlc-scan"><div class="hlc-qr" data-qr-url="' + esc(qrUrl(city, area, o.home)) + '"></div></div>'
+      +   '</div>'
+      +   '<div class="hlc-hub-bar"><div class="hlc-hub-area hlc-pairfit"><span class="hlc-fit">' + head + '</span></div>' + tally + '</div>'
+      +   go + legend + slot + golds
+      +   '<div class="hlc-hub-rows">' + lines
+      +     '<div class="hlc-hub-more"><div class="hlc-hub-rest hlc-pairfit"><span class="hlc-fit">' + rest + '</span></div>'
+      +     '<div class="hlc-hub-scan">' + scan + '</div></div>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="hlc-foot hlc-hub-foot">' + foot + '</div>'
+      + '</div>';
+  }
+  // The whole slot: one card a view (a page a view in a hub city). o.pass (the deck's passes),
+  // o.date, o.home (the airport of the screen, for the app link).
   function build(doc, L, o) {
     o = o || {};
-    var city = up(doc && doc.iata);
-    var list = cards(doc, o.date == null ? null : o.date, o.tz || tzOf(city));
+    var city = up(doc && doc.iata), hub = isHub(doc);
+    var list = shown(doc, o.date == null ? null : o.date, o.tz || tzOf(city));
     if (!list.length) return '';
     var html = list.map(function (c, i) {
-      return card(doc, c, L, { pass: o.pass, home: o.home, first: i === 0 });
+      return (hub ? hubPage : card)(doc, c, L, { pass: o.pass, home: o.home, first: i === 0 });
     }).join('');
-    return '<div class="hlc' + (L.length < 2 ? ' hlc--one' : '') + '" data-city="' + esc(city) + '">'
+    return '<div class="hlc' + (hub ? ' hlc--hub' : '') + (L.length < 2 ? ' hlc--one' : '') + '" data-city="' + esc(city) + '">'
       + '<div class="axr-pages hlc-views">' + html + '</div></div>';
   }
   // The picture of the city behind the card: the same checked photograph the weather card shows
@@ -552,7 +762,7 @@
       Array.prototype.forEach.call(art.querySelectorAll('.hlc-fit'), function (s) {
         var box = s.parentElement;
         if (!box) return;
-        box.style.fontSize = ''; box.classList.remove('hlc-stack'); box.classList.remove('hlc-clip');
+        box.style.fontSize = ''; box.classList.remove('hlc-stack'); box.classList.remove('hlc-clip'); box.classList.remove('hlc-drop');
         if (!box.getClientRects().length) return;
         var cs = getComputedStyle(box), base = parseFloat(cs.fontSize), k = 1;
         var floor = Math.min(1, Math.max(0.7, least / base));
@@ -572,9 +782,39 @@
         if (s.scrollWidth > room() + 0.5 && box.classList.contains('hlc-pairfit')) {
           box.style.fontSize = ''; k = 1; box.classList.add('hlc-stack'); step();
         }
+        // a line of a hub city still too long at the floor: what may give way does (the note of a
+        // line, the street or the shuttle mark; the invitation after how many more), and the line
+        // is fitted again without it, on one line first
+        if (s.scrollWidth > room() + 0.5 && box.querySelector && box.querySelector(':scope > .hlc-hub-note, .hlc-hub-cut')) {
+          box.style.fontSize = ''; k = 1; box.classList.remove('hlc-stack'); box.classList.add('hlc-drop'); step();
+          if (s.scrollWidth > room() + 0.5 && box.classList.contains('hlc-pairfit')) { box.style.fontSize = ''; k = 1; box.classList.add('hlc-stack'); step(); }
+        }
         // still too long at the floor: the address gives way (an ellipsis at its end), never the
         // telephone after it
         if (s.scrollWidth > room() + 0.5 && box.classList.contains('hlc-info')) box.classList.add('hlc-clip');
+      });
+    } catch (e) {}
+  }
+  // The trim of each card hotel's logo (hubLogo): the trimmed part of the picture contained and
+  // centred in its cell, as object-view-box would show it, from the file's own proportions once it
+  // has loaded (an SVG with no size of its own still has them); placed again whenever asked.
+  function crops(el) {
+    try {
+      Array.prototype.forEach.call(el.querySelectorAll('.hlc-hub-pic > img[data-trim]'), function (im) {
+        var place = function () {
+          var box = im.parentElement, m = /^inset\(([\d.]+)% ([\d.]+)% ([\d.]+)% ([\d.]+)%\)$/.exec(im.getAttribute('data-trim') || '');
+          var W = box ? box.clientWidth : 0, H = box ? box.clientHeight : 0, nw = im.naturalWidth, nh = im.naturalHeight;
+          if (!m || !(W > 0) || !(H > 0) || !(nw > 0) || !(nh > 0)) return;
+          var t = m[1] / 100, r = m[2] / 100, b = m[3] / 100, l = m[4] / 100, fw = 1 - l - r, fh = 1 - t - b;
+          if (!(fw > 0) || !(fh > 0)) return;
+          var ca = (nw / nh) * fw / fh, cw = W, ch = W / ca;
+          if (ch > H) { ch = H; cw = H * ca; }
+          var FW = cw / fw, FH = ch / fh;
+          im.style.cssText = 'position:absolute; max-width:none; max-height:none; object-fit:fill; width:' + FW + 'px; height:' + FH + 'px; left:'
+            + ((W - cw) / 2 - l * FW) + 'px; top:' + ((H - ch) / 2 - t * FH) + 'px;';
+        };
+        if (im.complete && im.naturalWidth) place();
+        else if (!im.__hlcCrop) { im.__hlcCrop = 1; im.addEventListener('load', place); }
       });
     } catch (e) {}
   }
@@ -583,11 +823,17 @@
     try {
       var art = el.querySelector('.hlc');
       if (!art) return;
-      var again = function () { try { if (art.isConnected) { fit(el); codes(el); } } catch (e) {} };
+      var again = function () { try { if (art.isConnected) { fit(el); codes(el); crops(el); } } catch (e) {} };
       if (root.document && root.document.fonts && root.document.fonts.load) {
         try {
-          Promise.all([root.document.fonts.load('600 30px "HL Playfair Display"'), root.document.fonts.load('500 20px "HL Montserrat"'),
-            root.document.fonts.load('600 20px "HL Montserrat"')]).then(again, again);
+          var faces = [root.document.fonts.load('600 30px "HL Playfair Display"'), root.document.fonts.load('500 20px "HL Montserrat"'),
+            root.document.fonts.load('600 20px "HL Montserrat"')];
+          // a hub city: the faces of the board (css/font.css)
+          if (art.classList && art.classList.contains('hlc--hub')) {
+            faces.push(root.document.fonts.load('700 25px "AC Nord Display"'), root.document.fonts.load('500 18px "AC Nord Text"'),
+              root.document.fonts.load('400 18px "AC Nord Text"'));
+          }
+          Promise.all(faces).then(again, again);
         } catch (e1) {}
         // any face that arrives later (another weight, a script face) changes the widths the
         // fitter measured: fit again then, until the card leaves the page
@@ -656,17 +902,23 @@
       }
       fit(el);
       codes(el);
+      crops(el);
       // the QR library may arrive after the first paint: draw the codes once it has
       if (typeof root.QRCode === 'undefined' && root.setTimeout) root.setTimeout(function () { codes(el); }, 2500);
       try { if (typeof root._axrPageSync === 'function') root._axrPageSync(); } catch (e2) {}
       return true;
     } catch (e) { return false; }
   }
-  // The logos of the city's list, for the deck to warm before the slot comes round.
+  // The logos of the city's list, for the deck to warm before the slot comes round (a hub city:
+  // the logos of its card hotels, the only ones its pages show).
   function media() {
     var c = cityFor(), doc = c ? get(c) : null, out = [];
     if (!doc) return out;
-    doc.hotels.forEach(function (h) { if (h.logo && h.logo.file && out.indexOf(h.logo.file) < 0) out.push(h.logo.file); });
+    var hub = isHub(doc);
+    doc.hotels.forEach(function (h) {
+      if (hub && h.card !== true) return;
+      if (h.logo && h.logo.file && out.indexOf(h.logo.file) < 0) out.push(h.logo.file);
+    });
     (doc.foot_marks || []).forEach(function (m) { if (m.file) out.push(m.file); });
     return out;
   }
@@ -677,8 +929,17 @@
 
   return {
     CITIES: CITIES,
+    HUBS: HUBS,
     AREAS: AREAS,
     HEAD: HEAD,
+    HUB_AREAS: HUB_AREAS,
+    HUB_HEAD: HUB_HEAD,
+    HUB_MORE: HUB_MORE,
+    TRANSIT: TRANSIT,
+    HUB_MIN: HUB_MIN,
+    HUB_ROWS: HUB_ROWS,
+    HUB_ROWS_MIN: HUB_ROWS_MIN,
+    HUB_CARDS: HUB_CARDS,
     RULE: RULE,
     PER_CARD: PER_CARD,
     VIEW_MS: VIEW_MS,
@@ -694,6 +955,8 @@
     monthDay: monthDay,
     isOpen: isOpen,
     cards: cards,
+    isHub: isHub,
+    shown: shown,
     page: page,
     cityFor: cityFor,
     findCity: findCity,
@@ -709,6 +972,7 @@
     unitPx: unitPx,
     floorPx: floorPx,
     fit: fit,
+    crops: crops,
     render: render,
     media: media
   };

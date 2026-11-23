@@ -1,7 +1,8 @@
 # The hotel lists (gate centre deck, and the full list in the phone app)
 
 Free guest information by area for the city a gate's flight goes to, when that city has a
-checked list (Moncton YQM, Charlottetown YYG, Halifax YHZ and Fredericton YFC so far); every other city the board
+checked list (Moncton YQM, Charlottetown YYG, Halifax YHZ, Fredericton YFC and Toronto YYZ so far); Toronto is a
+hub city with two pages of its own (below); every other city the board
 names gets one "Hotels in {CITY}" card with a scan code to a map search (below). One slot of the centre deck shows the
 cards in turn: **Airport hotels**, **Downtown hotels**, **Nearby hotels** and **Resorts worth the
 drive**. Each card is a list and nothing else: the hotel's logo on one cream column where an
@@ -17,9 +18,81 @@ slides of the same deck and are not changed by this.
 
 Code: `fids-current/js/hotel-list-card.js` (rules, cards, scan codes), `fids-current/css/hotel-list-card.css`,
 four hooks in `fids-current/js/fids-core.js` (the deck builder puts the slide after the last Accor
-page, the skip loop, the dwell, the preloader), the list view in `fids-current/app.html`, eleven
-words in `fids-current/js/board-strings.js` (nine languages each), and a credits line for the two faces. Test: `tests/hotel-list-cards.test.js`.
-Review link: `gids.html?ap=<any>&gate=<n>&hotellist=YYG&scene=hotellist` shows a city's cards on any gate.
+page, the skip loop, the dwell, the preloader), the list view in `fids-current/app.html`, the
+words in `fids-current/js/board-strings.js` (the `hotels…` and `hotel…` keys, nine languages each), and a credits line
+for the faces (`credHotelListFaces`). Tests: `tests/hotel-list-cards.test.js`, `tests/hotel-catalog-match.test.js`.
+Review link: `gids.html?ap=<any>&gate=<n>&hotellist=YYG&scene=hotellist` shows a city's cards on any gate;
+`&hotellist=YYZ` the two pages of Toronto.
+
+## A hub city: two pages, near the airport and downtown (v24177)
+
+A city too big for the area cards (`HotelListCard.HUBS`, Toronto YYZ so far, also in `CITIES`) shows two
+pages in the same slot instead: **Near the airport**, then **Downtown**. A page shows only when its area has
+at least three hotels open (`HUB_MIN`); a city with one page left holds it, as a one-card list is held, and the
+dwell follows the real count of pages (ten seconds a page, the last one held four more). Each page, on the cream
+of the list cards, at 1680x1050:
+
+- the head: the city in bronze capitals with its province (data, `hub.region`), **Where to stay**
+  (`hotelsWhereToStay`) in the languages of the board, and at the right the scan code of the area
+  (`app.html?hotels=YYZ&area=airport|downtown`);
+- the bar between two gold rules: the name of the area (`hotelsAreaAirport`, `hotelsAreaDowntown`) and the
+  count of its hotels open on the day, one line a language (`hotelsCountTwo|Few|Many|Other`, the plural form of
+  each language as the home page counts airports; a count under two is not shown);
+- how to get there beside a train mark: the data names a kind (`link`: **Free {LINE} train**,
+  `hotelsTrainFree`; `ride`: **{LINE} to {STOP}** and **{MIN} min · every {EVERY} min**, `hotelsRideTo` and
+  `hotelsRideTime`), and the line, its stop and its figures are data (`hub.areas.<area>.transit`), never words
+  of the store. Toronto: the airport's free Link train (to Viscount station, where the Alt Hotel is) and the
+  UP Express to Union, 28 minutes, every 15 (its operator's own pages, read 2026-11-22);
+- on a page that shows a verified shuttle mark, the legend of the mark (`hotelShuttle`) beside a bus mark;
+- on a page with no card hotel, the place of a partner hotel in a dashed frame: **Partner hotel** and
+  **Placement available** (`hotelsPartnerSlot`, `hotelsPlacement`), one line a language. It also shows on the
+  stream tour whenever a gate there has a flight to Toronto;
+- the card hotels (`card: true` in the data, at most two a page, `HUB_CARDS`): a fine gold frame on the cream
+  (a border only, never a ground: no box behind a logo), the logo through `<img>` on the cream with a fine rule
+  after it, the name, the street and the telephone. No word "partner" on a card. The gold look is decided from
+  the data alone, so a line never changes look between passes;
+- the lines: five, one less for each card hotel above them, never under three (`HUB_ROWS`, `HUB_ROWS_MIN`), the
+  name at the left and at the right the shuttle mark where it is verified, else the street; the next lines on
+  the next pass of the deck, none twice on a page, every hotel coming round. A name still too long at the
+  18 px floor drops its note before it is cut;
+- how many more the scan code lists (`hotelsMoreAirport`, `hotelsMoreDowntown`, a label form in the languages
+  whose plural would change with the figure) and **Scan for the full list**, with **Scan** (`hotelsScan`) at the
+  right;
+- the navy foot: **Free guest information · no endorsement** (`hotelsNoEndorse`), one line a language.
+
+The faces are the board's own, AC Nord Display (the heading, the area, the way there, the names) and AC Nord
+Text (everything else), declared by `css/font.css`, which the gate loads before the lists' sheet; Japanese,
+Chinese and Arabic take the script faces of the board. Nothing is under 18 px at 1680x1050.
+
+A hub counts only as the city a flight goes to, never as one of its stops: a flight through Toronto to
+Vancouver shows the Vancouver card, not Toronto's hotels (`cityFor`). Billy Bishop (YTZ) is not given the
+Toronto list: its passengers are downtown already, and a page near Pearson would mislead them. The phone app
+needs nothing new: once the city is in `CITIES` it lists both areas, and the scan code of each page opens its
+area.
+
+### Card hotels and the Accor catalog (checked by hand, never by a board)
+
+A card hotel keeps, in the checked file, `card: true`, `card_id` (its id in the catalog it was checked
+against: Fairmont Royal York A551, Novotel Toronto Centre 0931) and `card_brand` (FAI, NOV); its street and
+telephone are verified on its brand property page (all.accor.com) like every fact. The slim copy carries only
+`card: true`. The boards never ask the catalog for the lists: `node scripts/hotels/match-catalog.js YYZ`
+(`--json` for JSON, `--save` to keep the two answers in `scripts/hotels/work/`, `--from <file>` to read saved
+answers) asks the catalog through the board's own proxy once from the airport and once from the centre,
+keeps the OPEN rows within each area by the distance the catalog returns and by the cards' own area rule on
+the row's position, and prints the card hotels the catalog no longer lists, the catalog hotels in the two
+areas that the file lacks as card hotels (with the entry of the file a name points to), and the differences of
+name, street and telephone (the catalog's telephone read through its marks, `41/63678900` as
+`(416) 367-8900`; a street only with a figure in it). It writes nothing to the data: a person settles each
+difference on the hotel's own page and records it with its source and date. Run it by hand, never on a timer or
+in the worker.
+
+### Chain hotels: blocked, needs a person
+
+Most chain hotels near Pearson rest on brand sites that refuse automated readers (Marriott, Hilton, IHG,
+Choice, Hyatt, and the airport's own site torontopearson.com, all 403 or a robot wall on 2026-11-22). They are
+not read another way: each is in `excluded` with the page a person should read (`kind: "blocked"`, `read`). A
+person who reads the page records each fact with that page and the date, moves the hotel into `hotels`, and
+runs the build step; the airport page grows a line at a time, and a page only shows with three hotels.
 
 ## Every other city: "Hotels in {CITY}" (v24176)
 
@@ -46,7 +119,7 @@ to, then its stops from the last), for any code the board has a name for
 (`airportCityNameSafe_v21877`, the city tables of every board; cased as the gate writes cities,
 without the airport's own name a city with two of ours carries). It does not show when a city of
 the flight has a checked list (the list shows), on a gate with no flight, for a code with no
-name, or for the city of the screen itself. Review link: `?hotellist=YYZ&scene=hotellist` shows the
+name, or for the city of the screen itself. Review link: `?hotellist=YOW&scene=hotellist` shows the
 card of a city without a list on any gate; `?hotellist=YQM` still shows the Moncton list; a code
 the board has no name for is no link (the gate shows what it shows without one).
 
@@ -83,16 +156,18 @@ Canada", never the Australian Sydney; "Hôtels à Santiago, République dominica
   centres (`DOWNTOWN_COORDS`) is in `fids-core.js`, which the app does not load. The query names
   the city; the point only tells which one (London, Ontario or London, England).
 
-## The data: `scripts/hotels/data/<code>.json` (Moncton `yqm.json`, Charlottetown `yyg.json`, Halifax `yhz.json`, Fredericton `yfc.json`)
+## The data: `scripts/hotels/data/<code>.json` (Moncton `yqm.json`, Charlottetown `yyg.json`, Halifax `yhz.json`, Fredericton `yfc.json`, Toronto `yyz.json`)
 
-One checked file a city (Moncton and Charlottetown checked on 2026-11-16, Halifax on 2026-11-21, Fredericton on 2026-11-22),
+One checked file a city (Moncton and Charlottetown checked on 2026-11-16, Halifax on 2026-11-21, Fredericton and Toronto on 2026-11-22),
 kept out of the site. The cities are one list,
 `HotelListCard.CITIES` in `fids-current/js/hotel-list-card.js`: the build step, the phone app and
 the tests read it, and fail on a checked file whose city is not in it. The site serves a slim
 copy of each, `fids-current/data/hotels/<code>.json` (about 10 KB instead of about 120 KB, since
 every gate with a flight to the city fetches it): only the hotels that are listed, and only the
 fields the cards and the phone app read (id, name, area, address line, telephone, website,
-season, shuttle mark, drive, logo; the marks of the foot). `node scripts/hotels/build-runtime.js`
+season, shuttle mark, drive, logo; the marks of the foot; for a hub city also the street of each hotel,
+`card: true` on its card hotels and its hub block: the province and, for each area, the kind of the way there,
+its mark, the line, the stop and the figures, without their sources). `node scripts/hotels/build-runtime.js`
 makes the slim copies from the checked files (`--check` only compares), and
 `tests/hotel-list-cards.test.js` holds the two to agree: the same bytes, the same hotels on the
 same cards on every day of a year, the same card markup.
@@ -102,6 +177,13 @@ verified (`verified.<field>.verified`, `.source`, `.checked`); the shuttle and t
 season keep their own source and evidence. `listed: false` holds a hotel back (the reason is
 given); `excluded` lists the places left out (motels, hostels, apartment suites, places that have
 closed or could not be confirmed) with the reason for each.
+
+A hub city's file also has `hub` (after `points`): `region` (the province) and, for `airport` and `downtown`,
+`transit` with its `kind`, `icon`, `line` (and for a ride its `stop`, `min` and `every`), `verified`, `source`,
+`checked` and the `evidence` quoted from the page. Its hotels are in the two areas only; a nearby hotel is in
+`excluded` (kind `nearby_not_checked`). The build step and the tests refuse a hub city without its hub block,
+a hotel of a hub city outside the two areas, a card hotel without its logo, its verified street and telephone
+or its `card_id`, and a hub block or a card hotel in any other city.
 
 Sources: the hotels' own sites and brand property pages; Destination Moncton-Dieppe listings;
 the Greater Moncton airport's hotels and transport pages (cyqm.ca); Tourism PEI listings (with
@@ -114,7 +196,11 @@ site, where tourismfredericton.ca now forwards; their map points give the distan
 Wyndham and Best Western property pages (the airport's site, yfcfredericton.ca, lists no hotels
 and names no hotel shuttle; Tourism New Brunswick answered 403 with a Cloudflare page and was not
 used; the Marriott, IHG, Hilton, Choice and Radisson pages answered 403, so those hotels rest on
-the city listing alone);
+the city listing alone); for Toronto, the hotels' own sites and brand property pages (all.accor.com for the
+two card hotels), the UP Express pages (upexpress.com) for the train, and Destination Toronto's hotel listing
+(stay.destinationtoronto.com, a host of its own beside the blocked www.destinationtoronto.com, answered
+normally; whether it counts as the official tourism site is recorded in the file's `unverified` for a person to
+confirm, with the six facts that rest on it alone);
 OpenStreetMap (positions in Moncton and Charlottetown, and of the Riverside Resort near Fredericton, ODbL, "© OpenStreetMap contributors"); the OSRM public router on
 OpenStreetMap roads for the drive distances to the resorts. A search index was used only for
 some brand-hotel postal codes, which are marked `verified: false` (postal codes are not shown).
@@ -167,6 +253,11 @@ License 1.1, `OFL.txt` beside each. They are declared under names of their own (
 Display`, `HL Montserrat`) so the Accor stacks, which name Montserrat, are not affected. The
 flight boards keep Bricolage Grotesque.
 
+The two pages of a hub city (v24177) are set in AC Nord Display and AC Nord Text, the faces already bundled
+with the boards (`fids-current/fonts/ac-nord/`, declared in `css/font.css`, on the approved list of
+`tests/fonts-approved-only.test.js`); the lists' sheet declares no face of its own for them. The phone app does
+not load `css/font.css`, and its list keeps the two faces above.
+
 ## Refreshing a list
 
 Edit the city's checked file (`scripts/hotels/data/<code>.json`), keep every `verified` and
@@ -176,6 +267,9 @@ holds every hotel to the area rule, the season format and the shuttle rule, and 
 the checked file.
 
 ## Adding a city
+
+A hub city (two pages, near the airport and downtown) is a city of `CITIES` that is also in `HUBS`, with a hub
+block in its checked file; the steps, and the catalog check of its card hotels, are in `scripts/hotels/README.md`.
 
 `node scripts/hotels/find-candidates.js <code>` (an on-demand helper, one Overpass query a city,
 the raw answer cached under `scripts/hotels/work/`, which git ignores) writes a worksheet and a

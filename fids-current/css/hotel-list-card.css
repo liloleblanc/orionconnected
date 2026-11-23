@@ -22,6 +22,17 @@
    weather card shows (.hlc-find--pic): the heading white over a navy shade, the code on a tile of
    the card's cream, the photographer named beside it where the licence asks.
 
+   A hub city (v24177, .hlc--hub: Toronto) has two pages instead, near the airport then
+   downtown, each a column of the same paper: the city and its province in bronze capitals over
+   "Where to stay", the scan code of the area at the right; the area and its count between two
+   gold rules; how to get there beside a train mark; on a page with no card hotel, the place of a
+   partner hotel in a dashed frame; the card hotels in a fine gold frame on the cream (a border
+   only: never a box behind a logo), their logo on the cream with a fine rule after it; the lines,
+   the name at the left and the street or the shuttle mark at the right; how many more the scan
+   code lists; the navy foot. In the faces of the board, AC Nord Display (the heading, the area,
+   the way there, the names) and AC Nord Text (everything else), declared in css/font.css, which
+   the gate loads before this sheet.
+
    Look: LIGHT, the family of the Algonquin page: cream paper, navy ink, bronze capitals and
    icons, fine gold rules; the foot is the one navy band.
    Faces, both self-hosted under the SIL Open Font License (fonts/playfair-display, fonts/montserrat),
@@ -175,6 +186,80 @@
 .hlc-find-credit{ position:absolute; inset-inline-end:calc(14 * var(--hlc-px)); bottom:calc(10 * var(--hlc-px)); max-width:60%;
   font-size:calc(18 * var(--hlc-px)); line-height:1.2; color:#fff; text-shadow:0 0 calc(6 * var(--hlc-px)) rgba(0,0,0,.8); text-align:end; }
 .hlc-find-credit .pcr-cam{ width:1em; height:1em; vertical-align:-0.14em; margin-inline-end:.3em; }
+
+/* ── a hub city (.hlc--hub): two pages, near the airport then downtown, in the faces of the board ── */
+.hlc--hub{ --hlc-hub-text:'AC Nord Text', var(--hlc-sans); --hlc-hub-display:'AC Nord Display', 'AC Nord Text', var(--hlc-sans); font-weight:400; }
+.hlc--hub, .hlc--hub *{ font-family:var(--hlc-hub-text) !important; }
+.hlc--hub .hlc-title, .hlc--hub .hlc-title *, .hlc--hub .hlc-hub-area, .hlc--hub .hlc-hub-area *, .hlc--hub .hlc-hub-go, .hlc--hub .hlc-hub-go *,
+.hlc--hub .hlc-hub-av, .hlc--hub .hlc-name, .hlc--hub .hlc-name *{ font-family:var(--hlc-hub-display) !important; }
+.hlc--hub .hlc-hub-legend, .hlc--hub .hlc-hub-legend *, .hlc--hub .hlc-hub-note, .hlc--hub .hlc-hub-note *{ font-family:var(--hlc-hub-text) !important; }
+/* Japanese, Chinese and Arabic: the script faces of the board, on a half and on all it holds */
+.hlc--hub [lang="ja"], .hlc--hub [lang|="zh"], .hlc--hub [lang="ar"], .hlc--hub [lang="ja"] *, .hlc--hub [lang|="zh"] *, .hlc--hub [lang="ar"] *{
+  font-family:var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif !important; }
+/* the city, a name in Latin letters on every board, in the spaced capitals of its province even in
+   a half marked Arabic, Japanese or Chinese */
+.hlc--hub .hlc-city [lang]{ font-family:var(--hlc-hub-text) !important; letter-spacing:inherit; }
+.hlc-hub-in{ flex:1 1 0; min-height:0; display:flex; flex-direction:column; padding:calc(22 * var(--hlc-px)) calc(32 * var(--hlc-px)) 0; }
+.hlc-hub-head{ flex:0 0 auto; display:flex; align-items:center; gap:calc(24 * var(--hlc-px)); padding-bottom:calc(12 * var(--hlc-px)); }
+.hlc-hub-titles{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:calc(8 * var(--hlc-px)); }
+.hlc--hub .hlc-city{ font-size:calc(18 * var(--hlc-px)); font-weight:500; letter-spacing:.2em; }
+.hlc--hub .hlc-title{ font-size:calc(40 * var(--hlc-px)); font-weight:700; line-height:1.08; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; }
+.hlc--hub .hlc-qr{ width:calc(104 * var(--hlc-px)); height:calc(104 * var(--hlc-px)); padding:calc(4 * var(--hlc-px)); }
+/* a fine bronze dot between two parts of one language (the city and its province, a line and its
+   minutes, how many more and the invitation); the thin rule between two languages stays */
+.hlc-hub-dot{ display:inline-block; width:.24em; height:.24em; margin:0 .5em; border-radius:50%; vertical-align:.24em; background:currentColor; opacity:.7; }
+/* in the spaced capitals of the city, the space after the last letter is the spacing's own */
+.hlc--hub .hlc-city .hlc-hub-dot{ margin-inline:.4em .6em; }
+.hlc-hub-bar{ flex:0 0 auto; display:flex; align-items:center; gap:calc(16 * var(--hlc-px)); padding:calc(12 * var(--hlc-px)) 0;
+  border-top:calc(2 * var(--hlc-px)) solid var(--hlc-rule); border-bottom:var(--hlc-px) solid rgba(184,146,58,.55); }
+.hlc-hub-area{ flex:1 1 0; min-width:0; font-size:calc(30 * var(--hlc-px)); font-weight:700; line-height:1.12; white-space:nowrap; overflow:hidden; }
+.hlc-hub-area .hlc-sep + .bs-h{ color:var(--hlc-soft); font-weight:500; }
+/* the count: one line for each language, at the right */
+.hlc-hub-count{ flex:0 0 auto; text-align:end; font-size:calc(18 * var(--hlc-px)); font-weight:500; line-height:1.2; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--hlc-bronze); white-space:nowrap; }
+.hlc-hub-count .bs-h{ display:block; }
+.hlc-hub-count .hlc-sep{ display:none; }
+/* how to get there: the mark, then the line (in bold) and its words; the mark's own room after it
+   is in its width, so the fitter counts it */
+.hlc-hub-go{ flex:0 0 auto; display:flex; align-items:center; padding:calc(8 * var(--hlc-px)) 0; border-bottom:var(--hlc-px) solid rgba(184,146,58,.42);
+  font-size:calc(22 * var(--hlc-px)); font-weight:500; line-height:1.18; color:var(--hlc-soft); white-space:nowrap; overflow:hidden; }
+.hlc-hub-go .hlc-ico{ width:calc(40 * var(--hlc-px)); height:calc(28 * var(--hlc-px)); padding-inline-end:calc(12 * var(--hlc-px)); }
+.hlc-hub-line{ font-weight:700; color:var(--hlc-navy); }
+.hlc--hub .hlc-hub-legend{ font-size:calc(20 * var(--hlc-px)); }
+/* the place of a partner hotel: a dashed frame, a line for each language */
+.hlc-hub-slot{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:0; margin-top:calc(8 * var(--hlc-px));
+  padding:calc(6 * var(--hlc-px)) calc(18 * var(--hlc-px)); border:calc(2 * var(--hlc-px)) dashed rgba(20,32,60,.22); border-radius:calc(8 * var(--hlc-px)); }
+.hlc-hub-slot-l{ max-width:100%; font-size:calc(18 * var(--hlc-px)); line-height:1.3; color:var(--hlc-soft); white-space:nowrap; overflow:hidden; }
+.hlc-hub-tag{ font-size:1em; font-weight:500; letter-spacing:.12em; text-transform:uppercase; }
+.hlc-hub-av{ margin-inline-start:.8em; font-size:1.12em; font-weight:500; }
+/* the card hotels: a fine gold frame on the cream (a border, never a ground), the logo on the
+   cream with a fine rule after it */
+.hlc-hub-cards{ flex:0 0 auto; display:flex; flex-direction:column; gap:calc(8 * var(--hlc-px)); margin-top:calc(8 * var(--hlc-px)); }
+.hlc-hub-card{ display:flex; align-items:center; padding:calc(8 * var(--hlc-px)) calc(16 * var(--hlc-px)); border:var(--hlc-px) solid var(--hlc-rule); border-radius:calc(8 * var(--hlc-px)); }
+.hlc--hub .hlc-hub-card .hlc-logo{ flex:0 0 calc(166 * var(--hlc-px)); align-self:center; height:calc(52 * var(--hlc-px)); padding:0 calc(16 * var(--hlc-px)) 0 0;
+  border-inline-end:var(--hlc-px) solid rgba(20,32,60,.15); }
+.hlc-hub-pic{ position:relative; display:block; width:100%; height:100%; overflow:hidden; }
+.hlc--hub .hlc-hub-card .hlc-img{ width:100%; height:100%; max-height:none; object-fit:contain; }
+.hlc--hub .hlc-hub-card .hlc-text{ padding:0 0 0 calc(18 * var(--hlc-px)); gap:calc(2 * var(--hlc-px)); }
+.hlc--hub .hlc-name{ font-size:calc(25 * var(--hlc-px)); font-weight:700; line-height:1.15; }
+.hlc--hub .hlc-info{ font-size:calc(18 * var(--hlc-px)); font-weight:400; }
+/* the lines: as tall as the page leaves them, the name at the left, the note at the right */
+.hlc-hub-rows{ flex:1 1 0; min-height:0; display:flex; flex-direction:column; padding:0 0 calc(2 * var(--hlc-px)); }
+.hlc-hub-row{ flex:1 1 0; min-height:0; display:flex; align-items:center; border-bottom:var(--hlc-px) solid rgba(184,146,58,.42); }
+.hlc-hub-row .hlc-name{ flex:1 1 auto; min-width:0; }
+.hlc-hub-note{ flex:0 0 auto; margin-inline-start:auto; padding-inline-start:calc(16 * var(--hlc-px)); font-size:calc(18 * var(--hlc-px)); font-weight:400; color:var(--hlc-soft); }
+.hlc-hub-note .hlc-mark{ width:1.5em; height:1.5em; margin:0; vertical-align:-0.35em; }
+.hlc--hub .hlc-drop .hlc-hub-note{ display:none; }
+.hlc-hub-more{ flex:1 1 0; display:flex; align-items:center; gap:calc(16 * var(--hlc-px)); }
+/* no room for how many more and the invitation, even stacked: the invitation goes (the word beside
+   the code still says it) */
+.hlc--hub .hlc-drop .hlc-hub-cut{ display:none; }
+.hlc-hub-rest{ flex:1 1 0; min-width:0; font-size:calc(18 * var(--hlc-px)); line-height:1.2; color:var(--hlc-soft); white-space:nowrap; overflow:hidden; }
+.hlc-hub-scan{ flex:0 0 auto; font-size:calc(18 * var(--hlc-px)); font-weight:500; color:var(--hlc-bronze); white-space:nowrap; }
+/* the foot: one centred line for each language */
+.hlc .hlc-hub-foot{ flex-direction:column; justify-content:center; gap:calc(2 * var(--hlc-px)); text-align:center; font-size:calc(18 * var(--hlc-px)); line-height:1.2; }
+.hlc-hub-foot .hlc-tl{ max-width:100%; }
+.hlc-hub-foot .hlc-tl + .hlc-tl{ color:var(--hlc-mist); }
 
 /* ── foot ── */
 .hlc-foot{ flex:0 0 auto; min-height:calc(62 * var(--hlc-px)); display:flex; align-items:center; gap:calc(22 * var(--hlc-px));
