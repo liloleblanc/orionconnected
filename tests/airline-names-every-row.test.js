@@ -164,6 +164,7 @@ const NOT_FEED_ROWS = {
   'gate-marks-origin-main.json': 'what the marks beside the gate orbs drew, by code: no feed rows',
   'gate-header-names.json': 'the width of each airline name in the header of a gate, measured: no feed rows',
   'header-band.json': 'band colours',
+  'hotel-catalog-yyz.json': 'made-up hotel catalog rows for the catalog match test: no feed rows',
   'name-fit-model.json': 'measured sizes of names',
   'phx-capture-headers.txt': 'the headers of a capture',
   'rows-v24067.json': 'airports as feeds name them ([iata, icao, name]); no airline on them',
