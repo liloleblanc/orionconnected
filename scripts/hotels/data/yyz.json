@@ -197,7 +197,7 @@
    "name": "Embassy Suites",
    "address": "262 Carlingview Drive, Toronto",
    "kind": "blocked",
-   "reason": "Blocked, needs a person: hilton.com; not confirmed. Leads only (OpenStreetMap or search snippets, not facts): \"Embassy Suites by Hilton Toronto Airport\" on the owner group’s site (eastonsgroup.com, not an official source); 262 Carlingview Drive, +1-416-674-8442.",
+   "reason": "Blocked, needs a person: hilton.com; not confirmed. Leads only (OpenStreetMap or search snippets, not facts): \"Embassy Suites by Hilton Toronto Airport\" on the hotel group’s site (eastonsgroup.com, not an official source); 262 Carlingview Drive, +1-416-674-8442.",
    "source": "https://www.openstreetmap.org/way/34749730",
    "read": "https://www.hilton.com/en/hotels/yyzeses-embassy-suites-toronto-airport/",
    "also": [
@@ -356,7 +356,7 @@
    "name": "Element",
    "address": "6257 Airport Road",
    "kind": "blocked",
-   "reason": "Blocked, needs a person: marriott.com; not confirmed. Leads only (OpenStreetMap or search snippets, not facts): \"Element Toronto Airport\" on the owner group’s site (not an official source), one building with the Four Points by Sheraton Toronto Airport at 6257 Airport Road, Mississauga; +1 905-678-1800 on that site.",
+   "reason": "Blocked, needs a person: marriott.com; not confirmed. Leads only (OpenStreetMap or search snippets, not facts): \"Element Toronto Airport\" on the hotel group’s site (not an official source), one building with the Four Points by Sheraton Toronto Airport at 6257 Airport Road, Mississauga; +1 905-678-1800 on that site.",
    "source": "https://www.openstreetmap.org/node/12863386069",
    "read": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
    "also": [
@@ -368,7 +368,7 @@
    "name": "Four Points",
    "address": "6257 Airport Road, Mississauga",
    "kind": "blocked",
-   "reason": "Blocked, needs a person: marriott.com; not confirmed. Leads only (OpenStreetMap or search snippets, not facts): \"Four Points by Sheraton Toronto Airport\" and an unlabelled +1 905-678-1400 on the owner group’s site (not an official source); 6257 Airport Road, Mississauga L4V 1E4; a shuttle to the UP Express in search snippets.",
+   "reason": "Blocked, needs a person: marriott.com; not confirmed. Leads only (OpenStreetMap or search snippets, not facts): \"Four Points by Sheraton Toronto Airport\" and an unlabelled +1 905-678-1400 on the hotel group’s site (not an official source); 6257 Airport Road, Mississauga L4V 1E4; a shuttle to the UP Express in search snippets.",
    "source": "https://www.openstreetmap.org/way/737886649",
    "read": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
    "also": [
@@ -2315,7 +2315,7 @@
    "logo": null,
    "logo_missing": "No logo in this pass (hub city, 2026-11-22): the name alone.",
    "listed": false,
-   "not_listed_reason": "Facts only on the owner group’s site (mangahotels.com), which is not one of the four official sources, and the Marriott page is blocked (marriott.com/YYZFS): blocked, needs a person. List it when a person agrees the owner site counts as the hotel’s own page, or reads the Marriott page.",
+   "not_listed_reason": "Facts only on the hotel group’s site (mangahotels.com), which is not one of the four official sources, and the Marriott page is blocked (marriott.com/YYZFS): blocked, needs a person. List it when a person agrees the hotel group’s site counts as the hotel’s own page, or reads the Marriott page.",
    "verified": {
     "name": {
      "verified": false,

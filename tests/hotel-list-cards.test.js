@@ -1292,10 +1292,16 @@ test('a hub city: the place of a partner hotel only on a page with no card hotel
   for (const m2 of CSS.matchAll(/(\.hlc-hub[^{]*)\{([^}]*)\}/g)) if (!/hlc-hub-dot/.test(m2[1])) assert.doesNotMatch(m2[2], /background/, m2[1]);
 });
 
+// The opening <svg> tag of a file, found by position (no stripping of comments by pattern).
+function svgHead(src) {
+  const at = src.indexOf('<svg');
+  return at < 0 ? '' : src.slice(at, src.indexOf('>', at) + 1);
+}
+
 test('a hub city: the trim of a card logo is cut by placing the picture in its cell, an SVG with no size of its own too', () => {
   // the Fairmont lockup has no width and height (no natural size: the browser ignores
   // object-view-box on it); the Novotel file has its own (70 x 40)
-  const sized = (f) => /<svg[^>]*\swidth="[\d.]+"[^>]*\sheight="[\d.]+"/.test(fs.readFileSync(path.join(SITE, f), 'utf8').slice(0, 4000).replace(/<\?xml[^>]*>|<!--[\s\S]*?-->/g, ''));
+  const sized = (f) => /<svg[^>]*\swidth="[\d.]+"[^>]*\sheight="[\d.]+"/.test(svgHead(fs.readFileSync(path.join(SITE, f), 'utf8')));
   const gold = RUN.YYZ.hotels.filter((h) => h.card);
   assert.deepEqual(gold.map((h) => sized(h.logo.file)), [false, true]);
   const place = (natural, box, trim) => {
@@ -1378,7 +1384,7 @@ test('a hub city: the head, the way there and each line, every word from the sto
     for (const id of rowIds(v)) {
       const h = RUN.YYZ.hotels.find((x) => x.id === id);
       const row = v.split('<div class="hlc-hub-row" data-hotel="' + id + '">')[1].split('</div></div>')[0];
-      assert.ok(row.startsWith('<div class="hlc-name"><span class="hlc-fit"><bdi translate="no">' + B.esc(h.name).replace(/&#39;/g, '&#39;')), id);
+      assert.ok(row.startsWith('<div class="hlc-name"><span class="hlc-fit"><bdi translate="no">' + B.esc(h.name)), id);
       if (h.shuttle.mark) assert.ok(row.includes('<span class="hlc-hub-note"><i class="hlc-ico hlc-mark">'), id + ': the mark');
       else assert.ok(row.includes('<span class="hlc-hub-note"><bdi class="hlc-addr" translate="no">' + B.esc(h.address.street) + '</bdi></span>'), id + ': the street');
     }
