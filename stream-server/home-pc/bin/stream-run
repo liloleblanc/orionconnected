@@ -1,0 +1,265 @@
+#!/usr/bin/env bash
+# Runs one board stream on the home PC: a virtual screen (Xvfb), Chrome showing
+# the board on it, and ffmpeg encoding that screen.
+#
+# Settings come from the environment. The unit reads /etc/fids-home/stream-N.env
+# and then the optional /etc/fids-home/stream-N.override.env; the bench passes
+# its own file. When any one process ends, the others are stopped and this
+# script exits non-zero, so systemd starts the whole stream again from a clean
+# state. A dead Chrome can therefore never leave ffmpeg sending a frozen screen.
+# Exit status 78 means a setting is missing; the unit does not retry that.
+set -uo pipefail
+
+N="${1:-}"
+case "$N" in 1|2) ;; *) echo "usage: stream-run 1|2" >&2; exit 2 ;; esac
+TAG="stream-$N"
+log()   { echo "[$TAG] $*"; }
+warn()  { echo "WARN[$TAG]: $*" >&2; }
+fatal() { echo "FATAL[$TAG]: $1" >&2; [ -z "${2:-}" ] || echo "  fix: $2" >&2; exit 78; }
+
+: "${STREAM_URL:=}"
+: "${WIDTH:=1920}" "${HEIGHT:=1080}" "${FRAMERATE:=30}" "${VIDEO_BITRATE:=8M}"
+: "${RENDER:=software}" "${ENCODER:=x264}" "${OUTPUT:=youtube}"
+: "${DISPLAY_NUM:=$((90 + N))}" "${RTMP_PORT:=$((1935 + N))}"
+: "${NET_GUARD:=0}" "${CDP_PORT:=}" "${MODE_OVERRIDE:=}" "${MUSIC_URL:=}"
+: "${HETZNER_REPLICA:=0}" "${BENCH_DIR:=}"
+: "${CHROME_BIN:=/usr/bin/google-chrome-stable}"
+STATE_DIR="${STATE_DIRECTORY:-/var/lib/fids-home/stream-$N}"
+RUN_DIR="${RUNTIME_DIRECTORY:-/run/fids-home/stream-$N}"
+BIN="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+STATUS="/run/fids-home/status/push-$N"
+
+# ---- preflight: fail once, with the reason, instead of looping -------------
+[ -n "$STREAM_URL" ] || fatal "STREAM_URL is empty in /etc/fids-home/stream-$N.env" \
+  "set the board address there, then: sudo systemctl restart fids-home-stream@$N"
+[ -x "$CHROME_BIN" ] || fatal "Chrome not found at $CHROME_BIN" "sudo bash install.sh"
+case "$OUTPUT" in
+  youtube)
+    [ -e "$STATUS" ] || fatal "no YouTube stream key for stream $N on this PC" "sudo set-stream-key $N"
+    OUT_DESC="youtube via 127.0.0.1:$RTMP_PORT, key fingerprint $(head -c 8 "$STATUS" 2>/dev/null)" ;;
+  local)   OUT_DESC="local relay 127.0.0.1:$RTMP_PORT (no push)" ;;
+  null)    OUT_DESC="null (encode and discard)" ;;
+  file:*)  OUT_DESC="file ${OUTPUT#file:}" ;;
+  direct)  OUT_DESC="direct to YouTube (emergency mode)" ;;
+  *) fatal "OUTPUT=$OUTPUT is not one of youtube, local, null, file:PATH, direct" \
+       "edit /etc/fids-home/stream-$N.env" ;;
+esac
+case "$RENDER" in gpu|software|hetzner) ;; *) fatal "RENDER=$RENDER is not gpu, software or hetzner" "edit /etc/fids-home/stream-$N.env" ;; esac
+case "$ENCODER" in nvenc|x264|x264-ultrafast) ;; *) fatal "ENCODER=$ENCODER is not nvenc or x264" "edit /etc/fids-home/stream-$N.env" ;; esac
+
+URL="$STREAM_URL"
+[ -z "$MODE_OVERRIDE" ] || URL="${URL//mode=live/mode=$MODE_OVERRIDE}"
+if [ "$NET_GUARD" = 1 ] && [ -z "$CDP_PORT" ]; then CDP_PORT=$((9290 + N)); fi
+
+log "board $URL"
+log "${WIDTH}x${HEIGHT}@${FRAMERATE} ${VIDEO_BITRATE} render=$RENDER encoder=$ENCODER guard=$NET_GUARD output=$OUT_DESC"
+
+PIDS=()
+all_gone() { local p; for p in "${PIDS[@]}"; do kill -0 "$p" 2>/dev/null && return 1; done; return 0; }
+# stop_all [grace]: with a grace period the children are first given time to
+# end on the signal systemd already sent to the whole unit (a second SIGTERM
+# makes ffmpeg exit without finishing its output).
+stop_all() {
+  trap - TERM INT
+  [ "${#PIDS[@]}" -eq 0 ] && return 0
+  if [ "${1:-}" = grace ]; then
+    for _ in 1 2 3 4 5 6 7 8 9 10; do all_gone && return 0; sleep 0.5; done
+  fi
+  kill "${PIDS[@]}" 2>/dev/null
+  for _ in 1 2 3 4 5 6 7 8 9 10; do all_gone && return 0; sleep 0.5; done
+  kill -9 "${PIDS[@]}" 2>/dev/null
+  return 0
+}
+trap 'log "stop requested"; stop_all grace; exit 0' TERM INT
+
+# ---- virtual screen ----------------------------------------------------------
+export DISPLAY=":$DISPLAY_NUM"
+LOCK="/tmp/.X$DISPLAY_NUM-lock"; SOCK="/tmp/.X11-unix/X$DISPLAY_NUM"
+if [ -e "$LOCK" ]; then
+  old="$(tr -cd '0-9' < "$LOCK" 2>/dev/null)"
+  if [ -n "$old" ] && [ -d "/proc/$old" ]; then
+    warn "display $DISPLAY is still held by process $old; retrying later"; exit 1
+  fi
+  rm -f "$LOCK" "$SOCK" || { warn "cannot remove the stale lock $LOCK"; exit 1; }
+fi
+# xkbcomp warns about some 30 unknown keysyms at every start; those lines are dropped.
+Xvfb "$DISPLAY" -screen 0 "${WIDTH}x${HEIGHT}x24" -nolisten tcp -noreset \
+  2> >(grep --line-buffered -v -e 'Could not resolve keysym' -e 'XKEYBOARD keymap compiler' \
+       -e 'Errors from xkbcomp are not fatal' >&2) &
+XVFB_PID=$!; PIDS+=("$XVFB_PID")
+for _ in $(seq 1 50); do
+  [ -S "$SOCK" ] && break
+  kill -0 "$XVFB_PID" 2>/dev/null || break
+  sleep 0.2
+done
+[ -S "$SOCK" ] || { warn "Xvfb did not start on $DISPLAY"; stop_all; exit 1; }
+
+# ---- Chrome ------------------------------------------------------------------
+# Caches only, never the whole profile: Local Storage holds the Customize
+# designs and the tour resume point. The HTTP caches are cleared so a deploy
+# always reaches the stream. GPU shader caches hold no page content and are kept,
+# because rebuilding them makes the first minutes on the GPU uneven.
+PROFILE="$STATE_DIR/chrome-profile"
+export HOME="$STATE_DIR" XDG_CONFIG_HOME="$STATE_DIR/.config" XDG_CACHE_HOME="$STATE_DIR/.cache"
+export DBUS_SESSION_BUS_ADDRESS="disabled:"
+mkdir -p "$PROFILE"
+rm -rf "$PROFILE/Default/Cache" "$PROFILE/Default/Code Cache" 2>/dev/null
+
+if [ "$RENDER" = hetzner ]; then
+  # The cloud box flags, unchanged (setup.sh), for side by side measurement.
+  rm -rf "$PROFILE/GPUCache" "$PROFILE/ShaderCache" 2>/dev/null
+  CHROME_ARGS=(--kiosk --no-sandbox --no-first-run --no-default-browser-check
+    --user-data-dir="$PROFILE" --disk-cache-size=1
+    --disable-infobars --disable-session-crashed-bubble
+    --disable-features=Translate --autoplay-policy=no-user-gesture-required
+    --disable-gpu --disable-software-rasterizer --disable-dev-shm-usage
+    --force-device-scale-factor=1 --hide-scrollbars
+    --window-position=0,0 --window-size="${WIDTH},${HEIGHT}")
+else
+  CHROME_ARGS=(--user-data-dir="$PROFILE" --kiosk --no-first-run --no-default-browser-check
+    --password-store=basic --hide-crash-restore-bubble --disable-features=Translate
+    --autoplay-policy=no-user-gesture-required --disk-cache-size=1 --force-device-scale-factor=1
+    --hide-scrollbars --lang=en-US --ozone-platform=x11
+    --window-position=0,0 --window-size="${WIDTH},${HEIGHT}"
+    --disable-background-timer-throttling --disable-renderer-backgrounding
+    --disable-backgrounding-occluded-windows)
+  if [ "$RENDER" = gpu ]; then
+    CHROME_ARGS+=(--use-angle=vulkan --enable-features=Vulkan,VulkanFromANGLE,DefaultANGLEVulkan
+      --disable-vulkan-surface --enable-gpu-rasterization --ignore-gpu-blocklist)
+  else
+    CHROME_ARGS+=(--disable-gpu --disable-software-rasterizer)
+  fi
+fi
+# Extra flags for experiments (gpu-preflight.sh), split on spaces.
+[ -z "${CHROME_EXTRA_ARGS:-}" ] || read -ra _EXTRA <<< "$CHROME_EXTRA_ARGS"
+[ -z "${CHROME_EXTRA_ARGS:-}" ] || CHROME_ARGS+=("${_EXTRA[@]}")
+if [ "$NET_GUARD" = 1 ]; then
+  CHROME_ARGS+=(--remote-debugging-port="$CDP_PORT")
+  START_URL="about:blank"
+else
+  START_URL="$URL"
+fi
+rm -f "$RUN_DIR/loaded"
+# There is no session bus for this user, so Chrome logs dbus errors in bursts;
+# they are dropped here to keep the journal (and the error counts) readable.
+"$CHROME_BIN" "${CHROME_ARGS[@]}" "$START_URL" 2> >(grep --line-buffered -v -e ':ERROR:dbus/' >&2) &
+CHROME_PID=$!; PIDS+=("$CHROME_PID")
+
+GUARD_PID=""
+if [ "$NET_GUARD" = 1 ]; then
+  GUARD_ARGS=(--port "$CDP_PORT" --url "$URL" --tag "$TAG" --block --loaded-file "$RUN_DIR/loaded")
+  [ -z "$BENCH_DIR" ] || GUARD_ARGS+=(--out-dir "$BENCH_DIR" --suffix "$N")
+  python3 "$BIN/cdp-guard.py" "${GUARD_ARGS[@]}" &
+  GUARD_PID=$!; PIDS+=("$GUARD_PID")
+  for _ in $(seq 1 90); do
+    [ -e "$RUN_DIR/loaded" ] && break
+    kill -0 "$GUARD_PID" 2>/dev/null || break
+    sleep 0.5
+  done
+  [ -e "$RUN_DIR/loaded" ] || warn "the guard did not report the board as loaded; continuing"
+else
+  sleep 8   # fonts and the first data, as on the cloud box
+fi
+
+# ---- audio -------------------------------------------------------------------
+# YouTube needs exactly one audio track. Silence is generated locally, so no
+# network input can stall or end the run.
+AUDIO_IN=(-thread_queue_size 512 -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100)
+AUDIO_FILTER=()
+if [ -n "$MUSIC_URL" ]; then
+  # A live station ignores the range and keeps sending until the time limit,
+  # so the answer is judged by its status code, not by the curl exit status.
+  CODE="$(curl -sS --max-time 5 -r 0-0 -o /dev/null -w '%{http_code}' "$MUSIC_URL" 2>/dev/null)"
+  if [ "$CODE" = 200 ] || [ "$CODE" = 206 ]; then
+    if [ "$HETZNER_REPLICA" = 1 ]; then
+      # The cloud box audio input flags, unchanged (setup.sh), for the bench.
+      AUDIO_IN=(-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 5 -i "$MUSIC_URL")
+    else
+      # A live station only. No -reconnect_at_eof: with ffmpeg 6.1, a file whose
+      # server ignores Range requests (the proxy silence.wav, python http.server)
+      # is re-requested at its end offset in a tight loop and the video encoder
+      # stalls; the bench reproduced this 300 s into the run. apad keeps the
+      # audio track going with silence if the station ends.
+      AUDIO_IN=(-thread_queue_size 4096 -use_wallclock_as_timestamps 1 -reconnect 1
+        -reconnect_streamed 1 -reconnect_on_network_error 1 -reconnect_delay_max 5 -i "$MUSIC_URL")
+      AUDIO_FILTER=(-af aresample=async=1000:first_pts=0,apad)
+    fi
+    log "audio: $MUSIC_URL"
+  else
+    warn "the music address did not answer; streaming silence"
+  fi
+elif [ -s "$STATE_DIR/music/loop.m4a" ]; then
+  AUDIO_IN=(-stream_loop -1 -i "$STATE_DIR/music/loop.m4a")
+  log "audio: looping $STATE_DIR/music/loop.m4a"
+fi
+
+# ---- video encoder -------------------------------------------------------------
+G=$((FRAMERATE * 2))
+if [ "$ENCODER" = nvenc ] && ! ffmpeg -hide_banner -nostdin -loglevel error -f lavfi \
+     -i color=black:s=256x144:r=30 -frames:v 5 -c:v h264_nvenc -f null - </dev/null; then
+  warn "the NVENC self-test failed (driver update waiting for a reboot?); using x264 for this start"
+  ENCODER=x264
+fi
+COLOUR=(-vf "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p"
+  -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv)
+case "$ENCODER" in
+  nvenc)
+    VENC=("${COLOUR[@]}" -c:v h264_nvenc -preset p5 -tune hq -profile:v high -rc cbr
+      -b:v "$VIDEO_BITRATE" -maxrate "$VIDEO_BITRATE" -bufsize "$VIDEO_BITRATE"
+      -bf 2 -strict_gop 1 -no-scenecut 1 -forced-idr 1 -g "$G" -fps_mode cfr -r "$FRAMERATE") ;;
+  x264)
+    VENC=("${COLOUR[@]}" -c:v libx264 -preset veryfast -profile:v high -bf 2 -g "$G" -keyint_min "$G"
+      -sc_threshold 0 -b:v "$VIDEO_BITRATE" -minrate "$VIDEO_BITRATE" -maxrate "$VIDEO_BITRATE"
+      -bufsize "$VIDEO_BITRATE" -x264-params nal-hrd=cbr:force-cfr=1 -fps_mode cfr -r "$FRAMERATE") ;;
+  x264-ultrafast)
+    # The cloud box encoder line, unchanged (setup.sh).
+    VENC=(-c:v libx264 -preset ultrafast -pix_fmt yuv420p
+      -b:v "$VIDEO_BITRATE" -minrate "$VIDEO_BITRATE" -maxrate "$VIDEO_BITRATE" -bufsize "$VIDEO_BITRATE"
+      -x264-params nal-hrd=cbr:force-cfr=1 -g "$G" -r "$FRAMERATE") ;;
+esac
+
+case "$OUTPUT" in
+  youtube|local) OUT=(-f flv -flvflags no_duration_filesize "rtmp://127.0.0.1:$RTMP_PORT/s/live") ;;
+  file:*)        OUT=(-f flv "${OUTPUT#file:}") ;;
+  null)          OUT=(-f null -) ;;
+  direct)
+    # Emergency only: the key is then visible in the process list and can be
+    # printed in ffmpeg error lines. It needs LoadCredential in a unit drop-in.
+    CRED="${CREDENTIALS_DIRECTORY:-/nonexistent}/fids-stream-$N.key"
+    [ -s "$CRED" ] || { stop_all; fatal "OUTPUT=direct needs the key as a unit credential" "see Direct output in the README"; }
+    IFS= read -r DKEY < "$CRED"
+    OUT=(-f flv "rtmp://a.rtmp.youtube.com/live2/$DKEY")
+    unset DKEY ;;
+esac
+
+# ---- ffmpeg ------------------------------------------------------------------
+FIFO="$RUN_DIR/progress.fifo"
+rm -f "$FIFO"; mkfifo -m 0600 "$FIFO"
+PROGRESS_LOG="${BENCH_DIR:+$BENCH_DIR/progress-$N.csv}" "$BIN/progress-sink" "$RUN_DIR/progress" "$TAG" < "$FIFO" &
+SINK_PID=$!; PIDS+=("$SINK_PID")
+ffmpeg -hide_banner -nostdin -nostats -loglevel warning -y -progress pipe:1 -stats_period 5 \
+  -f x11grab -draw_mouse 0 -thread_queue_size 1024 -framerate "$FRAMERATE" \
+  -video_size "${WIDTH}x${HEIGHT}" -i "$DISPLAY" \
+  "${AUDIO_IN[@]}" \
+  -map 0:v:0 -map 1:a:0 \
+  "${VENC[@]}" \
+  "${AUDIO_FILTER[@]}" -c:a aac -b:a 128k -ar 44100 -ac 2 \
+  "${OUT[@]}" > "$FIFO" &
+FFMPEG_PID=$!; PIDS+=("$FFMPEG_PID")
+unset OUT
+log "running: Xvfb $XVFB_PID, Chrome $CHROME_PID, ffmpeg $FFMPEG_PID${GUARD_PID:+, guard $GUARD_PID}"
+
+# ---- supervise ---------------------------------------------------------------
+wait -n -p DONE "${PIDS[@]}"
+RC=$?
+case "${DONE:-}" in
+  "$XVFB_PID")   WHAT=Xvfb ;;
+  "$CHROME_PID") WHAT=Chrome ;;
+  "$FFMPEG_PID") WHAT=ffmpeg ;;
+  "$SINK_PID")   WHAT=progress-sink ;;
+  "$GUARD_PID")  WHAT=cdp-guard ;;
+  *)             WHAT="process ${DONE:-unknown}" ;;
+esac
+log "$WHAT exited (status $RC); stopping the rest so the stream restarts cleanly"
+stop_all
+exit 1

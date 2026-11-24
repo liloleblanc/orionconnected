@@ -1,0 +1,37 @@
+[Unit]
+Description=FIDS home stream %i: Xvfb, Chrome and ffmpeg
+After=network-online.target nvidia-persistenced.service fids-home-rtmp@%i.service
+Wants=network-online.target
+Requires=fids-home-rtmp@%i.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=fidsstream
+Group=fidsstream
+SupplementaryGroups=video render
+EnvironmentFile=/etc/fids-home/stream-%i.env
+EnvironmentFile=-/etc/fids-home/stream-%i.override.env
+Environment=TZ=Etc/UTC LANG=C.UTF-8 HOME=/var/lib/fids-home/stream-%i
+StateDirectory=fids-home/stream-%i
+RuntimeDirectory=fids-home/stream-%i
+ExecStartPre=/opt/fids-home/bin/wait-desktop 75
+ExecStart=/opt/fids-home/bin/stream-run %i
+Restart=always
+RestartSec=5
+RestartSteps=5
+RestartMaxDelaySec=120
+RestartPreventExitStatus=78
+TimeoutStartSec=150
+TimeoutStopSec=15
+KillMode=control-group
+CPUWeight=200
+IOWeight=200
+MemoryHigh=3G
+MemoryMax=4G
+OOMPolicy=stop
+LimitNOFILE=65536
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

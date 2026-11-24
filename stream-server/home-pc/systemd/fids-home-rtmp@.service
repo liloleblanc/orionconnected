@@ -1,0 +1,19 @@
+[Unit]
+Description=FIDS home stream %i: local RTMP relay to YouTube
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/fids-home/stream-%i.env
+EnvironmentFile=-/etc/fids-home/stream-%i.override.env
+RuntimeDirectory=fids-home/rtmp-%i
+RuntimeDirectoryMode=0700
+ExecStartPre=/opt/fids-home/bin/rtmp-render %i
+ExecStartPre=/usr/sbin/nginx -t -q -e stderr -c /run/fids-home/rtmp-%i/nginx.conf
+ExecStart=/usr/sbin/nginx -e stderr -c /run/fids-home/rtmp-%i/nginx.conf -g "daemon off;"
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,5 +1,8 @@
 # Orion FIDS → YouTube Live (24/7)
 
+> Both streams can also run from one desktop PC with an NVIDIA GPU instead of
+> two cloud boxes: see [home-pc/README.md](home-pc/README.md).
+
 Streams the Moncton FIDS departures board to YouTube from a small cloud
 server — no laptop left running. Headless Chrome renders the board, ffmpeg
 encodes it, systemd keeps it alive forever.

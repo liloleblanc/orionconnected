@@ -29,7 +29,7 @@ for c in $(find /opt -name config.env 2>/dev/null | sort); do
   svc="$(basename "$d")"
   st="$(systemctl is-active "${svc}.service" 2>/dev/null || echo '?')"
   cbr='NO-CBR!'; grep -q 'nal-hrd' "$d/run.sh" 2>/dev/null && cbr='cbr-ok'
-  cch='STALE!';  grep -q 'rm -rf .*chrome-profile' "$d/run.sh" 2>/dev/null && cch='cache-ok'
+  cch='STALE!';  grep -q 'Default/Cache' "$d/run.sh" 2>/dev/null && cch='cache-ok'
   printf '%-4s %-9s %-10s %-8s %-8s key…%s\n' \
     "${ap:-?}" "$st" "$hw@${br:-?}" "$cbr" "$cch" "${key: -4}"
   # The airport code alone cannot tell a pinned box from a touring one:

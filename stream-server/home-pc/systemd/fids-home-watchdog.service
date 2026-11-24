@@ -1,0 +1,6 @@
+[Unit]
+Description=FIDS home streams: health check
+
+[Service]
+Type=oneshot
+ExecStart=/opt/fids-home/bin/fids-watchdog

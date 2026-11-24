@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Reads ffmpeg -progress output on stdin.
+# Keeps the latest block in FILE (replaced whole, every 5 s), appends each block
+# to the CSV named by PROGRESS_LOG when that is set, and prints one summary line
+# a minute for the journal. -W interactive makes mawk read line by line.
+# usage: progress-sink FILE [TAG]
+set -uo pipefail
+OUT="${1:?usage: progress-sink FILE [TAG]}"
+TAG="${2:-stream}"
+exec awk -W interactive -v out="$OUT" -v tag="$TAG" -v csv="${PROGRESS_LOG:-}" '
+BEGIN { FS = "="; last = 0 }
+{ v[$1] = $2 }
+$1 == "progress" {
+  now = systime()
+  size = v["total_size"] + 0; dup = v["dup_frames"] + 0; drop = v["drop_frames"] + 0
+  tmp = out ".tmp"
+  printf "epoch=%d\nframe=%d\nfps=%s\nspeed=%s\ndup_frames=%d\ndrop_frames=%d\ntotal_size=%d\nout_time_us=%s\nprogress=%s\n", \
+    now, v["frame"] + 0, v["fps"], v["speed"], dup, drop, size, v["out_time_us"], v["progress"] > tmp
+  close(tmp)
+  system("mv -f \"" tmp "\" \"" out "\"")
+  if (csv != "") {
+    if (!hdr) { print "epoch,frame,fps,speed,dup,drop,total_size,out_time_us" >> csv; hdr = 1 }
+    sp = v["speed"]; sub(/x$/, "", sp)
+    printf "%d,%d,%s,%s,%d,%d,%d,%s\n", now, v["frame"] + 0, v["fps"], sp, dup, drop, size, v["out_time_us"] >> csv
+    fflush(csv)
+  }
+  if (now - last >= 60) {
+    kbps = (last > 0 && now > last) ? (size - lsize) * 8 / 1000 / (now - last) : 0
+    printf "[%s] fps=%s speed=%s dup=+%d drop=+%d kbps=%d\n", tag, v["fps"], v["speed"], dup - ldup, drop - ldrop, kbps
+    fflush()
+    last = now; lsize = size; ldup = dup; ldrop = drop
+  }
+}'

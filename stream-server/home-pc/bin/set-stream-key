@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Sets the YouTube stream key for stream 1 or 2 on this PC.
+# The key is read with hidden input, never taken as an argument and never
+# printed: only the first 8 hex characters of its sha256 are shown.
+# usage: sudo set-stream-key 1|2 [--clear]
+set -euo pipefail
+[ "$(id -u)" -eq 0 ] || exec sudo -- "$0" "$@"
+N="${1:-}"
+case "$N" in 1|2) ;; *) echo "usage: sudo set-stream-key 1|2 [--clear]" >&2; exit 2 ;; esac
+O=$(( N == 1 ? 2 : 1 ))
+STORE=/etc/credstore
+F="$STORE/fids-stream-$N.key"
+OF="$STORE/fids-stream-$O.key"
+OVR="/etc/fids-home/stream-$N.override.env"
+install -d -m 0700 -o root -g root "$STORE"
+
+if [ "${2:-}" = --clear ]; then
+  rm -f "$F"
+  systemctl restart "fids-home-rtmp@$N.service" || true
+  echo "Stream $N key removed."
+  exit 0
+fi
+
+read -rsp "Paste the YouTube stream key for stream $N (hidden): " K </dev/tty; echo
+read -rsp "Paste it again to confirm: " K2 </dev/tty; echo
+K="${K//[[:space:]]/}"; K2="${K2//[[:space:]]/}"
+[ -n "$K" ] || { echo "No key given. Nothing changed."; exit 1; }
+[ "$K" = "$K2" ] || { echo "The two pastes differ. Nothing changed."; exit 1; }
+[[ "$K" =~ ^[A-Za-z0-9-]{8,64}$ ]] || { echo "Letters, digits and dashes only. Nothing changed."; exit 1; }
+[[ "$K" =~ ^[A-Za-z0-9]{4}(-[A-Za-z0-9]{4}){4}$ ]] || echo "Note: the usual format is five groups of four. Saving anyway."
+if [ -s "$OF" ]; then
+  OTHER=""; IFS= read -r OTHER < "$OF" || true
+  if [ "$K" = "${OTHER//[[:space:]]/}" ]; then
+    unset K K2 OTHER
+    echo "Stream $O already uses this key (two encoders on one key). Nothing changed."
+    exit 1
+  fi
+  unset OTHER
+fi
+umask 077
+T="$(mktemp "$STORE/.fids-stream-$N.XXXXXX")"
+printf '%s\n' "$K" > "$T"
+chmod 600 "$T"
+mv -f "$T" "$F"
+unset K K2
+echo "Key for stream $N saved (fingerprint $(sha256sum < "$F" | cut -c1-8))."
+
+OVR_OUT="$(grep -E '^OUTPUT=' "$OVR" 2>/dev/null | tail -1)"
+if [ -n "$OVR_OUT" ] && [ "$OVR_OUT" != OUTPUT=youtube ]; then
+  echo "Note: $OVR sets $OVR_OUT; stream $N reaches YouTube only after that file is removed."
+fi
+# Restarting the relay also restarts the stream when it is running (Requires=).
+systemctl restart "fids-home-rtmp@$N.service"
+if systemctl is-enabled --quiet "fids-home-stream@$N.service"; then
+  systemctl is-active --quiet "fids-home-stream@$N.service" || systemctl start "fids-home-stream@$N.service"
+  echo "Stream $N restarted with the new key."
+else
+  echo "Start it with: sudo systemctl enable --now fids-home-stream@$N"
+fi
