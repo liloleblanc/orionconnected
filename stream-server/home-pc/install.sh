@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Installs the two home streams on an Ubuntu 24.04 desktop PC with an NVIDIA GPU.
 # Safe to run again. It never touches Xorg, the network, automatic updates,
-# stream keys or the cloud servers, and it starts no stream.
+# stream keys or the cloud servers, and it starts no stream. Besides its own
+# files it changes three system settings: a journald drop-in (persistent
+# journal, 2 GB, 2 months; journald is restarted), an apport ignore list (no
+# crash reports for nginx and ffmpeg, which hold the stream key in memory), and
+# the masked stock nginx.service.
 # usage (from this directory): sudo bash install.sh
 #   CHROME_POLICY=1  also installs the Chrome managed policy (Chrome then
 #                    shows "Managed by your organization" on this PC)
@@ -30,7 +34,7 @@ trap cleanup EXIT
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -y ffmpeg xvfb python3-websocket vulkan-tools mesa-utils sysstat \
+apt-get install -y ffmpeg xvfb xauth python3-websocket vulkan-tools mesa-utils sysstat \
   nginx libnginx-mod-rtmp fonts-liberation fonts-dejavu-core curl ca-certificates gnupg
 
 # Google Chrome stable from the signed Google apt repository.
@@ -38,13 +42,19 @@ if ! command -v google-chrome-stable >/dev/null 2>&1; then
   install -d -m 0755 /etc/apt/keyrings
   KEYTMP="$(mktemp)"; GNUPGTMP="$(mktemp -d)"
   curl -fsSL https://dl.google.com/linux/linux_signing_key.pub -o "$KEYTMP"
-  gpg --homedir "$GNUPGTMP" --show-keys --with-colons "$KEYTMP" | grep -q "^fpr:::::::::$CHROME_FPR:" || {
+  # Only the key with the expected fingerprint is exported into the keyring,
+  # whatever else the downloaded file holds.
+  gpg --homedir "$GNUPGTMP" --quiet --import "$KEYTMP" 2>/dev/null || true
+  gpg --homedir "$GNUPGTMP" --export "$CHROME_FPR" > /etc/apt/keyrings/google-chrome.gpg
+  gpg --homedir "$GNUPGTMP" --show-keys --with-colons /etc/apt/keyrings/google-chrome.gpg 2>/dev/null \
+      | grep -q "^fpr:::::::::$CHROME_FPR:" || {
     echo "the downloaded Google key does not have the expected fingerprint $CHROME_FPR" >&2
-    rm -rf "$KEYTMP" "$GNUPGTMP"; exit 1; }
-  gpg --homedir "$GNUPGTMP" --dearmor < "$KEYTMP" > /etc/apt/keyrings/google-chrome.gpg
+    rm -rf "$KEYTMP" "$GNUPGTMP" /etc/apt/keyrings/google-chrome.gpg; exit 1; }
   chmod 0644 /etc/apt/keyrings/google-chrome.gpg
   rm -rf "$KEYTMP" "$GNUPGTMP"
-  # Keeps the Chrome package from rewriting this source list.
+  # Settings read by the Chrome package scripts. They do not stop the package
+  # from writing its own signed google-chrome.sources at install (seen on the
+  # test PC); that file is accepted below.
   printf 'repo_add_once="false"\nrepo_reenable_on_distupgrade="false"\n' > /etc/default/google-chrome
   echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
     > /etc/apt/sources.list.d/google-chrome.list
@@ -88,6 +98,15 @@ install -m 0644 "$SRC"/systemd/fids-home-stream@.service "$SRC"/systemd/fids-hom
   "$SRC"/systemd/fids-home-watchdog.service "$SRC"/systemd/fids-home-watchdog.timer /etc/systemd/system/
 install -d -m 0755 /etc/systemd/journald.conf.d
 install -m 0644 "$SRC"/config/journald-60-fids-home.conf /etc/systemd/journald.conf.d/60-fids-home.conf
+# Ubuntu crash reports (apport) copy the whole process memory and can be sent
+# to errors.ubuntu.com from a desktop prompt. nginx (the relay) and ffmpeg
+# (OUTPUT=direct) hold the stream key, so apport ignores them. The units also
+# set LimitCORE=0.
+if [ -d /etc/apport ]; then
+  install -d -m 0755 /etc/apport/report-ignore
+  printf '%s\n' "$(readlink -f /usr/sbin/nginx)" "$(readlink -f /usr/bin/ffmpeg)" > /etc/apport/report-ignore/fids-home
+  chmod 0644 /etc/apport/report-ignore/fids-home
+fi
 if [ "${CHROME_POLICY:-0}" = 1 ]; then
   install -d -m 0755 /etc/opt/chrome/policies/managed
   install -m 0644 "$SRC"/config/chrome-policy.json /etc/opt/chrome/policies/managed/fids-home.json

@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Runs one board stream on the home PC: a virtual screen (Xvfb), Chrome showing
-# the board on it, and ffmpeg encoding that screen.
+# the board on it, a DevTools monitor (cdp-guard.py) that checks the page
+# answers, and ffmpeg encoding that screen.
 #
 # Settings come from the environment. The unit reads /etc/fids-home/stream-N.env
 # and then the optional /etc/fids-home/stream-N.override.env; the bench passes
 # its own file. When any one process ends, the others are stopped and this
 # script exits non-zero, so systemd starts the whole stream again from a clean
-# state. A dead Chrome can therefore never leave ffmpeg sending a frozen screen.
+# state. A dead Chrome can therefore never leave ffmpeg sending a frozen screen,
+# and a hung or crashed page ends the monitor, which restarts the stream too.
 # Exit status 78 means a setting is missing; the unit does not retry that.
 set -uo pipefail
 
@@ -26,6 +28,9 @@ fatal() { echo "FATAL[$TAG]: $1" >&2; [ -z "${2:-}" ] || echo "  fix: $2" >&2; e
 : "${CHROME_BIN:=/usr/bin/google-chrome-stable}"
 STATE_DIR="${STATE_DIRECTORY:-/var/lib/fids-home/stream-$N}"
 RUN_DIR="${RUNTIME_DIRECTORY:-/run/fids-home/stream-$N}"
+# Chrome makes a temp dir at every start; under the runtime directory it is
+# removed when the unit stops instead of piling up in /tmp.
+export TMPDIR="$RUN_DIR"
 BIN="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 STATUS="/run/fids-home/status/push-$N"
 
@@ -49,7 +54,7 @@ case "$ENCODER" in nvenc|x264|x264-ultrafast) ;; *) fatal "ENCODER=$ENCODER is n
 
 URL="$STREAM_URL"
 [ -z "$MODE_OVERRIDE" ] || URL="${URL//mode=live/mode=$MODE_OVERRIDE}"
-if [ "$NET_GUARD" = 1 ] && [ -z "$CDP_PORT" ]; then CDP_PORT=$((9290 + N)); fi
+[ -n "$CDP_PORT" ] || CDP_PORT=$((9290 + N))
 
 log "board $URL"
 log "${WIDTH}x${HEIGHT}@${FRAMERATE} ${VIDEO_BITRATE} render=$RENDER encoder=$ENCODER guard=$NET_GUARD output=$OUT_DESC"
@@ -72,8 +77,31 @@ stop_all() {
 }
 trap 'log "stop requested"; stop_all grace; exit 0' TERM INT
 
+# ---- local relay ---------------------------------------------------------------
+# The relay is a separate unit (Wants=, not Requires=). While it is down, wait
+# here instead of starting Chrome only to fail at the first frame.
+if [ "$OUTPUT" = youtube ] || [ "$OUTPUT" = local ]; then
+  for i in $(seq 1 30); do
+    (exec 3<>"/dev/tcp/127.0.0.1/$RTMP_PORT") 2>/dev/null && break
+    [ "$i" = 30 ] && { warn "the local relay on 127.0.0.1:$RTMP_PORT is not answering; retrying later"; exit 1; }
+    sleep 1
+  done
+fi
+
 # ---- virtual screen ----------------------------------------------------------
+# The screen is 8 pixels wider and taller than the capture. Chrome keeps a
+# window that fills the whole screen 1 pixel short (a black right column and
+# bottom row in the stream), and the spare strip is where the pointer is parked,
+# off the board, so no hover style can trigger. Only this user can connect
+# (Xauthority cookie in the runtime directory).
 export DISPLAY=":$DISPLAY_NUM"
+export XAUTHORITY="$RUN_DIR/Xauthority"
+rm -f "$XAUTHORITY"
+( umask 077; : > "$XAUTHORITY" )
+# The here-string keeps the cookie out of every argument list.
+COOKIE="$(mcookie)"
+xauth -q -f "$XAUTHORITY" source - <<< "add $DISPLAY . $COOKIE" || { warn "xauth failed"; exit 1; }
+unset COOKIE
 LOCK="/tmp/.X$DISPLAY_NUM-lock"; SOCK="/tmp/.X11-unix/X$DISPLAY_NUM"
 if [ -e "$LOCK" ]; then
   old="$(tr -cd '0-9' < "$LOCK" 2>/dev/null)"
@@ -83,7 +111,7 @@ if [ -e "$LOCK" ]; then
   rm -f "$LOCK" "$SOCK" || { warn "cannot remove the stale lock $LOCK"; exit 1; }
 fi
 # xkbcomp warns about some 30 unknown keysyms at every start; those lines are dropped.
-Xvfb "$DISPLAY" -screen 0 "${WIDTH}x${HEIGHT}x24" -nolisten tcp -noreset \
+Xvfb "$DISPLAY" -screen 0 "$((WIDTH + 8))x$((HEIGHT + 8))x24" -auth "$XAUTHORITY" -nolisten tcp -noreset \
   2> >(grep --line-buffered -v -e 'Could not resolve keysym' -e 'XKEYBOARD keymap compiler' \
        -e 'Errors from xkbcomp are not fatal' >&2) &
 XVFB_PID=$!; PIDS+=("$XVFB_PID")
@@ -93,6 +121,22 @@ for _ in $(seq 1 50); do
   sleep 0.2
 done
 [ -S "$SOCK" ] || { warn "Xvfb did not start on $DISPLAY"; stop_all; exit 1; }
+python3 - "$((WIDTH + 7))" "$((HEIGHT + 7))" <<'PARK' || warn "could not park the pointer"
+import ctypes, sys
+x = ctypes.cdll.LoadLibrary("libX11.so.6")
+x.XOpenDisplay.restype = ctypes.c_void_p
+x.XOpenDisplay.argtypes = [ctypes.c_char_p]
+x.XDefaultRootWindow.restype = ctypes.c_ulong
+x.XDefaultRootWindow.argtypes = [ctypes.c_void_p]
+x.XWarpPointer.argtypes = [ctypes.c_void_p, ctypes.c_ulong, ctypes.c_ulong] + [ctypes.c_int] * 2 \
+    + [ctypes.c_uint] * 2 + [ctypes.c_int] * 2
+x.XCloseDisplay.argtypes = [ctypes.c_void_p]
+d = x.XOpenDisplay(None)
+if not d:
+    sys.exit(1)
+x.XWarpPointer(d, 0, x.XDefaultRootWindow(d), 0, 0, 0, 0, int(sys.argv[1]), int(sys.argv[2]))
+x.XCloseDisplay(d)
+PARK
 
 # ---- Chrome ------------------------------------------------------------------
 # Caches only, never the whole profile: Local Storage holds the Customize
@@ -133,33 +177,29 @@ fi
 # Extra flags for experiments (gpu-preflight.sh), split on spaces.
 [ -z "${CHROME_EXTRA_ARGS:-}" ] || read -ra _EXTRA <<< "$CHROME_EXTRA_ARGS"
 [ -z "${CHROME_EXTRA_ARGS:-}" ] || CHROME_ARGS+=("${_EXTRA[@]}")
-if [ "$NET_GUARD" = 1 ]; then
-  CHROME_ARGS+=(--remote-debugging-port="$CDP_PORT")
-  START_URL="about:blank"
-else
-  START_URL="$URL"
-fi
+# DevTools listens on 127.0.0.1 only. Chrome starts on about:blank and the
+# monitor loads the board once it is attached.
+CHROME_ARGS+=(--remote-debugging-port="$CDP_PORT")
 rm -f "$RUN_DIR/loaded"
 # There is no session bus for this user, so Chrome logs dbus errors in bursts;
 # they are dropped here to keep the journal (and the error counts) readable.
-"$CHROME_BIN" "${CHROME_ARGS[@]}" "$START_URL" 2> >(grep --line-buffered -v -e ':ERROR:dbus/' >&2) &
+"$CHROME_BIN" "${CHROME_ARGS[@]}" about:blank 2> >(grep --line-buffered -v -e ':ERROR:dbus/' >&2) &
 CHROME_PID=$!; PIDS+=("$CHROME_PID")
 
-GUARD_PID=""
-if [ "$NET_GUARD" = 1 ]; then
-  GUARD_ARGS=(--port "$CDP_PORT" --url "$URL" --tag "$TAG" --block --loaded-file "$RUN_DIR/loaded")
-  [ -z "$BENCH_DIR" ] || GUARD_ARGS+=(--out-dir "$BENCH_DIR" --suffix "$N")
-  python3 "$BIN/cdp-guard.py" "${GUARD_ARGS[@]}" &
-  GUARD_PID=$!; PIDS+=("$GUARD_PID")
-  for _ in $(seq 1 90); do
-    [ -e "$RUN_DIR/loaded" ] && break
-    kill -0 "$GUARD_PID" 2>/dev/null || break
-    sleep 0.5
-  done
-  [ -e "$RUN_DIR/loaded" ] || warn "the guard did not report the board as loaded; continuing"
-else
-  sleep 8   # fonts and the first data, as on the cloud box
-fi
+# The monitor always runs: it loads the board, and it ends when the page
+# crashes or stops answering (two missed heartbeats, 10 s apart). With
+# NET_GUARD=1 it also blocks the billed proxy paths (test mode).
+GUARD_ARGS=(--port "$CDP_PORT" --url "$URL" --tag "$TAG" --loaded-file "$RUN_DIR/loaded")
+[ "$NET_GUARD" = 1 ] && GUARD_ARGS+=(--block)
+[ -z "$BENCH_DIR" ] || GUARD_ARGS+=(--out-dir "$BENCH_DIR" --suffix "$N")
+python3 "$BIN/cdp-guard.py" "${GUARD_ARGS[@]}" &
+GUARD_PID=$!; PIDS+=("$GUARD_PID")
+for _ in $(seq 1 90); do
+  [ -e "$RUN_DIR/loaded" ] && break
+  kill -0 "$GUARD_PID" 2>/dev/null || break
+  sleep 0.5
+done
+[ -e "$RUN_DIR/loaded" ] || warn "the monitor did not report the board as loaded; continuing"
 
 # ---- audio -------------------------------------------------------------------
 # YouTube needs exactly one audio track. Silence is generated locally, so no
@@ -200,8 +240,8 @@ if [ "$ENCODER" = nvenc ] && ! ffmpeg -hide_banner -nostdin -loglevel error -f l
   warn "the NVENC self-test failed (driver update waiting for a reboot?); using x264 for this start"
   ENCODER=x264
 fi
-COLOUR=(-vf "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p"
-  -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv)
+COLOUR=(-colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv)
+VF_MAIN="scale=out_color_matrix=bt709:out_range=tv,format=yuv420p"
 case "$ENCODER" in
   nvenc)
     VENC=("${COLOUR[@]}" -c:v h264_nvenc -preset p5 -tune hq -profile:v high -rc cbr
@@ -212,8 +252,9 @@ case "$ENCODER" in
       -sc_threshold 0 -b:v "$VIDEO_BITRATE" -minrate "$VIDEO_BITRATE" -maxrate "$VIDEO_BITRATE"
       -bufsize "$VIDEO_BITRATE" -x264-params nal-hrd=cbr:force-cfr=1 -fps_mode cfr -r "$FRAMERATE") ;;
   x264-ultrafast)
-    # The cloud box encoder line, unchanged (setup.sh).
-    VENC=(-c:v libx264 -preset ultrafast -pix_fmt yuv420p
+    # The cloud box encoder line (setup.sh); format=yuv420p stands for its -pix_fmt.
+    VF_MAIN="format=yuv420p"
+    VENC=(-c:v libx264 -preset ultrafast
       -b:v "$VIDEO_BITRATE" -minrate "$VIDEO_BITRATE" -maxrate "$VIDEO_BITRATE" -bufsize "$VIDEO_BITRATE"
       -x264-params nal-hrd=cbr:force-cfr=1 -g "$G" -r "$FRAMERATE") ;;
 esac
@@ -233,21 +274,29 @@ case "$OUTPUT" in
 esac
 
 # ---- ffmpeg ------------------------------------------------------------------
+# A second output keeps a 64x36 grey thumbnail of the encoded picture, every
+# 10 s, for the watchdog frozen or black check. The bottom 6% (the scrolling
+# news ticker, which keeps moving on the compositor when the page hangs) is
+# cut off first.
+THUMB="$RUN_DIR/thumb.pgm"
+FILTER="[0:v]split=2[e][m];[e]$VF_MAIN[v];[m]fps=1/10,crop=iw:trunc(ih*0.94/2)*2:0:0,scale=64:36,format=gray[t]"
 FIFO="$RUN_DIR/progress.fifo"
 rm -f "$FIFO"; mkfifo -m 0600 "$FIFO"
 PROGRESS_LOG="${BENCH_DIR:+$BENCH_DIR/progress-$N.csv}" "$BIN/progress-sink" "$RUN_DIR/progress" "$TAG" < "$FIFO" &
 SINK_PID=$!; PIDS+=("$SINK_PID")
 ffmpeg -hide_banner -nostdin -nostats -loglevel warning -y -progress pipe:1 -stats_period 5 \
   -f x11grab -draw_mouse 0 -thread_queue_size 1024 -framerate "$FRAMERATE" \
-  -video_size "${WIDTH}x${HEIGHT}" -i "$DISPLAY" \
+  -video_size "${WIDTH}x${HEIGHT}" -i "$DISPLAY+0,0" \
   "${AUDIO_IN[@]}" \
-  -map 0:v:0 -map 1:a:0 \
+  -filter_complex "$FILTER" \
+  -map "[v]" -map 1:a:0 \
   "${VENC[@]}" \
   "${AUDIO_FILTER[@]}" -c:a aac -b:a 128k -ar 44100 -ac 2 \
-  "${OUT[@]}" > "$FIFO" &
+  "${OUT[@]}" \
+  -map "[t]" -fps_mode passthrough -c:v pgm -f image2 -update 1 -atomic_writing 1 "$THUMB" > "$FIFO" &
 FFMPEG_PID=$!; PIDS+=("$FFMPEG_PID")
 unset OUT
-log "running: Xvfb $XVFB_PID, Chrome $CHROME_PID, ffmpeg $FFMPEG_PID${GUARD_PID:+, guard $GUARD_PID}"
+log "running: Xvfb $XVFB_PID, Chrome $CHROME_PID, monitor $GUARD_PID, ffmpeg $FFMPEG_PID"
 
 # ---- supervise ---------------------------------------------------------------
 wait -n -p DONE "${PIDS[@]}"
@@ -257,7 +306,7 @@ case "${DONE:-}" in
   "$CHROME_PID") WHAT=Chrome ;;
   "$FFMPEG_PID") WHAT=ffmpeg ;;
   "$SINK_PID")   WHAT=progress-sink ;;
-  "$GUARD_PID")  WHAT=cdp-guard ;;
+  "$GUARD_PID")  WHAT="the page monitor (cdp-guard)" ;;
   *)             WHAT="process ${DONE:-unknown}" ;;
 esac
 log "$WHAT exited (status $RC); stopping the rest so the stream restarts cleanly"

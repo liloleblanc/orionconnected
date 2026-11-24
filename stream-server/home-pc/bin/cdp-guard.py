@@ -1,14 +1,19 @@
 #!/usr/bin/python3
-"""Network guard and probe for one board stream, over the Chrome DevTools protocol.
+"""Page monitor and network guard for one board stream, over the Chrome DevTools protocol.
 
 Chrome starts on about:blank with --remote-debugging-port (127.0.0.1 only).
 This script then:
-  1. attaches to every target (pages, frames, workers) before it runs, and
-     in each of them blocks every proxy path that is not on a short allow list;
-  2. proves the block works with a self-test request, and stops otherwise;
-  3. loads the board and marks it loaded;
-  4. keeps watching: counts what it blocked, stops the stream (exit 4) when a
-     billed request gets a response, and records the Chrome GPU status and the
+  1. attaches to every target (pages, frames, workers) before it runs; with
+     --block (test mode) it blocks, in each of them, every proxy path that is
+     not on a short allow list, and proves the block with a self-test request;
+  2. loads the board and marks it loaded;
+  3. keeps watching, and exits (which restarts the stream) when the page
+     crashes or goes away, or when it misses two heartbeats in a row: a
+     Runtime.evaluate every 10 s that must answer within 5 s. A page whose
+     main thread hangs keeps its CSS ticker scrolling on the compositor, so
+     the picture alone does not show it;
+  4. with --block, stops the stream (exit 4) when a billed request gets a
+     response; with --out-dir, records the Chrome GPU status and the
      requestAnimationFrame timing of the top frame for the bench.
 The patterns are host agnostic, so no proxy host name is written here.
 A request to an allowed path costs one extra round trip through this script.
@@ -35,6 +40,9 @@ ALLOW_PATHS = [
     "api/media-assignments", "api/dry-dock", "api/screens/", "accor/",
 ]
 SELFTEST = "__fids_guard_selftest__"
+HEARTBEAT_EVERY = 10.0
+HEARTBEAT_TIMEOUT = 5.0
+HEARTBEAT_MISSES = 2
 PATTERNS = ["*.workers.dev/*", "*" + SELFTEST + "*"]
 PROXY_RE = re.compile(r"^https?://[^/?#]+\.workers\.dev/")
 
@@ -137,6 +145,7 @@ class Guard:
         self.selftest_hits = 0
         self.selftest = "not run"
         self.page = None
+        self.page_target = None
         self.loaded = False
         self.page_gone = False
         self.kinds = {}
@@ -198,6 +207,11 @@ class Guard:
             log(self.tag, "a Chrome target crashed (%s)" % self.kinds.get(sid, "?"))
             if sid == self.page:
                 self.page_gone = True
+        elif method == "Target.targetCrashed":
+            log(self.tag, "a Chrome target crashed (%s, status %s)" % (
+                p.get("targetId", "?")[:8], p.get("status", "?")))
+            if p.get("targetId") == self.page_target:
+                self.page_gone = True
 
     def attach(self, p):
         sid = p["sessionId"]
@@ -211,8 +225,12 @@ class Guard:
             send("Target.setAutoAttach", {"autoAttach": True, "waitForDebuggerOnStart": True, "flatten": True}, sid)
         if kind == "page" and self.page is None:
             self.page = sid
+            self.page_target = p.get("targetInfo", {}).get("targetId")
             send("Page.enable", {}, sid)
-            send("Page.addScriptToEvaluateOnNewDocument", {"source": RAF_PROBE}, sid)
+            send("Inspector.enable", {}, sid)
+            if self.args.out_dir:
+                # Only when measuring: the probe keeps every frame interval until read.
+                send("Page.addScriptToEvaluateOnNewDocument", {"source": RAF_PROBE}, sid)
         send("Runtime.runIfWaitingForDebugger", {}, sid)
 
     def counts(self):
@@ -265,7 +283,7 @@ def main():
     ap.add_argument("--port", type=int, required=True)
     ap.add_argument("--url", required=True)
     ap.add_argument("--tag", default="stream")
-    ap.add_argument("--block", action="store_true", help="block the billed proxy paths")
+    ap.add_argument("--block", action="store_true", help="block the billed proxy paths (test mode)")
     ap.add_argument("--loaded-file")
     ap.add_argument("--out-dir", help="write guard-N.json, gpu-N.json and raf-N.jsonl here")
     ap.add_argument("--suffix", default="")
@@ -282,6 +300,7 @@ def main():
     g = Guard(cdp, args)
     cdp.on_event = g.on_event
     cdp.on_error = g.on_error
+    cdp.call("Target.setDiscoverTargets", {"discover": True})
     cdp.call("Target.setAutoAttach", {"autoAttach": True, "waitForDebuggerOnStart": True, "flatten": True})
     end = time.monotonic() + 15
     while g.page is None and time.monotonic() < end:
@@ -321,6 +340,8 @@ def main():
     log(g.tag, "board %s" % ("loaded" if g.loaded else "still loading after 30 s; carrying on"))
 
     started = time.monotonic()
+    next_beat = started + HEARTBEAT_EVERY
+    misses = 0
     next_raf = started + 10
     next_env = started + 5
     next_gpu = started + 15
@@ -334,8 +355,27 @@ def main():
             return 4
         if g.page_gone:
             write_json(counts_path, g.counts())
-            log(g.tag, "the board page went away; stopping")
+            log(g.tag, "the board page crashed or went away; stopping")
             return 1
+        if now >= next_beat:
+            try:
+                cdp.call("Runtime.evaluate", {"expression": "1", "returnByValue": True}, g.page,
+                         timeout=HEARTBEAT_TIMEOUT)
+                if misses:
+                    log(g.tag, "the board page answers again after %d missed heartbeat(s)" % misses)
+                misses = 0
+            except TimeoutError:
+                misses += 1
+                log(g.tag, "the board page did not answer within %d s (%d of %d)" % (
+                    HEARTBEAT_TIMEOUT, misses, HEARTBEAT_MISSES))
+                if misses >= HEARTBEAT_MISSES:
+                    write_json(counts_path, g.counts())
+                    log(g.tag, "the board page is hung; stopping")
+                    return 5
+            except CdpError:
+                # The page is between two documents (a navigation); it answered.
+                misses = 0
+            next_beat = time.monotonic() + HEARTBEAT_EVERY
         if now >= next_env:
             next_env = float("inf")
             try:
@@ -361,7 +401,7 @@ def main():
             next_raf = now + 10
             try:
                 r = cdp.call("Runtime.evaluate", {"expression": "window.__fidsRaf ? window.__fidsRaf.take() : null",
-                                                  "returnByValue": True}, g.page, timeout=10)
+                                                  "returnByValue": True}, g.page, timeout=HEARTBEAT_TIMEOUT)
                 iv = r.get("result", {}).get("value")
                 with open(raf_path, "a") as fh:
                     fh.write(json.dumps({"t": int(time.time()), "iv": iv if iv is not None else []}) + "\n")
@@ -371,7 +411,8 @@ def main():
             write_json(counts_path, g.counts())
         if now >= next_log:
             next_log = now + 600
-            log(g.tag, "blocked %d so far %s" % (sum(g.blocked.values()), json.dumps(g.blocked, sort_keys=True)))
+            if args.block:
+                log(g.tag, "blocked %d so far %s" % (sum(g.blocked.values()), json.dumps(g.blocked, sort_keys=True)))
         if args.exit_after and now - started >= args.exit_after:
             write_json(counts_path, g.counts())
             return 0

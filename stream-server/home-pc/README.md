@@ -14,20 +14,35 @@ depends on the monitor, the KVM or the desktop session.
 
 ```
 Xvfb :91 ── Chrome (kiosk, board) ── ffmpeg x11grab ─▶ nginx relay 127.0.0.1:1936 ─▶ YouTube
-             (GPU: ANGLE on Vulkan)    (1080p30, CBR)      (fids-home-rtmp@1)          (push)
+  │          (GPU: ANGLE on Vulkan)    (1080p30, CBR)      (fids-home-rtmp@1)          (push)
+  └─ page monitor (cdp-guard.py, DevTools on 127.0.0.1:9291)
 ```
 
-* **The key never sits in a command line.** ffmpeg sends to the local relay;
-  only the relay config (root only, in `/run`) carries the YouTube address.
+* **The key never sits in a command line or a log line.** ffmpeg sends to the
+  local relay; only the relay config (root only, in `/run`) carries the key,
+  as a separate `playPath` parameter, so the push address that nginx prints
+  when the YouTube host does not resolve holds no key. The relay unit also
+  drops any log line that names a push target or holds a key-shaped token
+  (`LogFilterPatterns`, which keeps it out of the journal and of syslog).
   A YouTube drop is retried by the relay while Chrome and ffmpeg keep running.
 * **One process down means a clean restart.** `stream-run` starts Xvfb,
-  Chrome and ffmpeg and waits on all three; when any of them ends it stops the
-  others and systemd starts the stream again. A dead Chrome cannot leave
-  ffmpeg sending a frozen screen.
+  Chrome, the page monitor and ffmpeg and waits on all of them; when any of
+  them ends it stops the others and systemd starts the stream again. A dead
+  Chrome cannot leave ffmpeg sending a frozen screen.
+* **A hung or crashed page is caught in seconds.** The page monitor asks the
+  board page a trivial question every 10 s; two answers missing in a row
+  (5 s each), or a crashed page, end the monitor and so restart the stream.
+  The picture alone cannot show a hung page: the news ticker keeps scrolling
+  on the compositor thread while the board clock and rotation stand still.
 * **A watchdog** (`fids-home-watchdog.timer`, every 30 s) restarts a stream
-  whose encoder stalls or whose picture stays frozen or black for 3 minutes,
-  restarts a relay with no connection out to YouTube for 2 minutes, and starts
-  an enabled stream that is down. At most 4 of its restarts per stream per hour.
+  whose encoder stalls or whose picture stays frozen or black for 3 minutes
+  (from a 64x36 thumbnail ffmpeg writes every 10 s, the ticker band cut off),
+  restarts a relay with no connection out to YouTube for 2 minutes, starts
+  an enabled stream that is down, and resets the systemd restart delay of a
+  stream that has been healthy for 10 minutes after crashes (otherwise each
+  crash in a row waits longer, up to 2 minutes). At most 4 of its restarts
+  per stream per hour. It also logs `CRIT gpu` once an hour while `nvidia-smi`
+  fails (see Updates).
 
 ## Files
 
@@ -35,15 +50,27 @@ Xvfb :91 ── Chrome (kiosk, board) ── ffmpeg x11grab ─▶ nginx relay 1
 |---|---|
 | `/opt/fids-home/bin/` | `bin/` (stream-run, rtmp-render, set-stream-key, fids-watchdog, fids-diag, wait-desktop, progress-sink, cdp-guard.py) |
 | `/opt/fids-home/bench/`, `/opt/fids-home/xorg/` | `bench/`, `xorg/` |
+| `/opt/fids-home/config/` | `config/` (relay template, test override, shipped env files) |
 | `/etc/fids-home/stream-N.env` | `config/stream-N.env` (installed once, then local) |
 | `/etc/fids-home/stream-N.override.env` | optional; read after the env file, so its lines win |
 | `/etc/credstore/fids-stream-N.key` | written only by `set-stream-key` (root, 0600) |
 | `/var/lib/fids-home/stream-N/` | Chrome profile (Local Storage keeps the Customize designs) |
-| `/run/fids-home/` | progress files, the rendered relay configs, watchdog state |
+| `/run/fids-home/stream-N/` | progress file, `thumb.pgm`, the Xvfb cookie (`Xauthority`), Chrome temp files; removed at stop |
+| `/run/fids-home/rtmp-N/` | the rendered relay config (root only, 0700) |
+| `/run/fids-home/watchdog/`, `/run/fids-home/status/` | watchdog state; key fingerprints of the relays that push |
 | `/etc/systemd/system/fids-home-*` | `systemd/` |
+| `/etc/systemd/journald.conf.d/60-fids-home.conf` | `config/journald-60-fids-home.conf`: persistent journal, at most 2 GB, kept 2 months (system wide) |
+| `/etc/apport/report-ignore/fids-home` | written by `install.sh`: no Ubuntu crash reports for nginx and ffmpeg |
+| `/usr/local/sbin/set-stream-key`, `/usr/local/bin/fids-diag` | symlinks into `/opt/fids-home/bin/` |
 
 Chrome runs as the system user `fidsstream`, never as root and never as the
-desktop user.
+desktop user. The relay workers run as `nobody`. Each virtual screen is
+8 pixels wider and taller than the 1920x1080 capture: Chrome keeps a window
+that fills a whole screen 1 pixel short (a black right column and bottom row),
+and the spare strip is where the pointer is parked, off the board, so no hover
+style can trigger. Only `fidsstream` (and root, with the cookie) can connect
+to the screens. To look at one by hand:
+`sudo XAUTHORITY=/run/fids-home/stream-1/Xauthority ffmpeg -f x11grab -video_size 1920x1080 -i :91 -frames:v 1 /tmp/s1.png`.
 
 ## Install
 
@@ -51,13 +78,16 @@ desktop user.
 sudo bash install.sh
 ```
 
-It installs ffmpeg, Xvfb, nginx with the RTMP module and Google Chrome stable
-(from the signed Google apt repository), creates the user and directories,
+It installs ffmpeg, Xvfb, xauth, nginx with the RTMP module, python3-websocket,
+vulkan-tools, mesa-utils, sysstat, two font packages and Google Chrome stable
+(from the signed Google apt repository; only the key with the expected
+fingerprint goes into the keyring), creates the user and directories,
 installs the units, and enables only the watchdog timer. It masks the stock
 `nginx.service` first, because the Ubuntu package would otherwise start a web
-server on port 80. It never touches Xorg, the network, automatic updates,
-stream keys or the cloud boxes, and starts no stream. Run it again after
-pulling changes. `CHROME_POLICY=1 sudo bash install.sh` also installs a Chrome
+server on port 80. System-wide it also adds the journald drop-in (and
+restarts journald) and the apport ignore list from the Files table. It never
+touches Xorg, the network, automatic updates, stream keys or the cloud boxes,
+and starts no stream. Run it again after pulling changes. `CHROME_POLICY=1 sudo bash install.sh` also installs a Chrome
 policy that turns off the translate bar and the default browser prompt (Chrome
 then shows "Managed by your organization" on this PC).
 
@@ -73,14 +103,18 @@ The override loads the board with `mode=demo`, blocks the billed proxy paths
 inside Chrome (`cdp-guard.py`, below) and keeps the video on the local relay.
 Delete the override file to go back to the normal settings.
 
-### The network guard (`NET_GUARD=1`)
+### The page monitor and the network guard (`NET_GUARD=1`)
 
-Chrome starts on `about:blank` with DevTools on 127.0.0.1. `cdp-guard.py`
-attaches to every page, frame and worker before it runs and pauses every
-request to the flight proxy (`*.workers.dev`). Only board settings, media lists
-and hotel offers are let through (`ALLOW_PATHS`); every other proxy path is
-answered with `BlockedByClient`. A self-test request must be blocked before the
-board loads, and a proxy response off the allow list stops the stream (exit 4).
+Chrome always starts on `about:blank` with DevTools on 127.0.0.1 (port
+9290+N; any local process on the PC can reach it, as with any DevTools port).
+`cdp-guard.py` attaches to every page, frame and worker before it runs, loads
+the board and then watches the page (heartbeat and crash, above).
+
+With `NET_GUARD=1` (test mode) it also pauses every request to the flight
+proxy (`*.workers.dev`). Only board settings, media lists and hotel offers are
+let through (`ALLOW_PATHS`); every other proxy path is answered with
+`BlockedByClient`. A self-test request must be blocked before the board loads,
+and a proxy response off the allow list stops the stream (exit 4).
 Measured: the demo boards do ask for `flights`, `yqm`, `acinfo`, `fararr`,
 `opinfo`, `proxy/flights` and `ai/citybg`, so demo mode alone is not free.
 
@@ -114,8 +148,20 @@ digits and dashes, or when the other stream already uses it. Without a key, a
 stream with `OUTPUT=youtube` stops at once with
 `FATAL[stream-N]: no YouTube stream key for stream N on this PC` and exit
 status 78, which systemd does not retry. `fids-diag` shows only the first
-8 hex characters of the key sha256, and counts the journal lines that contain
-the key (it must say 0).
+8 hex characters of the key sha256, and counts the log lines that contain the
+key in the journal of every fids unit (all kept boots) and in
+`/var/log/syslog*` (both must say 0). Before the relay writes a push, the
+ingest host must resolve (up to 60 s); during an internet or DNS outage the
+relay exits with a message that holds no key and systemd tries again every
+few seconds, and the stream waits for the relay and comes back with it.
+
+The key file is only as safe as the root account and the desktop session:
+with automatic login, no screen lock, password-free sudo and SSH password
+logins on, anyone at the keyboard or with the account password on the LAN can
+read it. Before a real key goes in, consider (a decision for whoever runs the
+PC, not done by `install.sh`): `PasswordAuthentication no` in a file under
+`/etc/ssh/sshd_config.d/` (key logins keep working), removing the
+password-free sudo rule once setup is done, and `ufw` limited to the LAN.
 
 No YouTube or Google sign-in is needed on this PC. YouTube Studio is used from
 any signed-in device to copy keys, to create an unlisted test broadcast on a
@@ -125,11 +171,15 @@ new key, to turn Auto-stop off, and to watch stream health.
 
 1. **Test broadcast on a new key.** In Studio create a new stream key and an
    unlisted broadcast on it. On the PC, keep the test override but replace
-   `OUTPUT=local` with `OUTPUT=youtube`, run `sudo set-stream-key 1` with the
-   test key, then `sudo systemctl start fids-home-stream@1` (start, not
-   enable). Watch Studio stream health for a day; `fids-diag` must show push UP
-   and a leak count of 0. End with
-   `sudo systemctl stop fids-home-stream@1 fids-home-rtmp@1 && sudo set-stream-key 1 --clear`.
+   `OUTPUT=local` with `OUTPUT=youtube`
+   (`sudo sed -i 's/^OUTPUT=local$/OUTPUT=youtube/' /etc/fids-home/stream-1.override.env`),
+   run `sudo set-stream-key 1` and paste the test key twice, then
+   `sudo systemctl start fids-home-stream@1` (start, not enable). The test
+   broadcast then shows the demo board with the billed paths blocked. Watch
+   Studio stream health for a day; `fids-diag` must show push UP and leak
+   counts of 0. End with
+   `sudo systemctl stop fids-home-stream@1 fids-home-rtmp@1 && sudo set-stream-key 1 --clear`
+   (`--clear` leaves a stopped relay stopped).
 2. **Before the move:** set Auto-stop off on the public broadcast, so the short
    gap does not end it.
 3. **Move stream 1.** Delete `/etc/fids-home/stream-1.override.env`. Run
@@ -154,7 +204,11 @@ key is then visible in the process list and can appear in ffmpeg error lines.
 It needs the key as a unit credential:
 
 ```bash
-sudo systemctl edit fids-home-stream@1   # add:  [Service]  LoadCredential=fids-stream-1.key:/etc/credstore/fids-stream-1.key
+sudo systemctl edit fids-home-stream@1
+# add:
+#   [Service]
+#   LoadCredential=fids-stream-1.key:/etc/credstore/fids-stream-1.key
+#   LogFilterPatterns=~(live2/|[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4})
 ```
 
 ## Settings (`/etc/fids-home/stream-N.env`)
@@ -229,36 +283,83 @@ local files, and scores minutes 2 to 10 (`analyze.py`):
 * Stream 2 tours from its saved resume point, so it shows different airports in
   different runs; stream 1 (Moncton) is the like for like comparison.
 
+### Recovery and a soak on the real units (both streams, test mode, local relays)
+
+| Event | Recovery | Before the page monitor and the delay reset |
+|---|---|---|
+| Endless JS loop in the page (Departures board, ticker scrolling) | caught after 30 s, encoding again after 48 s | never caught (302 s watched) |
+| All renderers of a stream stopped (SIGSTOP) | caught after 26 s, encoding again after 44 s | 262 s |
+| Renderers killed | caught after 0.8 s, encoding again after 24 s | 18 s |
+| Chrome killed (second crash in a row) | encoding again after 22 s | 17 to 30 s, then up to 2 min per crash |
+| Crash restart delay after crashes | back to 5 s after 10 healthy minutes | grows to 2 min and stays |
+| DNS outage | relay retries every 8 s; stream encoding 8 s after DNS is back | stream down for up to an hour |
+
+10 minutes, demo boards, both at once, scored on minutes 2 to 10: speed at
+least 0.998 in every sample, 30.0 fps, 1 duplicated or dropped frame per
+stream, 8000 kbps in every 10 s window (7963 to 8037), audio gaps at most
+24 ms, no restarts, guard self-test passed and nothing leaked. Whole PC 24.5%
+CPU (37% peak), streams 1.95 + 1.90 cores, at most 1.3 + 1.2 GB, CPU 61 C,
+GPU 12% and NVENC 32%, 48 C, 40 W, no throttling. G4 failed on both streams:
+stream 2 had 5 page stalls over 250 ms (board and airport changes, as above);
+stream 1 had 11 of 1.1 to 2.5 s, about every 45 s, while the Moncton board kept
+asking for OpenSky positions (blocked in test mode). Run side by side on the
+same Moncton demo board for 6 minutes, the scripts before and after these
+changes both stayed under 100 ms with no stall over 250 ms (2.03 and 1.96
+cores), so the stalls come from the page, not from the PC.
+
+### Seen on the streams, from the pages (the cloud boxes show the same)
+
+* A board change shows a blank navy screen for 0.33 to 0.63 s.
+* An airport change on the tour stalls the page for up to 0.9 s.
+* The small Login pill shows bottom left (demo gate boards also show a white
+  strip).
+* The tour (`langs=en,es`) showed French as the second language at IAH and MSP.
+
 ## KVM
 
 `xorg/20-fids-kvm.conf` keeps the desktop X screen configured when the KVM
 switches this PC away (a DisplayPort hot-unplug): `ConnectedMonitor` and
-`CustomEDID` hold the monitor output, and `LimitFrameRateWhenHeadless false`
+`CustomEDID` hold the monitor outputs, and `LimitFrameRateWhenHeadless false`
 stops the 1 frame per second limit with no active display. The streams do not
-use the desktop screen; this protects the desktop only.
+use the desktop screen (they draw on their own virtual screens and the GPU
+directly); this protects the desktop only. It is not installed.
+
+**First do the physical test:** with both streams running, switch the KVM to
+the other computer for 60 s and back, then check `sudo fids-diag` (push UP,
+no restarts) and the desktop arrangement. Some KVMs emulate the monitor EDID
+themselves (see the KVM manual); if a switch does not unplug DisplayPort at
+all, this config is not needed.
 
 ```bash
-sudo EDID_MD5=<md5 of the monitor EDID> /opt/fids-home/xorg/apply-kvm-xorg.sh --apply
+sudo MONITORS="DFP-4=/sys/class/drm/card1-DP-2/edid" EDID_MD5=<md5 of that EDID> \
+  /opt/fids-home/xorg/apply-kvm-xorg.sh --apply
 journalctl -u fids-xorg-verify          # the result, within 3 minutes
 sudo /opt/fids-home/xorg/apply-kvm-xorg.sh --verify
 sudo /opt/fids-home/xorg/apply-kvm-xorg.sh --rollback
 ```
 
-`--apply` backs up, copies the live EDID to `/etc/X11/edid/dfp-4.bin`, installs
-the config, restarts GDM (the desktop logs out and auto-logs in again) and
-checks for 180 s: an x11 session on seat0, Xorg on the GPU, the three options in
-the Xorg log with no new `(EE)` lines, and the monitor output connected. On any
-failure it rolls back by itself. Rollback by hand:
+`MONITORS` must list **every** DisplayPort output in use, as
+`NVIDIA_NAME=EDID_SOURCE` pairs separated by spaces (for two monitors, for
+example `DFP-1=/sys/class/drm/card1-DP-1/edid DFP-4=/sys/class/drm/card1-DP-2/edid`,
+and `XRANDR_OUTPUTS="DP-1 DP-2"`): `ConnectedMonitor` overrides detection, so
+an output left out stays dark. `--install` refuses when more outputs are
+connected than listed; run it again with the new list after cabling another
+monitor. `--apply` backs up, copies each EDID to `/etc/X11/edid/`, writes the
+config, restarts GDM (the desktop logs out and auto-logs in again) and checks
+for 180 s: an x11 session on seat0, Xorg on the GPU, the three options in the
+Xorg log with no new `(EE)` lines, and the outputs connected. On any failure
+it rolls back by itself. `--rollback` restarts GDM only when it had something
+to undo. Rollback by hand:
 `sudo rm -f /etc/X11/xorg.conf.d/20-fids-kvm.conf && sudo systemctl restart gdm`.
-DFP-4 is the DisplayPort socket in use; a monitor on the other socket needs its
-own EDID and a `DFP-1` entry. The EDID file is never committed (it carries the
-monitor serial number).
+EDID files are never committed (they carry the monitor serial number).
 
 ### Network
 
-When a USB network adapter sits behind the KVM, the default route must not
-use it, or a switch-away cuts the upload. Either turn its connection off, or
-keep it as a non-default route:
+When a USB network adapter sits behind the KVM (on the KVM USB hub), the
+default route must not use it, or every switch-away removes the adapter and
+both YouTube pushes drop and reconnect through the onboard port. Either plug
+the adapter into the PC itself, turn its connection off, or keep it as a
+non-default route:
 
 ```bash
 nmcli connection modify <usb-connection> connection.autoconnect no && nmcli connection down <usb-connection>
@@ -273,7 +374,15 @@ nmcli connection modify <usb-connection> ipv4.never-default yes ipv6.never-defau
 * **Chrome** is not updated by unattended-upgrades. Monthly:
   `sudo apt-get install --only-upgrade google-chrome-stable`, then restart
   stream 1, wait 2 minutes, and restart stream 2.
-* **NVIDIA driver security updates** replace the user-space libraries before
-  the next reboot. Until then the NVENC self-test fails and that stream uses
-  x264, and Chrome may fall back to software drawing; the stream stays up.
-  Reboot soon after such an update.
+* **NVIDIA driver security updates** are installed by unattended-upgrades
+  (the driver is published in the `-security` pocket; automatic reboot is
+  off). They replace the user-space libraries while the old kernel module
+  stays loaded, so `nvidia-smi` fails until a reboot. Running streams keep
+  working; a stream that restarts in that window fails the NVENC self-test
+  and uses x264, and Chrome may draw in software. The watchdog then logs
+  `CRIT gpu` once an hour and `fids-diag` says so. Reboot soon after.
+  Holding the driver back instead is a trade-off (it delays driver security
+  fixes): the kernel module packages (`linux-modules-nvidia-*`) require the
+  exact driver version, so a hold must cover the kernel packages too, or a
+  kernel update would boot without the NVIDIA module. Either way, update the
+  driver and kernel by hand with a planned reboot.

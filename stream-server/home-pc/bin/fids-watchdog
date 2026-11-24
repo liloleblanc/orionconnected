@@ -4,16 +4,23 @@
 #  1. an enabled stream that is not running is started, unless it stopped
 #     itself with status 78 (missing key or setting);
 #  2. a stream that has run for 2 minutes or more is restarted when its encoder
-#     has stalled, or when its picture has been frozen or black for 3 minutes;
+#     has stalled, or when its picture has been frozen or black for 3 minutes
+#     (a hung or crashed page is caught sooner, by the page monitor in the
+#     stream itself);
 #  3. with OUTPUT=youtube, the relay is restarted when it has had no connection
-#     out for 4 checks in a row, which also restarts its stream.
+#     out for 4 checks in a row, which also restarts its stream;
+#  4. a stream healthy for 10 minutes after crash restarts gets its systemd
+#     restart counter reset, so the next crash waits 5 s again, not up to 2 min.
 # At most 4 watchdog restarts per stream per hour; after that it logs CRIT once
 # and leaves crash restarts to systemd until the hour has passed.
+# The picture comes from the thumbnail ffmpeg writes every 10 s (thumb.pgm in
+# the stream runtime directory), so this script never connects to the screens.
 set -uo pipefail
 STATE=/run/fids-home/watchdog
 install -d -m 0755 "$STATE"
 NOW=$(date +%s)
 LIMIT=4
+RESET_AFTER="${FIDS_WD_RESET_AFTER:-600}"
 
 envval() {   # envval N KEY: the effective value, override file last
   local v="" f l
@@ -39,6 +46,17 @@ restart_allowed() {
 }
 note_restart() { echo "$NOW" >> "$STATE/restarts-$1"; }
 reset_health() { rm -f "$STATE/thumbs-$1" "$STATE/frame-$1" "$STATE/pushmiss-$1"; }
+
+# A driver update installed by unattended-upgrades replaces the NVIDIA
+# libraries while the old kernel module stays loaded; nvidia-smi then fails.
+# Running streams keep working; the next start falls back to x264 and software
+# drawing. Logged once an hour until the PC is rebooted.
+if ! nvidia-smi -L >/dev/null 2>&1; then
+  if [ ! -e "$STATE/crit-gpu" ] || [ $((NOW - $(stat -c %Y "$STATE/crit-gpu"))) -ge 3600 ]; then
+    echo "CRIT gpu: nvidia-smi fails (a driver update waiting for a reboot?); restarted streams use x264 and software drawing until the PC is rebooted"
+    touch "$STATE/crit-gpu"
+  fi
+fi
 
 STATUS=""
 for N in 1 2; do
@@ -90,17 +108,14 @@ for N in 1 2; do
     fi
   fi
 
-  # 2. picture: a 64x36 grey thumbnail every check, the last 7 kept (3 minutes)
+  # 2. picture: the 64x36 grey thumbnail (ticker band cut off), the last 7 kept (3 minutes)
   if [ -z "$REASON" ]; then
-    D="$(envval "$N" DISPLAY_NUM)"; D="${D:-$((90 + N))}"
-    W="$(envval "$N" WIDTH)"; W="${W:-1920}"
-    H="$(envval "$N" HEIGHT)"; H="${H:-1080}"
-    T="$STATE/thumb-$N.raw"; L="$STATE/thumbs-$N"
-    if runuser -u fidsstream -- timeout 15 ffmpeg -hide_banner -nostdin -loglevel error \
-         -f x11grab -draw_mouse 0 -video_size "${W}x${H}" -i ":$D" -frames:v 1 \
-         -vf scale=64:36,format=gray -f rawvideo - > "$T" 2>/dev/null && [ -s "$T" ]; then
-      SUM="$(md5sum < "$T" | cut -c1-16)"
-      LUMA="$(od -An -v -tu1 "$T" | awk '{for (i = 1; i <= NF; i++) { s += $i; n++ }} END { print (n ? int(s / n) : 0) }')"
+    T="/run/fids-home/stream-$N/thumb.pgm"; L="$STATE/thumbs-$N"
+    if [ -s "$T" ] && [ $((NOW - $(stat -c %Y "$T"))) -le 30 ]; then
+      PX="$STATE/thumb-$N.raw"
+      tail -c 2304 "$T" > "$PX"
+      SUM="$(md5sum < "$PX" | cut -c1-16)"
+      LUMA="$(od -An -v -tu1 "$PX" | awk '{for (i = 1; i <= NF; i++) { s += $i; n++ }} END { print (n ? int(s / n) : 0) }')"
       echo "$NOW $SUM $LUMA" >> "$L"
       tail -n 7 "$L" > "$L.tmp" && mv -f "$L.tmp" "$L"
       if [ "$(wc -l < "$L")" -ge 7 ]; then
@@ -146,6 +161,13 @@ for N in 1 2; do
         systemctl restart --no-block "$R"
       fi
     fi
+  fi
+
+  # 4. crash restarts: back to the short delay after 10 healthy minutes
+  NR="$(systemctl show -p NRestarts --value "$U")"
+  if [ "$AGE" -ge "$RESET_AFTER" ] && [ "${NR:-0}" -gt 0 ]; then
+    echo "stream-$N: healthy for $((AGE / 60)) min after $NR crash restart(s); restart delay back to 5 s"
+    systemctl reset-failed "$U"
   fi
 done
 

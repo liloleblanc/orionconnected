@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # One-screen status of the two home streams (about 15 lines).
 # A stream key is never printed: only the first 8 hex characters of its sha256,
-# and a count of journal lines that contain it (the leak count, which must be 0).
+# and a count of log lines that contain it (the leak count, which must be 0):
+# the journal of every fids unit over all kept boots, and /var/log/syslog*.
 # usage: sudo fids-diag
 set -uo pipefail
 [ "$(id -u)" -eq 0 ] || exec sudo -- "$0" "$@"
@@ -34,7 +35,7 @@ CORES=$(nproc); LOAD=$(cut -d' ' -f1-3 /proc/loadavg)
 MEM=$(free -m | awk '/^Mem:/ { printf "%d/%dMB", $3, $2 }')
 GPU=$(nvidia-smi --query-gpu=temperature.gpu,utilization.gpu,utilization.encoder,encoder.stats.sessionCount \
       --format=csv,noheader,nounits 2>/dev/null | awk -F', *' '{ printf "GPU %sC util %s%% enc %s%% nvenc %s", $1, $2, $3, $4 }')
-echo "CORES $CORES  LOAD $LOAD  MEM $MEM  CPU $(cpu_pct) $(hwmon coretemp)C  ${GPU:-GPU ?}"
+echo "CORES $CORES  LOAD $LOAD  MEM $MEM  CPU $(cpu_pct) $(hwmon coretemp)C  ${GPU:-GPU ? (nvidia-smi failed: reboot after a driver update?)}"
 
 DEV=$(ip route show default | awk '{ for (i = 1; i < NF; i++) if ($i == "dev") { print $(i + 1); exit } }')
 NET="route ${DEV:-none}"
@@ -102,8 +103,10 @@ for N in 1 2; do
   KF="/etc/credstore/fids-stream-$N.key"
   if [ -s "$KF" ]; then
     FP="$(sha256sum < "$KF" | cut -c1-8)"
-    LEAK="$(journalctl -b -o cat --no-pager 2>/dev/null | grep -c -F -f <(grep -v '^$' "$KF"))"
-    echo "   key $FP  leaks in journal: $LEAK  cache $(du -sk "/var/lib/fids-home/stream-$N/chrome-profile/Default/Cache" 2>/dev/null | cut -f1)k"
+    LJ="$(journalctl -u 'fids-*' -o cat --no-pager 2>/dev/null | grep -c -F -f <(grep -v '^$' "$KF"))"
+    LS="$(for f in /var/log/syslog*; do case "$f" in *.gz) zcat -- "$f" ;; *) cat -- "$f" ;; esac; done 2>/dev/null \
+      | grep -c -F -f <(grep -v '^$' "$KF"))"
+    echo "   key $FP  leaks: journal $LJ syslog $LS  cache $(du -sk "/var/lib/fids-home/stream-$N/chrome-profile/Default/Cache" 2>/dev/null | cut -f1)k"
   else
     echo "   key none  cache $(du -sk "/var/lib/fids-home/stream-$N/chrome-profile/Default/Cache" 2>/dev/null | cut -f1)k"
   fi

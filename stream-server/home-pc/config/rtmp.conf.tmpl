@@ -1,7 +1,10 @@
-# nginx relay for one home stream. rtmp-render fills in @N@, @PORT@ and @PUSH@
-# and writes the result to /run/fids-home/rtmp-@N@/nginx.conf (root only).
+# nginx relay for one home stream. rtmp-render fills in the stream number, the
+# port and the push line (the placeholders between at signs below; a comment
+# never names one, or the push line would be copied into it too) and writes the
+# result to /run/fids-home/rtmp-N/nginx.conf (root only).
 load_module /usr/lib/nginx/modules/ngx_rtmp_module.so;
-user fidsstream fidsstream;
+# The workers run as nobody, not as the stream user that runs Chrome.
+user nobody nogroup;
 worker_processes 1;
 pid /run/fids-home/rtmp-@N@/nginx.pid;
 error_log stderr warn;

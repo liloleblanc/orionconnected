@@ -3,8 +3,14 @@
 # Runs as root before the relay starts (ExecStartPre of fids-home-rtmp@N).
 #
 # The stream key is read from /etc/credstore with bash builtins only (read,
-# parameter expansion, printf), so it never appears in an argument list, and
-# it is never printed. Only the first 8 hex characters of its sha256 are shown.
+# parameter expansion, printf), so it never appears in an argument list.
+# Only the first 8 hex characters of its sha256 are shown.
+# The key goes in a separate playPath parameter, not in the push address:
+# nginx prints the address when it cannot resolve the host (a DNS outage), so
+# the address must never hold the key. As a second line of defence, the relay
+# unit drops any log line that looks like a push target (LogFilterPatterns).
+# Before a push is written, the ingest host must resolve (up to DNS_WAIT s);
+# otherwise this exits 1 and the unit tries again.
 # The relay pushes to YouTube only when OUTPUT=youtube and a key is saved;
 # otherwise it accepts the local stream and sends it nowhere.
 set -euo pipefail
@@ -18,6 +24,7 @@ STATUS_DIR="/run/fids-home/status"
 PORT="${RTMP_PORT:-$((1935 + N))}"
 PUSH_BASE="${PUSH_BASE:-rtmp://a.rtmp.youtube.com/live2}"
 OUTPUT="${OUTPUT:-youtube}"
+DNS_WAIT="${DNS_WAIT:-60}"
 
 install -d -m 0755 "$STATUS_DIR"
 install -d -m 0700 "$OUT_DIR"
@@ -34,7 +41,17 @@ fi
 
 PUSH=""
 if [ "$OUTPUT" = youtube ] && [ -n "$KEY" ]; then
-  PUSH="push $PUSH_BASE/$KEY;"
+  HOST="${PUSH_BASE#rtmp://}"; HOST="${HOST%%/*}"; HOST="${HOST%%:*}"
+  for i in $(seq 1 "$DNS_WAIT"); do
+    getent ahosts "$HOST" >/dev/null 2>&1 && break
+    if [ "$i" = "$DNS_WAIT" ]; then
+      unset KEY
+      echo "rtmp-render[$N]: $HOST does not resolve after $DNS_WAIT s (internet or DNS down); the relay tries again" >&2
+      exit 1
+    fi
+    sleep 1
+  done
+  PUSH="push $PUSH_BASE playPath=$KEY;"
 fi
 
 CONF="$(<"$TMPL")"

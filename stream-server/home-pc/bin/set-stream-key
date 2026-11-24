@@ -16,7 +16,8 @@ install -d -m 0700 -o root -g root "$STORE"
 
 if [ "${2:-}" = --clear ]; then
   rm -f "$F"
-  systemctl restart "fids-home-rtmp@$N.service" || true
+  # try-restart: a running relay drops its push now; a stopped one stays stopped.
+  systemctl try-restart "fids-home-rtmp@$N.service" || true
   echo "Stream $N key removed."
   exit 0
 fi
@@ -45,15 +46,24 @@ mv -f "$T" "$F"
 unset K K2
 echo "Key for stream $N saved (fingerprint $(sha256sum < "$F" | cut -c1-8))."
 
-OVR_OUT="$(grep -E '^OUTPUT=' "$OVR" 2>/dev/null | tail -1)"
+# The override file is often absent (normal settings); grep then fails, which
+# must not end this script before the relay restart below.
+OVR_OUT=""
+if [ -f "$OVR" ]; then OVR_OUT="$(grep -E '^OUTPUT=' "$OVR" | tail -1 || true)"; fi
 if [ -n "$OVR_OUT" ] && [ "$OVR_OUT" != OUTPUT=youtube ]; then
   echo "Note: $OVR sets $OVR_OUT; stream $N reaches YouTube only after that file is removed."
 fi
-# Restarting the relay also restarts the stream when it is running (Requires=).
-systemctl restart "fids-home-rtmp@$N.service"
+# Restarting the relay also restarts the stream when it is running (PartOf=).
+if ! systemctl restart "fids-home-rtmp@$N.service"; then
+  echo "The relay did not start yet (no internet?); systemd keeps trying. See: journalctl -u fids-home-rtmp@$N -n 20"
+fi
 if systemctl is-enabled --quiet "fids-home-stream@$N.service"; then
   systemctl is-active --quiet "fids-home-stream@$N.service" || systemctl start "fids-home-stream@$N.service"
   echo "Stream $N restarted with the new key."
+elif systemctl is-active --quiet "fids-home-stream@$N.service"; then
+  echo "Stream $N restarted with the new key (started by hand, not enabled)."
 else
-  echo "Start it with: sudo systemctl enable --now fids-home-stream@$N"
+  echo "Relay $N is running with the new key. Start the stream with:"
+  echo "  sudo systemctl start fids-home-stream@$N           (a test, not started at boot)"
+  echo "  sudo systemctl enable --now fids-home-stream@$N    (normal running)"
 fi

@@ -32,10 +32,12 @@ ONGPU=no
 for p in $(awk '$2 ~ /^[0-9]+$/ { print $2 }' "$OUT/pmon.txt"); do
   grep -qx "$p" "/sys/fs/cgroup$CG/cgroup.procs" 2>/dev/null && ONGPU=yes
 done
-runuser -u fidsstream -- timeout 15 ffmpeg -hide_banner -nostdin -loglevel error -f x11grab -draw_mouse 0 -video_size 1920x1080 \
-  -i :93 -frames:v 1 -vf scale=192:108,format=gray -f rawvideo - > "$OUT/frame.raw" 2>/dev/null
-runuser -u fidsstream -- timeout 15 ffmpeg -hide_banner -nostdin -loglevel error -y -f x11grab -draw_mouse 0 -video_size 1920x1080 \
-  -i :93 -frames:v 1 "$OUT/frame.png" 2>/dev/null
+# The screen accepts only its Xauthority cookie (stream-run writes it).
+XA=/run/fids-home/preflight/Xauthority
+runuser -u fidsstream -- env XAUTHORITY="$XA" timeout 15 ffmpeg -hide_banner -nostdin -loglevel error -f x11grab -draw_mouse 0 \
+  -video_size 1920x1080 -i :93 -frames:v 1 -vf scale=192:108,format=gray -f rawvideo - > "$OUT/frame.raw" 2>/dev/null
+runuser -u fidsstream -- env XAUTHORITY="$XA" timeout 15 ffmpeg -hide_banner -nostdin -loglevel error -y -f x11grab -draw_mouse 0 \
+  -video_size 1920x1080 -i :93 -frames:v 1 "$OUT/frame.png" 2>/dev/null
 journalctl -u "$UNIT" --since "$T0" -o cat --no-pager > "$OUT/journal.txt" 2>&1
 systemctl stop "$UNIT"
 
