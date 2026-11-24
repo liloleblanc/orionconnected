@@ -111,6 +111,9 @@ test('the two boards are the addresses the cloud boxes stream', () => {
   assert.ok(miami && miami[1] === two, 'setup.sh MIAMI_URL and stream-2.env differ');
 });
 
+// The YouTube ingest host, searched for as text in the scripts.
+const INGEST_RE = /rtmp\.youtube\.com/;
+
 test('the stream key is read hidden and never handled in an argument list', () => {
   const k = read('bin/set-stream-key');
   assert.match(k, /read -rsp "Paste the YouTube stream key/);
@@ -120,7 +123,7 @@ test('the stream key is read hidden and never handled in an argument list', () =
   assert.doesNotMatch(k, /\$\{?[3-9]/);
 
   // A YouTube ingest address appears only where the key is assembled.
-  const withIngest = ALL.filter(p => !p.endsWith('.md') && fs.readFileSync(p, 'utf8').includes('rtmp.youtube.com'))
+  const withIngest = ALL.filter(p => !p.endsWith('.md') && INGEST_RE.test(fs.readFileSync(p, 'utf8')))
     .map(rel).sort();
   assert.deepEqual(withIngest, ['bin/rtmp-render', 'bin/stream-run']);
   // The key goes in playPath, never in the push address: nginx prints the
@@ -130,7 +133,7 @@ test('the stream key is read hidden and never handled in an argument list', () =
   assert.doesNotMatch(render, /\$PUSH_BASE\/\$\{?KEY/);
   assert.match(render, /getent ahosts "\$HOST"/);
   const run = read('bin/stream-run');
-  const directOnly = run.split('\n').filter(l => l.includes('rtmp.youtube.com'));
+  const directOnly = run.split('\n').filter(l => INGEST_RE.test(l));
   assert.equal(directOnly.length, 1);
   assert.match(directOnly[0], /DKEY/);
   assert.match(run, /^ {2}direct\)\n/m);
