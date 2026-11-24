@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# One-screen status of the two home streams (about 15 lines).
+# A stream key is never printed: only the first 8 hex characters of its sha256,
+# and a count of log lines that contain it (the leak count, which must be 0):
+# the journal of every fids unit over all kept boots, and /var/log/syslog*.
+# usage: sudo fids-diag
+set -uo pipefail
+[ "$(id -u)" -eq 0 ] || exec sudo -- "$0" "$@"
+
+envval() {
+  local v="" f l
+  for f in "/etc/fids-home/stream-$1.env" "/etc/fids-home/stream-$1.override.env"; do
+    [ -f "$f" ] || continue
+    l="$(grep -E "^$2=" "$f" | tail -1)"
+    if [ -n "$l" ]; then v="${l#*=}"; v="${v#\"}"; v="${v%\"}"; fi
+  done
+  printf '%s' "$v"
+}
+hwmon() {
+  local h
+  for h in /sys/class/hwmon/hwmon*; do
+    [ "$(cat "$h/name" 2>/dev/null)" = "$1" ] && { awk '{printf "%d", $1 / 1000}' "$h/temp1_input"; return; }
+  done
+  printf '?'
+}
+cpu_pct() {
+  local a b
+  a=($(awk '/^cpu /{print $2+$3+$4+$5+$6+$7+$8+$9, $5+$6}' /proc/stat)); sleep 0.5
+  b=($(awk '/^cpu /{print $2+$3+$4+$5+$6+$7+$8+$9, $5+$6}' /proc/stat))
+  awk -v t=$((b[0] - a[0])) -v i=$((b[1] - a[1])) 'BEGIN { v = (t > 0) ? 100 * (t - i) / t : 0; printf "%d%%", v }'
+}
+dur() { local s=$1; printf '%dd%02dh%02dm' $((s / 86400)) $((s % 86400 / 3600)) $((s % 3600 / 60)); }
+
+CORES=$(nproc); LOAD=$(cut -d' ' -f1-3 /proc/loadavg)
+MEM=$(free -m | awk '/^Mem:/ { printf "%d/%dMB", $3, $2 }')
+GPU=$(nvidia-smi --query-gpu=temperature.gpu,utilization.gpu,utilization.encoder,encoder.stats.sessionCount \
+      --format=csv,noheader,nounits 2>/dev/null | awk -F', *' '{ printf "GPU %sC util %s%% enc %s%% nvenc %s", $1, $2, $3, $4 }')
+echo "CORES $CORES  LOAD $LOAD  MEM $MEM  CPU $(cpu_pct) $(hwmon coretemp)C  ${GPU:-GPU ? (nvidia-smi failed: reboot after a driver update?)}"
+
+DEV=$(ip route show default | awk '{ for (i = 1; i < NF; i++) if ($i == "dev") { print $(i + 1); exit } }')
+NET="route ${DEV:-none}"
+case "$(readlink -f "/sys/class/net/${DEV:-none}/device" 2>/dev/null)" in
+  */usb*) NET="$NET (USB, WARN: may drop when the KVM switches)" ;;
+  "")     NET="$NET (WARN: no default route)" ;;
+  *)      NET="$NET (onboard)" ;;
+esac
+DESK="desktop none"; XOUT=""
+for s in $(loginctl list-sessions --no-legend | awk '{print $1}'); do
+  if [ "$(loginctl show-session "$s" -p Seat -p Type -p Active -p Class | sort | tr '\n' ' ')" = "Active=yes Class=user Seat=seat0 Type=x11 " ]; then
+    DU="$(loginctl show-session "$s" -p Name --value)"; DUID="$(id -u "$DU")"
+    DESK="desktop x11/seat0/active"
+    for x in /tmp/.X11-unix/X*; do
+      [ "$(stat -c %u "$x" 2>/dev/null)" = "$DUID" ] || continue
+      XOUT="$(runuser -u "$DU" -- env DISPLAY=":${x##*/X}" XAUTHORITY="/run/user/$DUID/gdm/Xauthority" \
+        xrandr --query 2>/dev/null | awk '/ connected/ { printf "%s ", $1 }')"
+      break
+    done
+  fi
+done
+echo "$NET  $DESK  outputs: ${XOUT:-none}"
+echo "------------------------------------------------------------"
+
+for N in 1 2; do
+  U="fids-home-stream@$N.service"; R="fids-home-rtmp@$N.service"
+  URL="$(envval "$N" STREAM_URL)"; Q="${URL#*\?}"
+  AP="$(printf '%s' "$URL" | sed -n 's/.*[?&]ap=\([A-Z]\{3\}\).*/\1/p')"
+  case "$Q" in *stream=1*) KIND="$AP pinned" ;; *) KIND="tour" ;; esac
+  ST="$(systemctl is-active "$U")"; EN="$(systemctl is-enabled "$U" 2>/dev/null)"
+  UP=""
+  if [ "$ST" = active ]; then
+    UP=" up $(dur $(( $(date +%s) - $(date -d "$(systemctl show -p ActiveEnterTimestamp --value "$U")" +%s) )))"
+  fi
+  NR="$(systemctl show -p NRestarts --value "$U")"
+  WD="$(awk -v now="$(date +%s)" 'now - $1 < 86400' "/run/fids-home/watchdog/restarts-$N" 2>/dev/null | wc -l)"
+  echo "#$N $KIND  $ST/$EN$UP  restarts $NR  watchdog/24h $WD"
+  W="$(envval "$N" WIDTH)"; H="$(envval "$N" HEIGHT)"; F="$(envval "$N" FRAMERATE)"
+  RENDER="$(envval "$N" RENDER)"
+  if [ "$ST" = active ] && [ "$RENDER" = gpu ]; then
+    CG="$(systemctl show -p ControlGroup --value "$U")"
+    ONGPU=no
+    for p in $(nvidia-smi --query-compute-apps=pid --format=csv,noheader 2>/dev/null) \
+             $(nvidia-smi pmon -c 1 -s u 2>/dev/null | awk '$2 ~ /^[0-9]+$/ { print $2 }'); do
+      grep -qx "$p" "/sys/fs/cgroup$CG/cgroup.procs" 2>/dev/null && { ONGPU=yes; break; }
+    done
+    RENDER="gpu (Chrome on GPU: $ONGPU)"
+  fi
+  P="/run/fids-home/stream-$N/progress"; PR="no progress"
+  if [ -f "$P" ]; then
+    PR="$(awk -F= '{ v[$1] = $2 } END { printf "fps %s speed %s dup %s drop %s", v["fps"], v["speed"], v["dup_frames"], v["drop_frames"] }' "$P")"
+  fi
+  OUTPUT="$(envval "$N" OUTPUT)"; PUSH="no push"
+  if [ -e "/run/fids-home/status/push-$N" ]; then
+    CG="$(systemctl show -p ControlGroup --value "$R")"
+    PORT="$(envval "$N" RTMP_PORT)"
+    OUTC="$(ss -tnpH state established 2>/dev/null | awk -v pids=" $(tr '\n' ' ' < "/sys/fs/cgroup$CG/cgroup.procs" 2>/dev/null) " -v port="$PORT" '
+      { split($3, a, ":"); if (a[length(a)] == port) next
+        s = $0; while (match(s, /pid=[0-9]+/)) { p = substr(s, RSTART + 4, RLENGTH - 4)
+          if (index(pids, " " p " ")) { n++; break }; s = substr(s, RSTART + RLENGTH) } }
+      END { print n + 0 }')"
+    [ "$OUTC" -gt 0 ] && PUSH="push UP" || PUSH="push DOWN"
+  fi
+  echo "   ${W}x${H}@${F} $(envval "$N" VIDEO_BITRATE) render $RENDER enc $(envval "$N" ENCODER) out $OUTPUT  $PR  $PUSH"
+  KF="/etc/credstore/fids-stream-$N.key"
+  if [ -s "$KF" ]; then
+    FP="$(sha256sum < "$KF" | cut -c1-8)"
+    LJ="$(journalctl -u 'fids-*' -o cat --no-pager 2>/dev/null | grep -c -F -f <(grep -v '^$' "$KF"))"
+    LS="$(for f in /var/log/syslog*; do case "$f" in *.gz) zcat -- "$f" ;; *) cat -- "$f" ;; esac; done 2>/dev/null \
+      | grep -c -F -f <(grep -v '^$' "$KF"))"
+    echo "   key $FP  leaks: journal $LJ syslog $LS  cache $(du -sk "/var/lib/fids-home/stream-$N/chrome-profile/Default/Cache" 2>/dev/null | cut -f1)k"
+  else
+    echo "   key none  cache $(du -sk "/var/lib/fids-home/stream-$N/chrome-profile/Default/Cache" 2>/dev/null | cut -f1)k"
+  fi
+  printf '   %s\n' "$(printf '%s' "$Q" | cut -c1-90)"
+done
+echo "------------------------------------------------------------"
+LINE=""
+for u in fids-home-stream@1 fids-home-rtmp@1 fids-home-stream@2 fids-home-rtmp@2 fids-home-watchdog; do
+  n="$(journalctl -u "$u" --since '20 min ago' --no-pager -o cat 2>/dev/null | grep -ciE 'error|fatal|failed|broken pipe|connection reset|CRIT')"
+  LINE="$LINE $u:$n"
+done
+echo "errors/20min$LINE"

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# At boot only, waits for the desktop auto-login (an active x11 session on seat0)
+# and for the NVIDIA driver, so the streams start after the desktop has the GPU.
+# Gives up after MAX seconds and lets the stream start anyway: the streams draw
+# on their own virtual screens and never depend on the desktop.
+# Later restarts (more than 5 minutes after boot) do not wait at all.
+# usage: wait-desktop [MAX_SECONDS]
+set -uo pipefail
+MAX="${1:-75}"
+UP="$(cut -d. -f1 /proc/uptime)"
+[ "$UP" -gt 300 ] && exit 0
+
+desktop_up() {
+  local s
+  for s in $(loginctl list-sessions --no-legend 2>/dev/null | awk '{print $1}'); do
+    loginctl show-session "$s" -p Seat -p Type -p Active -p Class 2>/dev/null | sort | tr '\n' ' ' \
+      | grep -q '^Active=yes Class=user Seat=seat0 Type=x11 $' && return 0
+  done
+  return 1
+}
+
+START=$SECONDS
+while [ $((SECONDS - START)) -lt "$MAX" ]; do
+  if desktop_up && nvidia-smi -L >/dev/null 2>&1; then
+    echo "wait-desktop: desktop session and GPU ready after $((SECONDS - START)) s"
+    exit 0
+  fi
+  sleep 3
+done
+echo "WARN wait-desktop: no active desktop session on seat0 after $MAX s; starting anyway" >&2
+exit 0

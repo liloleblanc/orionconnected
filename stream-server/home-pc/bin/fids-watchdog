@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+# Health check for the two home streams, run every 30 s by fids-home-watchdog.timer.
+# It acts only on fids-home-stream@1, @2 and their relays, never on a name pattern:
+#  1. an enabled stream that is not running is started, unless it stopped
+#     itself with status 78 (missing key or setting);
+#  2. a stream that has run for 2 minutes or more is restarted when its encoder
+#     has stalled, or when its picture has been frozen or black for 3 minutes
+#     (a hung or crashed page is caught sooner, by the page monitor in the
+#     stream itself);
+#  3. with OUTPUT=youtube, the relay is restarted when it has had no connection
+#     out for 4 checks in a row, which also restarts its stream;
+#  4. a stream healthy for 10 minutes after crash restarts gets its systemd
+#     restart counter reset, so the next crash waits 5 s again, not up to 2 min.
+# At most 4 watchdog restarts per stream per hour; after that it logs CRIT once
+# and leaves crash restarts to systemd until the hour has passed.
+# The picture comes from the thumbnail ffmpeg writes every 10 s (thumb.pgm in
+# the stream runtime directory), so this script never connects to the screens.
+set -uo pipefail
+STATE=/run/fids-home/watchdog
+install -d -m 0755 "$STATE"
+NOW=$(date +%s)
+LIMIT=4
+RESET_AFTER="${FIDS_WD_RESET_AFTER:-600}"
+
+envval() {   # envval N KEY: the effective value, override file last
+  local v="" f l
+  for f in "/etc/fids-home/stream-$1.env" "/etc/fids-home/stream-$1.override.env"; do
+    [ -f "$f" ] || continue
+    l="$(grep -E "^$2=" "$f" | tail -1)"
+    if [ -n "$l" ]; then v="${l#*=}"; v="${v#\"}"; v="${v%\"}"; fi
+  done
+  printf '%s' "$v"
+}
+
+restart_allowed() {
+  local f="$STATE/restarts-$1" n
+  touch "$f"
+  awk -v now="$NOW" 'now - $1 < 3600' "$f" > "$f.tmp" && mv -f "$f.tmp" "$f"
+  n=$(wc -l < "$f")
+  [ "$n" -lt "$LIMIT" ] && return 0
+  if [ ! -e "$STATE/crit-$1" ] || [ $((NOW - $(stat -c %Y "$STATE/crit-$1"))) -ge 3600 ]; then
+    echo "CRIT stream-$1: $n watchdog restarts in the last hour; not restarting it again until that drops"
+    touch "$STATE/crit-$1"
+  fi
+  return 1
+}
+note_restart() { echo "$NOW" >> "$STATE/restarts-$1"; }
+reset_health() { rm -f "$STATE/thumbs-$1" "$STATE/frame-$1" "$STATE/pushmiss-$1"; }
+
+# A driver update installed by unattended-upgrades replaces the NVIDIA
+# libraries while the old kernel module stays loaded; nvidia-smi then fails.
+# Running streams keep working; the next start falls back to x264 and software
+# drawing. Logged once an hour until the PC is rebooted.
+if ! nvidia-smi -L >/dev/null 2>&1; then
+  if [ ! -e "$STATE/crit-gpu" ] || [ $((NOW - $(stat -c %Y "$STATE/crit-gpu"))) -ge 3600 ]; then
+    echo "CRIT gpu: nvidia-smi fails (a driver update waiting for a reboot?); restarted streams use x264 and software drawing until the PC is rebooted"
+    touch "$STATE/crit-gpu"
+  fi
+fi
+
+STATUS=""
+for N in 1 2; do
+  U="fids-home-stream@$N.service"
+  R="fids-home-rtmp@$N.service"
+  ACTIVE="$(systemctl is-active "$U" 2>/dev/null)"
+  if [ "$ACTIVE" != active ]; then
+    reset_health "$N"
+    STATUS="$STATUS stream-$N=$ACTIVE"
+    systemctl is-enabled --quiet "$U" 2>/dev/null || continue
+    SUB="$(systemctl show -p SubState --value "$U")"
+    CODE="$(systemctl show -p ExecMainStatus --value "$U")"
+    if [ "$ACTIVE" = activating ] || [ "$SUB" = auto-restart ]; then
+      :
+    elif [ "$CODE" = 78 ]; then
+      if [ ! -e "$STATE/note78-$N" ]; then
+        echo "stream-$N: stopped itself with status 78 (missing key or setting); not starting it"
+        touch "$STATE/note78-$N"
+      fi
+    elif restart_allowed "$N"; then
+      echo "stream-$N: enabled but $ACTIVE; starting it"
+      note_restart "$N"
+      systemctl start --no-block "$U"
+    fi
+    continue
+  fi
+  rm -f "$STATE/note78-$N"
+
+  ENTER="$(systemctl show -p ActiveEnterTimestamp --value "$U")"
+  SINCE="$(date -d "$ENTER" +%s 2>/dev/null || echo "$NOW")"
+  AGE=$((NOW - SINCE))
+  STATUS="$STATUS stream-$N=active/${AGE}s"
+  if [ "$AGE" -lt 120 ]; then reset_health "$N"; continue; fi
+
+  REASON=""
+  # 1. encoder progress
+  P="/run/fids-home/stream-$N/progress"
+  if [ ! -f "$P" ]; then
+    REASON="no encoder progress file"
+  else
+    PAGE=$((NOW - $(stat -c %Y "$P")))
+    FRAME="$(sed -n 's/^frame=//p' "$P")"; FRAME="${FRAME:-0}"
+    LAST="$(cat "$STATE/frame-$N" 2>/dev/null || echo -1)"
+    echo "$FRAME" > "$STATE/frame-$N"
+    if [ "$PAGE" -gt 20 ]; then
+      REASON="encoder progress is $PAGE s old"
+    elif [ "$LAST" != -1 ] && [ "$FRAME" -le "$LAST" ]; then
+      REASON="encoder frame count stuck at $FRAME"
+    fi
+  fi
+
+  # 2. picture: the 64x36 grey thumbnail (ticker band cut off), the last 7 kept (3 minutes)
+  if [ -z "$REASON" ]; then
+    T="/run/fids-home/stream-$N/thumb.pgm"; L="$STATE/thumbs-$N"
+    if [ -s "$T" ] && [ $((NOW - $(stat -c %Y "$T"))) -le 30 ]; then
+      PX="$STATE/thumb-$N.raw"
+      tail -c 2304 "$T" > "$PX"
+      SUM="$(md5sum < "$PX" | cut -c1-16)"
+      LUMA="$(od -An -v -tu1 "$PX" | awk '{for (i = 1; i <= NF; i++) { s += $i; n++ }} END { print (n ? int(s / n) : 0) }')"
+      echo "$NOW $SUM $LUMA" >> "$L"
+      tail -n 7 "$L" > "$L.tmp" && mv -f "$L.tmp" "$L"
+      if [ "$(wc -l < "$L")" -ge 7 ]; then
+        SPAN=$((NOW - $(head -1 "$L" | cut -d' ' -f1)))
+        if [ "$SPAN" -ge 170 ]; then
+          if [ "$(cut -d' ' -f2 "$L" | sort -u | wc -l)" -eq 1 ]; then
+            REASON="picture unchanged for $SPAN s"
+          elif awk '$3 >= 6 { lit = 1 } END { exit lit }' "$L"; then
+            REASON="picture black for $SPAN s"
+          fi
+        fi
+      fi
+    fi
+  fi
+
+  if [ -n "$REASON" ]; then
+    if restart_allowed "$N"; then
+      echo "stream-$N: $REASON; restarting it"
+      note_restart "$N"; reset_health "$N"
+      systemctl restart --no-block "$U"
+    fi
+    continue
+  fi
+
+  # 3. the relay connection out (YouTube ingest)
+  if [ "$(envval "$N" OUTPUT)" = youtube ] && systemctl is-active --quiet "$R"; then
+    PORT="$(envval "$N" RTMP_PORT)"; PORT="${PORT:-$((1935 + N))}"
+    CG="$(systemctl show -p ControlGroup --value "$R")"
+    RPIDS="$(tr '\n' ' ' < "/sys/fs/cgroup$CG/cgroup.procs" 2>/dev/null)"
+    OUTC="$(ss -tnpH state established 2>/dev/null | awk -v pids=" $RPIDS " -v port="$PORT" '
+      { split($3, a, ":"); lp = a[length(a)]; if (lp == port) next
+        s = $0; while (match(s, /pid=[0-9]+/)) { p = substr(s, RSTART + 4, RLENGTH - 4)
+          if (index(pids, " " p " ")) { n++; break }; s = substr(s, RSTART + RLENGTH) } }
+      END { print n + 0 }')"
+    if [ "$OUTC" -gt 0 ]; then
+      rm -f "$STATE/pushmiss-$N"
+    else
+      MISS=$(( $(cat "$STATE/pushmiss-$N" 2>/dev/null || echo 0) + 1 ))
+      echo "$MISS" > "$STATE/pushmiss-$N"
+      if [ "$MISS" -ge 4 ] && restart_allowed "$N"; then
+        echo "stream-$N: the relay has had no connection to YouTube for $MISS checks; restarting it"
+        note_restart "$N"; reset_health "$N"
+        systemctl restart --no-block "$R"
+      fi
+    fi
+  fi
+
+  # 4. crash restarts: back to the short delay after 10 healthy minutes
+  NR="$(systemctl show -p NRestarts --value "$U")"
+  if [ "$AGE" -ge "$RESET_AFTER" ] && [ "${NR:-0}" -gt 0 ]; then
+    echo "stream-$N: healthy for $((AGE / 60)) min after $NR crash restart(s); restart delay back to 5 s"
+    systemctl reset-failed "$U"
+  fi
+done
+
+if [ ! -e "$STATE/last-status" ] || [ $((NOW - $(stat -c %Y "$STATE/last-status"))) -ge 300 ]; then
+  echo "status:$STATUS"
+  touch "$STATE/last-status"
+fi
+exit 0

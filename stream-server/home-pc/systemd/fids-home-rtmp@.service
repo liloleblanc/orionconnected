@@ -1,0 +1,26 @@
+[Unit]
+Description=FIDS home stream %i: local RTMP relay to YouTube
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/fids-home/stream-%i.env
+EnvironmentFile=-/etc/fids-home/stream-%i.override.env
+RuntimeDirectory=fids-home/rtmp-%i
+RuntimeDirectoryMode=0700
+ExecStartPre=/opt/fids-home/bin/rtmp-render %i
+ExecStartPre=/usr/sbin/nginx -t -q -e stderr -c /run/fids-home/rtmp-%i/nginx.conf
+ExecStart=/usr/sbin/nginx -e stderr -c /run/fids-home/rtmp-%i/nginx.conf -g "daemon off;"
+# Second line of defence for the stream key: journald drops (from the journal
+# and from syslog) any line of this unit that names a push target or holds a
+# key-shaped token. rtmp-render already keeps the key out of the push address.
+LogFilterPatterns=~(live2/|playPath|[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4})
+# No core dumps: nginx holds the key in memory (apport also ignores nginx, see install.sh).
+LimitCORE=0
+TimeoutStartSec=100
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
