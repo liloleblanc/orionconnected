@@ -13,7 +13,7 @@
 #     restart counter reset, so the next crash waits 5 s again, not up to 2 min.
 # At most 4 watchdog restarts per stream per hour; after that it logs CRIT once
 # and leaves crash restarts to systemd until the hour has passed.
-# The picture comes from the thumbnail ffmpeg writes every 10 s (thumb.pgm in
+# The picture comes from the thumbnail ffmpeg writes 5 times a second (thumb.pgm in
 # the stream runtime directory), so this script never connects to the screens.
 set -uo pipefail
 STATE=/run/fids-home/watchdog

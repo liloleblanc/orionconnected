@@ -36,7 +36,7 @@ Xvfb :91 ── Chrome (kiosk, board) ── ffmpeg x11grab ─▶ nginx relay 1
   on the compositor thread while the board clock and rotation stand still.
 * **A watchdog** (`fids-home-watchdog.timer`, every 30 s) restarts a stream
   whose encoder stalls or whose picture stays frozen or black for 3 minutes
-  (from a 64x36 thumbnail ffmpeg writes every 10 s, the ticker band cut off),
+  (from a 64x36 thumbnail ffmpeg writes 5 times a second, the ticker band cut off),
   restarts a relay with no connection out to YouTube for 2 minutes, starts
   an enabled stream that is down, and resets the systemd restart delay of a
   stream that has been healthy for 10 minutes after crashes (otherwise each
@@ -264,6 +264,13 @@ local files, and scores minutes 2 to 10 (`analyze.py`):
 | R2 again, performance profile | GPU | NVENC 8M | 3+52 / 0+9 | 0 | 19% | 1.2 + 1.7 | G4 (stream 2) |
 | R3 | GPU | x264 veryfast 8M | 38+73 / 0+11 | 0 | 26% | 1.7 + 2.4 | G4 |
 
+* **A 10 s window hides a 10 s rhythm.** The first page-monitor build took its
+  thumbnail every 10 s, and ffmpeg, which serves its slowest output first, then
+  sent the stream in floods: up to 5.4 s of nothing, then 5 s of video at once.
+  Every 10 s window still held 8000 kbps. Off air, with the same ffmpeg line
+  and 35 to 40 s per variant, the longest silence was 5.4 s with a picture
+  every 10 s (music or silent audio), 0.4 s at 2 a second and 0.1 s at 5 a
+  second, the same as with no picture. Judge delivery by the second.
 * **GPU drawing with NVENC is the setting in the env files.** It has the
   steadiest frames and the lowest CPU, and NVENC held 8000 kbps in every 10 s
   window, so CBR padding is not needed. GPU 48 C, 40 W, NVENC about 32%.

@@ -242,6 +242,17 @@ test('on the real board a flight request is no leak: only test mode stops the st
   assert.match(read('bin/cdp-guard.py'), /if args\.block and g\.leaks:/);
 });
 
+test('the watchdog thumbnail is taken often enough not to hold the stream back', () => {
+  // ffmpeg serves its slowest output first: one picture every 10 s made the
+  // stream leave in floods with 5 s of silence between them.
+  const run = read('bin/stream-run');
+  const fps = run.match(/^THUMB_FPS=(\d+)$/m);
+  assert.ok(fps, 'THUMB_FPS is a whole number of pictures a second');
+  assert.ok(Number(fps[1]) >= 2, 'THUMB_FPS under 2 brings the floods back');
+  assert.match(run, /\[m\]fps=\$THUMB_FPS,crop=/);
+  assert.doesNotMatch(run, /fps=1\/\d+/);
+});
+
 test('the virtual screen is private and wider than the capture', () => {
   const run = read('bin/stream-run');
   assert.match(run, /Xvfb "\$DISPLAY" -screen 0 "\$\(\(WIDTH \+ 8\)\)x\$\(\(HEIGHT \+ 8\)\)x24" -auth "\$XAUTHORITY"/);

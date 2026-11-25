@@ -274,12 +274,16 @@ case "$OUTPUT" in
 esac
 
 # ---- ffmpeg ------------------------------------------------------------------
-# A second output keeps a 64x36 grey thumbnail of the encoded picture, every
-# 10 s, for the watchdog frozen or black check. The bottom 6% (the scrolling
+# A second output keeps a 64x36 grey thumbnail of the encoded picture,
+# 5 times a second, for the watchdog frozen or black check. The bottom 6% (the scrolling
 # news ticker, which keeps moving on the compositor when the page hangs) is
 # cut off first.
+# THUMB_FPS must not go under 2: ffmpeg serves its slowest output first, so with
+# one picture every 10 s it held the whole stream back and sent it in floods
+# (5 s of nothing, then 5 s of video at once). At 5 a second there is no gap.
+THUMB_FPS=5
 THUMB="$RUN_DIR/thumb.pgm"
-FILTER="[0:v]split=2[e][m];[e]$VF_MAIN[v];[m]fps=1/10,crop=iw:trunc(ih*0.94/2)*2:0:0,scale=64:36,format=gray[t]"
+FILTER="[0:v]split=2[e][m];[e]$VF_MAIN[v];[m]fps=$THUMB_FPS,crop=iw:trunc(ih*0.94/2)*2:0:0,scale=64:36,format=gray[t]"
 FIFO="$RUN_DIR/progress.fifo"
 rm -f "$FIFO"; mkfifo -m 0600 "$FIFO"
 PROGRESS_LOG="${BENCH_DIR:+$BENCH_DIR/progress-$N.csv}" "$BIN/progress-sink" "$RUN_DIR/progress" "$TAG" < "$FIFO" &
