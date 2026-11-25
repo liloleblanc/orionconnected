@@ -9,6 +9,8 @@
 # usage (from this directory): sudo bash install.sh
 #   CHROME_POLICY=1  also installs the Chrome managed policy (Chrome then
 #                    shows "Managed by your organization" on this PC)
+#   POWER_KEY=1      also makes a short press of the power key do nothing and
+#                    records which device sends one (see README, Power key)
 set -euo pipefail
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ "$(id -u)" -eq 0 ] || { echo "run as root: sudo bash install.sh" >&2; exit 1; }
@@ -111,12 +113,22 @@ if [ "${CHROME_POLICY:-0}" = 1 ]; then
   install -d -m 0755 /etc/opt/chrome/policies/managed
   install -m 0644 "$SRC"/config/chrome-policy.json /etc/opt/chrome/policies/managed/fids-home.json
 fi
+if [ "${POWER_KEY:-0}" = 1 ]; then
+  install -m 0755 "$SRC"/bin/power-key-log "$APP/bin/"
+  install -m 0644 "$SRC"/systemd/fids-powerkey-log.service /etc/systemd/system/
+  install -d -m 0755 /etc/systemd/logind.conf.d
+  install -m 0644 "$SRC"/config/logind-60-power-key.conf /etc/systemd/logind.conf.d/60-power-key.conf
+fi
 ln -sfn "$APP/bin/set-stream-key" /usr/local/sbin/set-stream-key
 ln -sfn "$APP/bin/fids-diag" /usr/local/bin/fids-diag
 
 systemctl daemon-reload
 systemctl restart systemd-journald
 systemctl enable --now fids-home-watchdog.timer >/dev/null
+if [ "${POWER_KEY:-0}" = 1 ]; then
+  systemctl reload systemd-logind
+  systemctl enable --now fids-powerkey-log.service >/dev/null
+fi
 
 cat <<'NEXT'
 

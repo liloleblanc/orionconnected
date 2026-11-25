@@ -1,0 +1,64 @@
+#!/usr/bin/python3 -I
+"""Shows what the ADS-B receiver hears right now.
+
+Reads the JSON files readsb writes; asks no network. Usage: fids-planes [folder]
+"""
+import json, os, subprocess, sys, time
+
+STALE = 15
+DIR = sys.argv[1] if len(sys.argv) > 1 else "/run/fids-receiver"
+
+
+def load(name):
+    try:
+        with open(os.path.join(DIR, name), encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def num(v):
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+def cell(v, width, fmt="%d"):
+    return (fmt % v if num(v) is not None else "-").rjust(width)
+
+
+def main():
+    d = load("aircraft.json")
+    if d is None:
+        print("No data: the receiver is not running (or the stick is unplugged).")
+        print("Look at: systemctl status fids-receiver")
+        return 1
+    age = time.time() - (num(d.get("now")) or 0)
+    if age > STALE:
+        print("Stale: the last data is %d s old. The receiver has stopped writing." % age)
+        return 1
+    planes = [a for a in d.get("aircraft") or [] if isinstance(a, dict)]
+    planes.sort(key=lambda a: num(a.get("seen")) if num(a.get("seen")) is not None else 9e9)
+    print("%d aircraft heard, %d with a position, %s messages since the receiver started"
+          % (len(planes), sum(num(a.get("lat")) is not None for a in planes), cell(d.get("messages"), 0)))
+    if planes:
+        print("%-7s %-8s %8s %7s %9s %9s %6s %6s" % ("hex", "flight", "altitude", "knots", "lat", "lon", "signal", "seen"))
+    for a in planes:
+        alt = a.get("alt_baro")
+        print("%-7s %-8s %s %s %s %s %s %s" % (
+            str(a.get("hex", ""))[:7], str(a.get("flight", "")).strip()[:8],
+            "ground".rjust(8) if alt == "ground" else cell(alt, 8),
+            cell(a.get("gs"), 7), cell(a.get("lat"), 9, "%.4f"), cell(a.get("lon"), 9, "%.4f"),
+            cell(a.get("rssi"), 6, "%.1f"), cell(a.get("seen"), 6, "%.0fs")))
+    stats = load("stats.json") or {}
+    s = stats.get("last15min")
+    if isinstance(s, dict):
+        loc = s.get("local") if isinstance(s.get("local"), dict) else {}
+        print("last 15 min: %s messages, signal %s dB, noise %s dB, gain %s dB, samples lost %s, dropped (PC too busy) %s" % (
+            cell(s.get("messages_valid"), 0), cell(loc.get("signal"), 0, "%.1f"),
+            cell(loc.get("noise"), 0, "%.1f"), cell(stats.get("gain_db"), 0, "%.1f"),
+            cell(loc.get("samples_lost"), 0), cell(loc.get("samples_dropped"), 0)))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

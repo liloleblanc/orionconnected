@@ -48,7 +48,7 @@ Xvfb :91 ── Chrome (kiosk, board) ── ffmpeg x11grab ─▶ nginx relay 1
 
 | Path on the PC | From |
 |---|---|
-| `/opt/fids-home/bin/` | `bin/` (stream-run, rtmp-render, set-stream-key, fids-watchdog, fids-diag, wait-desktop, progress-sink, cdp-guard.py) |
+| `/opt/fids-home/bin/` | `bin/` (stream-run, rtmp-render, set-stream-key, fids-watchdog, fids-diag, wait-desktop, progress-sink, cdp-guard.py; power-key-log with `POWER_KEY=1`) |
 | `/opt/fids-home/bench/`, `/opt/fids-home/xorg/` | `bench/`, `xorg/` |
 | `/opt/fids-home/config/` | `config/` (relay template, test override, shipped env files) |
 | `/etc/fids-home/stream-N.env` | `config/stream-N.env` (installed once, then local) |
@@ -90,6 +90,31 @@ touches Xorg, the network, automatic updates, stream keys or the cloud boxes,
 and starts no stream. Run it again after pulling changes. `CHROME_POLICY=1 sudo bash install.sh` also installs a Chrome
 policy that turns off the translate bar and the default browser prompt (Chrome
 then shows "Managed by your organization" on this PC).
+
+## Power key
+
+A short press of the power button opens the desktop's power-off box, which
+turns the PC off by itself after 60 seconds when nobody answers. On a PC that
+streams around the clock one bump of the button ends the streams. `sudo
+POWER_KEY=1 bash install.sh` installs:
+
+* `/etc/systemd/logind.conf.d/60-power-key.conf`: logind ignores a short press.
+* `fids-powerkey-log.service`: writes which device sent a power, sleep, suspend,
+  wake or restart key, and nothing else. The kernel drops every other key before
+  it is delivered to the program. Read it with
+  `journalctl -u fids-powerkey-log`.
+
+The desktop has its own setting, per user, and needs it set once in the desktop
+session: `gsettings set org.gnome.settings-daemon.plugins.power
+power-button-action 'nothing'`.
+
+Holding the button still turns the PC off: the board does that, not Linux. The
+desktop menu keeps its Restart and Power Off choices.
+
+How to tell a power key from a menu choice afterwards: logind writes `Power key
+pressed short.` for a key; a menu choice writes no such line. The case button
+also counts up in `/sys/firmware/acpi/interrupts/ff_pwr_btn`, a keyboard power
+key does not.
 
 ## Test mode
 

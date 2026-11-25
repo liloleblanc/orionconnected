@@ -1,0 +1,22 @@
+[Unit]
+Description=Records which device sends a power, sleep or restart key (no other keys)
+After=systemd-udevd.service
+
+[Service]
+ExecStart=/opt/fids-home/bin/power-key-log
+DynamicUser=yes
+SupplementaryGroups=input
+DevicePolicy=closed
+DeviceAllow=char-input r
+PrivateNetwork=yes
+IPAddressDeny=any
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+CapabilityBoundingSet=
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
