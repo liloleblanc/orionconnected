@@ -216,6 +216,32 @@ test('a hung or crashed page restarts the stream, and the restart delay recovers
   assert.match(run, /-f image2 -update 1 -atomic_writing 1 "\$THUMB"/);
 });
 
+test('on the real board a flight request is no leak: only test mode stops the stream for one', () => {
+  // Runs the monitor's own event handler on a flight response from the proxy,
+  // once as on the real board and once in test mode. websocket is stubbed, so
+  // this needs no Chrome and no network.
+  const py = [
+    'import importlib.util, json, sys, types',
+    'sys.modules["websocket"] = types.ModuleType("websocket")',
+    'spec = importlib.util.spec_from_file_location("cdp_guard", sys.argv[1])',
+    'm = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)',
+    'out = {}',
+    'for block in (False, True):',
+    '    args = types.SimpleNamespace(block=block, tag="t", out_dir=None)',
+    '    g = m.Guard(None, args)',
+    '    for u in ("https://x.workers.dev/yqm/flights/arrivals", "https://x.workers.dev/api/airport-config?ap=YQM"):',
+    '        g.on_event({"method": "Network.responseReceived", "params": {"response": {"url": u}}})',
+    '    out["test" if block else "real"] = g.leaks',
+    'print(json.dumps(out))',
+  ].join('\n');
+  const got = JSON.parse(execFileSync('python3', ['-I', '-c', py, path.join(HOME, 'bin', 'cdp-guard.py')],
+    { encoding: 'utf8' }));
+  assert.deepEqual(got.real, []);
+  assert.deepEqual(got.test, ['yqm']);
+  // The loop that stops the stream on a leak runs only in test mode too.
+  assert.match(read('bin/cdp-guard.py'), /if args\.block and g\.leaks:/);
+});
+
 test('the virtual screen is private and wider than the capture', () => {
   const run = read('bin/stream-run');
   assert.match(run, /Xvfb "\$DISPLAY" -screen 0 "\$\(\(WIDTH \+ 8\)\)x\$\(\(HEIGHT \+ 8\)\)x24" -auth "\$XAUTHORITY"/);
