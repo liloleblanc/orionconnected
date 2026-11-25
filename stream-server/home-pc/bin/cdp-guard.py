@@ -193,8 +193,10 @@ class Guard:
                 k = self.key(url)
                 self.seen[k] = self.seen.get(k, 0) + 1
         elif method == "Network.responseReceived":
+            # A billed path is a leak only in test mode, where it should have
+            # been blocked; on the real board those requests are the flights.
             url = p.get("response", {}).get("url", "")
-            if not allowed(url):
+            if self.args.block and not allowed(url):
                 self.leaks.append(self.key(url))
         elif method == "Page.loadEventFired" and sid == self.page:
             self.loaded = True
@@ -349,7 +351,7 @@ def main():
     while True:
         cdp.pump(0.5)
         now = time.monotonic()
-        if g.leaks:
+        if args.block and g.leaks:
             write_json(counts_path, g.counts())
             log(g.tag, "FATAL a billed request reached the network: %s" % ", ".join(sorted(set(g.leaks))))
             return 4
