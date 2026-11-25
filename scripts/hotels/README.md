@@ -104,7 +104,9 @@ in the app; nothing else changes.
      `excluded` with `kind: "blocked"` and, in `read`, the exact page a person should open. That person
      reads the page in a browser, copies each fact with the page and the date into the hotel's
      `verified` fields, moves the hotel from `excluded` into `hotels` with `listed: true`, and runs the
-     build step. Nothing reads those pages for them.
+     build step. Nothing reads those pages for them. Each fact a person read keeps `method: "read by a
+     person in a browser, <date>"`, and the line they copied from the page as its `quote` where there
+     is one. A shuttle named only on a tourism listing is still not marked, whoever read it.
    - Do not use Google Places, Tripadvisor, Booking or Expedia: their terms forbid storing or
      caching what they show.
    - If a fact cannot be confirmed on an official page, leave it unverified. If two official
@@ -150,6 +152,16 @@ A city with dozens of hotels near its airport and in its centre (Toronto) is add
    page cannot be read (blocked, needs a person), or that serves only some of the area's hotels, stays
    with `verified: false` and the reason in its `note`: the build step leaves it out of the slim copy,
    and the page shows no way there (Toronto's Link train, near the airport).
+   A train that reaches only some of the area's hotels goes on those hotels instead, as their `access`
+   (v24178): `kind` `link` with its `stop` (data, as written) or `terminal` with the number of the
+   terminal the hotel is joined to; `line` and `from` (the line, and the terminal it is taken from) for
+   the legend of the page; `verified`, `source`, `checked` and the words read in `quote` (a person's
+   reading in a browser keeps `method`). It is read on the hotel's own page or its brand property page,
+   claims no fare and no hours, and takes the place of the shuttle mark and the street on the hotel's
+   line. Held (`verified: false`, the reason in its `note`), it is left out of the slim copy. Only a hub
+   city has it. The build step refuses a verified line for the whole area on the same line as the
+   access of its hotels: the page would say one train twice. The phone app's list shows the same note
+   under the hotel's address, with the legend under the heading.
 3. **Card hotels.** A hotel that takes the gold frame has `card: true`, `card_id` (its id in the
    catalog, as on its all.accor.com page) and `card_brand` (the catalog's brand code), a logo from the
    repository or an official source (listed in `fids-current/logos/hotels/list/sources.json`), and its

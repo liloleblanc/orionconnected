@@ -41,8 +41,11 @@
    page with no card hotel, the empty place of a partner hotel; the card hotels (card true in the
    data, at most HUB_CARDS) in a fine gold frame on the cream, with their logo, name, street and
    telephone; then HUB_ROWS lines less one for each card hotel (never under HUB_ROWS_MIN), the name
-   and, on the right, the shuttle mark where the shuttle is verified, else the street; the next
-   lines on the next pass of the deck; how many more the scan code lists; the navy foot. The
+   and, on the right, how the hotel is reached from the terminals where that is verified (v24178,
+   h.access: the train mark and its stop of the airport's train, or the terminal it is joined to,
+   with a legend line of the train and the terminal it is taken from), else the shuttle mark where
+   the shuttle is verified, else the street; the next lines on the next pass of the deck; how many
+   more the scan code lists; the navy foot. The
    faces of the board, AC Nord Display and AC Nord Text (css/font.css). A hub counts only as the
    city a flight goes to, never as one of its stops (neither for its list nor for a "Hotels in"
    card). A hub with no area open to HUB_MIN on the day shows its "Hotels in {CITY}" card instead.
@@ -89,6 +92,17 @@
   var HUB_HEAD = { airport: 'hotelsAreaAirport', downtown: 'hotelsAreaDowntown' };
   var HUB_MORE = { airport: 'hotelsMoreAirport', downtown: 'hotelsMoreDowntown' };
   var TRANSIT = { link: 'hotelsTrainFree', ride: 'hotelsRideTo' };
+  // How one hotel of a hub city is reached from the terminals by the airport's own train (h.access,
+  // v24178), each kind with the field it shows: link, its stop of the train (data, as written);
+  // terminal, the terminal it is joined to (the board's word for a terminal, arrTerminal, and its
+  // number). Both name the line and the terminal it is taken from, for the legend of the page
+  // (ACCESS_LEGEND).
+  var ACCESS = { link: 'stop', terminal: 'terminal' };
+  var ACCESS_LEGEND = 'hotelsTrainFrom';
+  // A terminal as an airport names it: a number (3), a number and a letter (2E) or a letter alone
+  // (B). A number is written in the board's figures, the rest as data, as the board writes the
+  // terminal of a flight.
+  var TERMINAL = /^(?:\d{1,2}[A-Z]?|[A-Z])$/;
   // a page only for an area with at least this many hotels open; five lines a page, one less for
   // each card hotel above them (at most two), never under three
   var HUB_MIN = 3;
@@ -612,6 +626,55 @@
     });
     return out.join('<b class="hlc-sep"></b>');
   }
+  // How a hotel is reached from the terminals (h.access), when the page can say it: a kind it has
+  // words for, its stop or its terminal, the line and the terminal it is taken from. null for a hotel
+  // without one, or with one held back in the checked file (verified false; the slim copy has none).
+  function accessOf(h) {
+    var a = h && h.access;
+    if (!a || typeof a !== 'object' || a.verified === false || !Object.prototype.hasOwnProperty.call(ACCESS, a.kind)) return null;
+    if (!a.line || !TERMINAL.test(String(a.from || ''))) return null;
+    if (a.kind === 'link' && !a.stop) return null;
+    if (a.kind === 'terminal' && !TERMINAL.test(String(a.terminal || ''))) return null;
+    return a;
+  }
+  // A terminal in one language: a number in the board's figures, else as the airport writes it.
+  function termOf(t, lg) {
+    t = String(t);
+    return /^\d+$/.test(t) ? store().num(Number(t), lg) : t;
+  }
+  // The legend an access note answers to: its line and the terminal it is taken from.
+  function wayKey(a) { return String(a.line) + '|' + String(a.from); }
+  // In one language (the halves of the board, and the phone app's list): the note of a hotel
+  // reached by the airport's train, its stop (data, as written) or the terminal it is joined to;
+  // and the legend of the train, the line (data) and the terminal it is taken from.
+  function wayWords(a, lg) {
+    if (a.kind === 'link') return dataOf(a.stop);
+    var w = store().bs('arrTerminal', lg);
+    return w ? esc(w) + '\u00a0' + esc(termOf(a.terminal, lg)) : '';
+  }
+  function wayLegendWords(a, lg) {
+    var w = store().bs(ACCESS_LEGEND, lg);
+    return w ? withData(w, { LINE: dataOf(a.line), N: esc(termOf(a.from, lg)) }) : '';
+  }
+  // The note of a line for a hotel reached by the airport's train: the train mark, then its stop
+  // (data, as written) or the terminal it is joined to in the languages of the board (a half each;
+  // a half that says the same as the one before is left out).
+  function wayOf(a, L) {
+    var say = a.kind === 'link' ? wayWords(a) : pairHtml(L, function (lg) { return wayWords(a, lg); }, 'arrTerminal');
+    return '<span class="hlc-hub-note hlc-hub-way" data-way="' + esc(wayKey(a)) + '">' + ico('train') + '<span class="hlc-hub-stop">' + say + '</span></span>';
+  }
+  // The legend of the train mark on a page with an access note: the line (data) and the terminal it
+  // is taken from, one line for each line and terminal its notes name.
+  function wayLegend(list, L) {
+    var seen = Object.create(null);
+    return list.map(function (a) {
+      var k = wayKey(a);
+      if (seen[k]) return '';
+      seen[k] = 1;
+      return '<div class="hlc-hub-go hlc-hub-legend hlc-hub-legend--way hlc-pairfit" data-way="' + esc(k) + '">' + ico('train') + '<span class="hlc-fit">'
+        + pairHtml(L, function (lg) { return wayLegendWords(a, lg); }, ACCESS_LEGEND) + '</span></div>';
+    }).join('');
+  }
   // The logo of a card hotel, through <img> on the cream of its cell. Its trim (logo.trim, the four
   // sides in per cent, TRIM) is cut by placing the picture inside the cell (crops), not by
   // object-view-box: an SVG file with no width and height of its own has no natural size, and the
@@ -637,7 +700,10 @@
     var plain = c.hotels.filter(function (h) { return gold.indexOf(h) < 0; });
     var rows = page(plain, o.pass, Math.max(HUB_ROWS_MIN, HUB_ROWS - gold.length));
     var count = c.hotels.length, more = count - gold.length - rows.length;
-    var mark = rows.some(function (h) { return h.shuttle && h.shuttle.mark === true; });
+    // the lines' notes: how a hotel is reached from the terminals where that is verified, else
+    // the shuttle mark, else the street
+    var ways = rows.map(accessOf);
+    var mark = rows.some(function (h, i) { return !ways[i] && h.shuttle && h.shuttle.mark === true; });
     // the head: the city and its province, the heading, the scan code of this area
     var place = pairOf(L, function (lg) { return hubCity(city, lg); });
     var region = hub.region ? (place ? '<b class="hlc-hub-dot"></b>' : '') + dataOf(hub.region) : '';
@@ -647,9 +713,11 @@
     var tally = count >= 2 ? '<div class="hlc-hub-count">' + pairOf(L, function (lg) {
       return BS.fmt(countKey(count, lg), lg, { N: BS.num(count, lg) }, true);
     }) + '</div>' : '';
-    // the way there, and the legend of the shuttle mark on a page that shows one
+    // the way there, the legend of the train mark on a page with an access note, and the legend of
+    // the shuttle mark on a page that shows one
     var go = t && ICON[t.icon] ? '<div class="hlc-hub-go hlc-pairfit">' + ico(t.icon) + '<span class="hlc-fit">'
       + pairHtml(L, function (lg) { return transitOf(t, lg); }, TRANSIT[t.kind]) + '</span></div>' : '';
+    var way = wayLegend(ways.filter(Boolean), L);
     var legend = mark ? '<div class="hlc-hub-go hlc-hub-legend hlc-pairfit">' + ico('shuttle') + '<span class="hlc-fit">'
       + pairOf(L, function (lg) { return BS.bs('hotelShuttle', lg); }, 'hotelShuttle') + '</span></div>' : '';
     // the place of a partner hotel, on a page with no card hotel: a line for each language
@@ -670,10 +738,12 @@
         + '<div class="hlc-text">' + nameOf(h, '', '')
         + '<div class="hlc-info"><span class="hlc-fit">' + infoOf(streetOf(h), true) + '</span></div></div></div>';
     }).join('') + '</div>' : '';
-    // the lines of this pass: the name, and the shuttle mark where it is verified, else the street
-    var lines = rows.map(function (h) {
-      var note = (h.shuttle && h.shuttle.mark === true) ? ico('shuttle', 'hlc-mark') : infoOf(streetOf(h), false);
-      return '<div class="hlc-hub-row" data-hotel="' + esc(h.id) + '">' + nameOf(h, '', '<span class="hlc-hub-note">' + note + '</span>') + '</div>';
+    // the lines of this pass: the name, and how it is reached from the terminals where that is
+    // verified, else the shuttle mark where it is verified, else the street
+    var lines = rows.map(function (h, i) {
+      var note = ways[i] ? wayOf(ways[i], L)
+        : '<span class="hlc-hub-note">' + ((h.shuttle && h.shuttle.mark === true) ? ico('shuttle', 'hlc-mark') : infoOf(streetOf(h), false)) + '</span>';
+      return '<div class="hlc-hub-row" data-hotel="' + esc(h.id) + '">' + nameOf(h, '', note) + '</div>';
     }).join('');
     // how many more the scan code lists (none: the invitation alone), and the word beside the code
     var rest = pairHtml(L, function (lg) {
@@ -694,7 +764,7 @@
       +     '<div class="hlc-scan"><div class="hlc-qr" data-qr-url="' + esc(qrUrl(city, area, o.home)) + '"></div></div>'
       +   '</div>'
       +   '<div class="hlc-hub-bar"><div class="hlc-hub-area hlc-pairfit"><span class="hlc-fit">' + head + '</span></div>' + tally + '</div>'
-      +   go + legend + slot + golds
+      +   go + way + legend + slot + golds
       +   '<div class="hlc-hub-rows">' + lines
       +     '<div class="hlc-hub-more"><div class="hlc-hub-rest hlc-pairfit"><span class="hlc-fit">' + rest + '</span></div>'
       +     '<div class="hlc-hub-scan">' + scan + '</div></div>'
@@ -822,17 +892,23 @@
         // telephone after it
         if (s.scrollWidth > room() + 0.5 && box.classList.contains('hlc-info')) box.classList.add('hlc-clip');
       });
-      // a hub page whose every shuttle mark gave way with its line's note: no legend for a mark the
-      // page no longer shows
-      try {
-        legends.forEach(function (lg) {
-          var pg = lg.closest('.hlc-view');
-          if (!pg) return;
-          var left = Array.prototype.some.call(pg.querySelectorAll('.hlc-hub-row .hlc-mark'), function (mk) { return !mk.closest('.hlc-drop'); });
-          if (!left) lg.classList.add('hlc-hub-legend--off');
-        });
-      } catch (e5) {}
+      try { legendsOff(legends); } catch (e5) {}
     } catch (e) {}
+  }
+  // After the fit, the legends of a hub page that answer to nothing the page still shows: the
+  // legend of the shuttle mark once every mark gave way with its line's note, and a legend of the
+  // train once every access note of its line and terminal gave way (the notes of another line or
+  // terminal keep their own legend).
+  function legendsOff(legends) {
+    legends.forEach(function (lg) {
+      var pg = lg.closest('.hlc-view');
+      if (!pg) return;
+      var way = lg.classList.contains('hlc-hub-legend--way'), key = lg.getAttribute('data-way');
+      var left = Array.prototype.some.call(pg.querySelectorAll(way ? '.hlc-hub-row .hlc-hub-way' : '.hlc-hub-row .hlc-mark'), function (mk) {
+        return !mk.closest('.hlc-drop') && (!way || mk.getAttribute('data-way') === key);
+      });
+      if (!left) lg.classList.add('hlc-hub-legend--off');
+    });
   }
   // The proportions of an SVG file that has no width and height of its own, where the browser
   // gives it no natural size (Chrome gives 300 wide; another engine may give 0): the picture laid
@@ -993,6 +1069,9 @@
     HUB_HEAD: HUB_HEAD,
     HUB_MORE: HUB_MORE,
     TRANSIT: TRANSIT,
+    ACCESS: ACCESS,
+    ACCESS_LEGEND: ACCESS_LEGEND,
+    TERMINAL: TERMINAL,
     HUB_MIN: HUB_MIN,
     HUB_ROWS: HUB_ROWS,
     HUB_ROWS_MIN: HUB_ROWS_MIN,
@@ -1029,6 +1108,10 @@
     unitPx: unitPx,
     floorPx: floorPx,
     fit: fit,
+    legendsOff: legendsOff,
+    accessOf: accessOf,
+    wayWords: wayWords,
+    wayLegendWords: wayLegendWords,
     crops: crops,
     render: render,
     media: media

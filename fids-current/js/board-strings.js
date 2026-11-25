@@ -1098,6 +1098,16 @@
     hotelsTrainFree: { en: 'Free {LINE} train', fr: 'Train {LINE} gratuit', es: 'Tren {LINE} gratuito', de: 'Kostenloser {LINE}-Zug', it: 'Treno {LINE} gratuito', pt: 'Trem {LINE} gratuito', ja: '無料の{LINE}列車', zh: '免费 {LINE} 列车', ar: 'قطار {LINE} المجاني' },
     hotelsRideTo: { $ctx: 'the way to an area of a hub city: a train line and its stop', en: '{LINE} to {STOP}', fr: '{LINE} jusqu’à {STOP}', es: '{LINE} hasta {STOP}', de: '{LINE} bis {STOP}', it: '{LINE} fino a {STOP}', pt: '{LINE} até {STOP}', ja: '{LINE}で{STOP}へ', zh: '乘 {LINE} 前往 {STOP}', ar: '{LINE} إلى {STOP}' },
     hotelsRideTime: { en: '{MIN} min · every {EVERY} min', fr: '{MIN} min · toutes les {EVERY} min', es: '{MIN} min · cada {EVERY} min', de: '{MIN} Min. · alle {EVERY} Min.', it: '{MIN} min · ogni {EVERY} min', pt: '{MIN} min · a cada {EVERY} min', ja: '所要{MIN}分 · {EVERY}分ごと', zh: '{MIN} 分钟 · 每 {EVERY} 分钟一班', ar: '{MIN} دقيقة · كل {EVERY} دقيقة' },
+    // v24178 — how a hotel of a hub city is reached from the terminals by the airport's own train
+    // (h.access): at the right of its line, the train mark and its stop (data: Viscount) or the
+    // terminal it is joined to (arrTerminal and its number, the board's own word for a terminal:
+    // "Aérogare" in French, as the UP Express's French page writes Pearson's, "située à
+    // l'aérogare 1", upexpress.com/fr/gares-up-express/gare-pearson, read 2026-11-23); and on a
+    // page with such a line, this legend beside the same mark. The line ({LINE}) is data, the
+    // terminal ({N}) a figure (or as the airport writes it: 2E). Japanese writes the terminal as
+    // the note beside it does, the word, a no-break space and the number. Nothing about fares or
+    // hours.
+    hotelsTrainFrom: { $ctx: 'the legend of the train mark of a hub city: the airport train line, and the terminal it is taken from', en: '{LINE} train from Terminal {N}', fr: 'Train {LINE} depuis l’aérogare {N}', es: 'Tren {LINE} desde la terminal {N}', de: '{LINE}-Zug ab Terminal {N}', it: 'Treno {LINE} dal Terminal {N}', pt: 'Trem {LINE} a partir do Terminal {N}', ja: 'ターミナル\u00A0{N}から{LINE}列車', zh: '从航站楼 {N} 乘 {LINE} 列车', ar: 'قطار {LINE} من مبنى الركاب {N}' },
     // ── BOARD LABELS ──────────────────────────────────────────────────────
     // Labels the boards had written as English literals or read through keys
     // no table held. The words copy the screens' own: terminal and weather

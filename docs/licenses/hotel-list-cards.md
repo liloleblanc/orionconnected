@@ -44,9 +44,22 @@ of the list cards, at 1680x1050:
   of the store, each read on its operator's own page; a way there that could not be read there stays in the
   checked file with `verified: false` and the reason in its note, and the build step leaves it off its page.
   Toronto: downtown, the UP Express to Union, 28 minutes, every 15 (upexpress.com, read 2026-11-22); near the
-  airport, none: the airport's Link train is held, since its operator's own site, torontopearson.com, is
-  blocked, and the pages that were read (Alt Hotel's own) show it reaching only Viscount station, where the
-  Alt Hotel is, not the other airport hotels;
+  airport, none: the airport's Link train is held as a line for the whole area, since its operator's own site,
+  torontopearson.com, is blocked, and the pages that were read (Alt Hotel's own) show it joining the terminals
+  and Viscount station, where the Alt Hotel is, and reaching none of the hotels away from the terminals and
+  Viscount. It shows per hotel instead (below);
+- how a hotel is reached from the terminals (v24178, `access` in the data), on the lines of the hotels it
+  reaches: the train mark at the right of the line, then its stop of the airport's train (data, as written:
+  **Viscount** for the Alt Hotel, from its own contact page) or the terminal it is joined to (the board's own
+  word for a terminal, `arrTerminal`, and its number: **Terminal 3** | **Aérogare 3** for the Sheraton Gateway,
+  from its brand page as read by a person in a browser on 2026-11-23). French writes Pearson's terminals
+  "aérogare", as the UP Express's French page does ("située à l'aérogare 1",
+  upexpress.com/fr/gares-up-express/gare-pearson, read 2026-11-23), and as the board already writes a
+  destination's terminal. On a page with such a line, one legend line beside the same mark: **Link train from
+  Terminal 1** (`hotelsTrainFrom`; the line and the terminal are data, `line` and `from`). Nothing about fares
+  or hours: those would need the operator's own page. A note that gives way to a long name takes its legend
+  with it when it was the last one. The phone app's full list shows the same note under the hotel's address,
+  in the phone's language, and the legend under the heading of the area;
 - on a page that shows a verified shuttle mark, the legend of the mark (`hotelShuttle`) beside a bus mark;
 - on a page with no card hotel, the place of a partner hotel in a dashed frame: **Partner hotel** and
   **Placement available** (`hotelsPartnerSlot`, `hotelsPlacement`), one line a language. It also shows on the
@@ -57,8 +70,9 @@ of the list cards, at 1680x1050:
   the data alone, so a line never changes look between passes;
 - the lines: five, one less for each card hotel above them, never under three (`HUB_ROWS`, `HUB_ROWS_MIN`), the
   name at the left and at the right the shuttle mark where it is verified, else the street; the next lines on
-  the next pass of the deck, none twice on a page, every hotel coming round. A name still too long at the
-  18 px floor drops its note before it is cut;
+  the next pass of the deck, none twice on a page, every hotel coming round. Where a hotel's way from the
+  terminals is verified (`access`, above), that note takes the place of the shuttle mark and the street. A name
+  still too long at the 18 px floor drops its note before it is cut;
 - how many more the scan code lists (`hotelsMoreAirport`, `hotelsMoreDowntown`, a label form in the languages
   whose plural would change with the figure) and **Scan for the full list**, with **Scan** (`hotelsScan`) at the
   right; nothing more to list, the invitation alone;
@@ -99,6 +113,21 @@ Choice, Hyatt, and the airport's own site torontopearson.com, all 403 or a robot
 not read another way: each is in `excluded` with the page a person should read (`kind: "blocked"`, `read`). A
 person who reads the page records each fact with that page and the date, moves the hotel into `hotels`, and
 runs the build step; the airport page grows a line at a time, and a page only shows with three hotels.
+
+On 2026-11-23 a person tried seven of them in a browser and read six (v24178), and each fact they read keeps
+its page, the date and the method ("read by a person in a browser, 2026-11-23"), the shuttle facts included,
+with the line they copied as its quote where there is one. Listed: the Sheraton Gateway, the Element and the
+Four Points (one building at 6257 Airport Road, each with its own telephone), the Hampton Inn & Suites and the
+Fairfield (marriott.com, hilton.com), and the Quality Inn (visitmississauga.ca, Mississauga's official tourism
+site; the place is the OpenStreetMap hotel on Airport Road between number 6257 and the OpenStreetMap point of
+the Nu Hotel, whose address, 6465, is only a lead). The Element and the Fairfield keep the names the person
+confirmed in the check; the line each copied from the same page writes Marriott's long form ("Element by
+Marriott Toronto Airport", "Fairfield by Marriott Inn & Suites Toronto Airport"), and both forms are recorded
+until a person reads the page heading. Shuttle marks from those brand pages for the Element, the Four
+Points, the Hampton and the Fairfield; none for the Quality Inn, whose shuttle is named only on the tourism
+listing (as the Hyatt Place), and none for the Sheraton Gateway, which is joined to Terminal 3 (its way there
+is its access note). The Nu Hotel's page would not open for the person either: it stays excluded. Toronto now
+lists 33 of 44: 9 near the airport, 24 downtown.
 
 ## Every other city: "Hotels in {CITY}" (v24176)
 
@@ -172,8 +201,9 @@ copy of each, `fids-current/data/hotels/<code>.json` (about 10 KB instead of abo
 every gate with a flight to the city fetches it): only the hotels that are listed, and only the
 fields the cards and the phone app read (id, name, area, address line, telephone, website,
 season, shuttle mark, drive, logo; the marks of the foot; for a hub city also the street of each hotel,
-`card: true` on its card hotels and its hub block: the province and, for each area whose way there is verified, its kind,
-its mark, the line, the stop and the figures, without their sources). `node scripts/hotels/build-runtime.js`
+`card: true` on its card hotels, a hotel's verified `access` (its kind, the line, the terminal it is taken from,
+and its stop or its terminal, without their sources) and its hub block: the province and, for each area whose
+way there is verified, its kind, its mark, the line, the stop and the figures, without their sources). `node scripts/hotels/build-runtime.js`
 makes the slim copies from the checked files (`--check` only compares), and
 `tests/hotel-list-cards.test.js` holds the two to agree: the same bytes, the same hotels on the
 same cards on every day of a year, the same card markup.
@@ -203,7 +233,8 @@ Wyndham and Best Western property pages (the airport's site, yfcfredericton.ca, 
 and names no hotel shuttle; Tourism New Brunswick answered 403 with a Cloudflare page and was not
 used; the Marriott, IHG, Hilton, Choice and Radisson pages answered 403, so those hotels rest on
 the city listing alone); for Toronto, the hotels' own sites and brand property pages (all.accor.com for the
-two card hotels), the UP Express pages (upexpress.com) for the train, and Destination Toronto's hotel listing
+two card hotels; marriott.com, hilton.com and visitmississauga.ca read by a person in a browser on 2026-11-23 for
+six airport hotels), the UP Express pages (upexpress.com) for the train, and Destination Toronto's hotel listing
 (stay.destinationtoronto.com, a host of its own beside the blocked www.destinationtoronto.com, answered
 normally; whether it counts as the official tourism site is recorded in the file's `unverified` for a person to
 confirm: until then the five hotels and the one telephone that rest on it alone are held, `listed: false`);
