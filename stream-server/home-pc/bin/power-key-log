@@ -1,0 +1,91 @@
+#!/usr/bin/python3 -I
+"""Logs which input device sends a power, sleep, suspend, wake or restart key.
+
+Nothing else can reach this program: it only opens devices that own one of those
+keys, and it sets the kernel event mask (EVIOCSMASK) on each of them, so every
+other key is dropped by the kernel before it is delivered here. A device whose
+mask cannot be set is not read.
+"""
+import fcntl, glob, os, select, struct, sys, time, ctypes
+
+NAMES = {116: "POWER", 142: "SLEEP", 143: "WAKEUP", 205: "SUSPEND", 408: "RESTART"}
+if os.environ.get("POWER_KEY_LOG_TEST_CODE"):
+    NAMES = {int(os.environ["POWER_KEY_LOG_TEST_CODE"]): "TEST"}
+EV_KEY, EV_MAX, KEY_BYTES = 1, 0x1F, 0x300 // 8
+EVIOCSMASK = (1 << 30) | (16 << 16) | (ord("E") << 8) | 0x93
+EVENT = struct.Struct("llHHi")
+
+
+def owns_key(ev):
+    try:
+        bits = 0
+        for w in open("/sys/class/input/%s/device/capabilities/key" % ev).read().split():
+            bits = (bits << 64) | int(w, 16)
+    except (OSError, ValueError):
+        return False
+    return any(bits >> c & 1 for c in NAMES)
+
+
+def open_masked(path):
+    fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+    try:
+        for t in range(1, EV_MAX + 1):
+            bits = bytearray(KEY_BYTES)
+            if t == EV_KEY:
+                for c in NAMES:
+                    bits[c // 8] |= 1 << (c % 8)
+            buf = (ctypes.c_char * len(bits)).from_buffer(bits)
+            size = len(bits) if t == EV_KEY else 8
+            fcntl.ioctl(fd, EVIOCSMASK, struct.pack("IIQ", t, size, ctypes.addressof(buf)))
+        while True:
+            try:
+                if not os.read(fd, EVENT.size * 64):
+                    break
+            except BlockingIOError:
+                break
+        return fd
+    except OSError:
+        os.close(fd)
+        raise
+
+
+def main():
+    fds = {}
+    refused = set()
+    while True:
+        for path in glob.glob("/dev/input/event*"):
+            ev = os.path.basename(path)
+            if path in [p for p, _ in fds.values()] or not owns_key(ev):
+                continue
+            # A device that was refused is asked again at the next look (udev may
+            # not have set its group yet); the refusal is printed once.
+            try:
+                name = open("/sys/class/input/%s/device/name" % ev).read().strip()
+                fds[open_masked(path)] = (path, name)
+                refused.discard(path)
+                print("watching the power keys of: %s (%s)" % (name, ev), flush=True)
+            except OSError as e:
+                if path not in refused:
+                    print("not reading %s: %s" % (ev, e), flush=True)
+                refused.add(path)
+        r, _, _ = select.select(list(fds), [], [], 5)
+        for fd in r:
+            path, name = fds[fd]
+            try:
+                data = os.read(fd, EVENT.size * 64)
+            except OSError:
+                data = b""
+            if not data:
+                os.close(fd)
+                del fds[fd]
+                refused.discard(path)
+                print("gone: %s" % name, flush=True)
+                continue
+            for i in range(0, len(data) - EVENT.size + 1, EVENT.size):
+                _, _, t, code, value = EVENT.unpack_from(data, i)
+                if t == EV_KEY and code in NAMES and value == 1:
+                    print("KEY %s pressed on: %s (%s)" % (NAMES[code], name, os.path.basename(path)), flush=True)
+
+
+if __name__ == "__main__":
+    main()

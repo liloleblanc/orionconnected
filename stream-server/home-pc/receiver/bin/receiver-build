@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Builds readsb from one pinned commit and installs the program.
+# The download is checked against a SHA-256 before anything in it is read. It
+# is unpacked and compiled by a throwaway user in a systemd sandbox: no network,
+# no writable system path, no home directories, lowest CPU priority. Only the
+# finished program comes back, on stdout.
+# usage: sudo receiver-build
+set -euo pipefail
+[ "$(id -u)" -eq 0 ] || { echo "run as root: sudo $0" >&2; exit 1; }
+
+VERSION=3.16.21
+COMMIT=321931802d89f1695a38f6dfb0a64ba5c1211be4
+SHA256=22c04835f43211a75b94c946fa5e360393e3a1f8e13378e0c19d3548bfcc4776
+URL="https://codeload.github.com/wiedehopf/readsb/tar.gz/$COMMIT"
+DEST=/opt/fids-receiver/bin
+
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"; rm -f /run/readsb-new' EXIT
+curl -fsSL --proto '=https' --max-time 120 --max-filesize 5000000 "$URL" -o "$WORK/src.tar.gz"
+echo "$SHA256  $WORK/src.tar.gz" | sha256sum -c --quiet - || {
+  echo "the download does not match the pinned SHA-256; nothing was built" >&2; exit 1; }
+
+# HAVE_BIASTEE=no: the code that could put power on the antenna socket is not
+# compiled in.
+systemd-run --quiet --wait --pipe --collect --unit=fids-receiver-build \
+  -p DynamicUser=yes -p PrivateNetwork=yes -p PrivateDevices=yes -p PrivateTmp=yes \
+  -p ProtectSystem=strict -p ProtectHome=yes -p NoNewPrivileges=yes \
+  -p CapabilityBoundingSet= -p RestrictAddressFamilies=AF_UNIX \
+  -p Nice=19 -p CPUWeight=10 -p IOWeight=10 -p MemoryMax=2G -p RuntimeMaxSec=600 \
+  /bin/bash -c '
+    set -euo pipefail
+    cd "$(mktemp -d)"
+    tar xz --strip-components=1
+    make -j4 readsb RTLSDR=yes HAVE_BIASTEE=no DISABLE_INTERACTIVE=yes >&2
+    cat readsb' < "$WORK/src.tar.gz" > "$WORK/readsb"
+
+# An empty or wrong answer must not replace a working program.
+chmod 0755 "$WORK/readsb"
+# The shell is there because systemd-run wants a program that exists outside the
+# sandbox, and because readsb prints its version on stderr.
+GOT="$(systemd-run --quiet --wait --pipe --collect -p DynamicUser=yes -p PrivateNetwork=yes \
+  -p ProtectSystem=strict -p ProtectHome=yes -p NoNewPrivileges=yes -p BindReadOnlyPaths="$WORK/readsb:/run/readsb-new" \
+  /bin/sh -c 'exec /run/readsb-new --version 2>&1' || true)"
+case "$GOT" in
+  *"$VERSION"*) ;;
+  *) echo "the built program does not say version $VERSION: ${GOT:-no answer}" >&2; exit 1 ;;
+esac
+install -d -m 0755 "$DEST"
+install -m 0755 -o root -g root "$WORK/readsb" "$DEST/readsb.new"
+mv -f "$DEST/readsb.new" "$DEST/readsb"
+echo "installed readsb $VERSION ($COMMIT) to $DEST/readsb"
