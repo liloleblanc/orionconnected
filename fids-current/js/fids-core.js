@@ -65737,7 +65737,8 @@ function _restartGateAdsTimer() {
       // Covering FIRST means the
       // new slide only ever appears as the old DISSOLVES over it — one clean
       // crossfade, no flash.
-      var _old = null, _wxWake = null;
+      var _old = null;
+      var _wxWake = null;   // the weather card's loops, woken when its copy is on the page
       // 2026-10-20 — what is up as the turn begins, read before it is lifted
       // and compared below once the next slide is painted: a centre card and
       // its markup, or an ad and the key its painter gave it (only while that
