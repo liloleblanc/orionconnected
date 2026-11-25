@@ -343,8 +343,9 @@ test('the outgoing copy leaves from the end state, moving, on absolute delays', 
   const tick = SRC.slice(SRC.indexOf("_wxLeaveWrap.classList.add('wxc-leaving');"), SRC.indexOf("_wxLeaveWrap.classList.add('wxc-leaving');") + 900);
   assert.match(tick, /_wxLeaveWrap\.style\.removeProperty\('--wxc-el'\)/, 'a stamp left by a rebuild would make the absolute delays negative');
   assert.match(tick, /querySelectorAll\(':scope > \[style\*="--wxc-el"\]'\)[\s\S]{0,120}removeProperty\('--wxc-el'\)/, 'on the swapped screens too');
-  assert.match(tick, /querySelectorAll\(':scope > video\.wxc-vid'\)[\s\S]{0,120}\.play\(\)/,
-    'and the scene is nudged to play — what the exit uncovers must MOVE');
+  const wake = SRC.slice(SRC.indexOf("_wxLeaveWrap.classList.add('wxc-leaving');"), SRC.indexOf("_wxLeaveWrap.classList.add('wxc-leaving');") + 2200);
+  assert.match(wake, /_wxWake = _wxLeaveWrap\.querySelectorAll\(':scope > video\.wxc-vid'\);[\s\S]*?_pr\.appendChild\(_old\);[\s\S]{0,160}for \(var _wv = 0; _wv < _wxWake\.length; _wv\+\+\) _wxPlayLive\(_wxWake\[_wv\]\);/,
+    'and the scene is nudged to play once its copy is on the page — what the exit uncovers must MOVE');
 });
 
 test('a reduced-motion preference turns the sequence off', () => {
@@ -403,10 +404,10 @@ test('the carry re-marks only inside the window, stamps base seconds, and resume
   const fitted = [];
   const carry = new Function('window', 'Date', '_WXC_ENTRANCE_MS', '_WXC_ENTRANCE_INTRO_S', '_WX_INTRO_BG_SPAN', '_wxSpeed',
     '_wxParkSceneAfterSet', '_wxHoldSceneForIntro', 'setTimeout', 'clearTimeout', '_wxFitIntroPaint',
-    fnBody('_wxCarryEntrance') + '\nreturn _wxCarryEntrance;');
+    fnBody('_wxPlayLive') + '\n' + fnBody('_wxCarryEntrance') + '\nreturn _wxCarryEntrance;');
   const NOW = 1_800_000_000_000;
   const mk = (withFilm) => {
-    const w = { classes: [], vars: {}, bg: withFilm ? { rate: 1, t: 0, played: false, playbackRate: 1 } : null };
+    const w = { classes: [], vars: {}, bg: withFilm ? { rate: 1, t: 0, played: false, playbackRate: 1, isConnected: true } : null };
     w.classList = { add: c => w.classes.push(c), contains: c => w.classes.includes(c) };
     w.style = { setProperty: (k, v) => { w.vars[k] = v; } };
     if (w.bg) { w.bg.play = () => { w.bg.played = true; }; Object.defineProperty(w.bg, 'currentTime', { set: v => { w.bg.t = v; }, get: () => w.bg.t }); }
@@ -458,7 +459,7 @@ test('the scene is never parked: it plays from the film\'s release to the card\'
   assert.doesNotMatch(SRC, /_wxParkSceneAfterSet/);
   assert.doesNotMatch(SRC, /window\._wxParkTimer/);
   const hold = fnBody('_wxHoldSceneForIntro');
-  assert.match(hold, /vid\.play\(\)/, 'released under the film');
+  assert.match(hold, /_wxPlayLive\(vids\[vq\]\)/, 'released under the film');
   assert.ok(hold.lastIndexOf('.pause()') < hold.indexOf('3800'), 'every pause in the hold comes before the release at 3.8s; nothing after it pauses the scene');
 
 });

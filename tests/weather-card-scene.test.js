@@ -343,5 +343,5 @@ test('the second and third scenes fade in on exactly the beats their screens arr
 test('the hold pauses every scene under the film and releases them together', () => {
   const hold = fn('_wxHoldSceneForIntro');
   assert.match(hold, /querySelectorAll\(':scope > video\.wxc-vid'\)/, 'all of them');
-  assert.match(hold, /vids\[vp\]\.pause\(\)/); assert.match(hold, /vids\[vq\]\.play\(\)/);
+  assert.match(hold, /vids\[vp\]\.pause\(\)/); assert.match(hold, /for \(var vq = 0; vq < vids\.length; vq\+\+\) _wxPlayLive\(vids\[vq\]\);/);
 });

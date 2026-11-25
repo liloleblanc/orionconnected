@@ -20623,7 +20623,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24177" src="/textures/gate-sky-shelf.mp4?v=24177" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24179" src="/textures/gate-sky-shelf.mp4?v=24179" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -20667,7 +20667,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24177" src="/textures/gate-sky-shelf.mp4?v=24177" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24179" src="/textures/gate-sky-shelf.mp4?v=24179" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -21871,7 +21871,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24177" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24179" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt=""' + window._gateMarkAttrs(_bwPick) + '>' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -39565,7 +39565,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24177';
+var FIDS_BUILD_TAG = 'v24179';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -65737,7 +65737,7 @@ function _restartGateAdsTimer() {
       // Covering FIRST means the
       // new slide only ever appears as the old DISSOLVES over it — one clean
       // crossfade, no flash.
-      var _old = null;
+      var _old = null, _wxWake = null;
       // 2026-10-20 — what is up as the turn begins, read before it is lifted
       // and compared below once the next slide is painted: a centre card and
       // its markup, or an ad and the key its painter gave it (only while that
@@ -65785,8 +65785,7 @@ function _restartGateAdsTimer() {
                     _wxLeaveWrap.style.removeProperty('--wxc-el');
                     var _wxLk = _wxLeaveWrap.querySelectorAll(':scope > [style*="--wxc-el"]');
                     for (var _wl = 0; _wl < _wxLk.length; _wl++) _wxLk[_wl].style.removeProperty('--wxc-el');
-                    var _wxLv = _wxLeaveWrap.querySelectorAll(':scope > video.wxc-vid');
-                    for (var _wv = 0; _wv < _wxLv.length; _wv++) { try { _wxLv[_wv].play(); } catch (eLv) {} }
+                    _wxWake = _wxLeaveWrap.querySelectorAll(':scope > video.wxc-vid');
                   } catch (eLk) {}
                 }
               }
@@ -65796,6 +65795,8 @@ function _restartGateAdsTimer() {
             el3._lastKey = null;
             el3._wxLastHtml = null;
             _pr.appendChild(_old); // cover NOW, before the new slide paints
+            // woken here and not above: until this line the copy is off the page
+            if (_wxWake) { for (var _wv = 0; _wv < _wxWake.length; _wv++) _wxPlayLive(_wxWake[_wv]); }
           }
         }
       } catch (e) { _old = null; }
@@ -70106,7 +70107,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24177" src="/textures/gate-sky-shelf.mp4?v=24177"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24179" src="/textures/gate-sky-shelf.mp4?v=24179"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
@@ -70295,6 +70296,24 @@ function _wxEndEntrance(root) {
 // can carry the intro only on the paint that will actually play it. A
 // re-render inside the same visit (a re-tint, a strips swap, a gate rebuild)
 // answers false and the titles are simply not emitted.
+// 2026-11-25 — A CLIP OFF THE PAGE STAYS STILL.
+// Taking a video out of the page pauses it: the browser does that. A play()
+// after that runs it for good. Nobody can see it, and while it plays the
+// browser may not drop it, its decoder, or the whole gate screen it still hangs
+// in. The loops below are started by a timer, so a card that was replaced or
+// turned away inside its first 3.8 seconds left up to three of them running on
+// every such visit: after 15 hours one board was decoding about twenty, which
+// was more than half of the processor work of the machine it runs on. Every
+// play() of the weather card goes through here.
+function _wxPlayLive(v) {
+  try {
+    if (!v || !v.isConnected) return false;
+    var p = v.play();
+    if (p && typeof p.catch === 'function') p.catch(function () {});
+    return true;
+  } catch (e) { return false; }
+}
+
 // v23786 — ONE VIDEO DECODES AT A TIME.
 // The title's backdrop and the scene are both 1920x1080. Playing them
 // together was two simultaneous decodes on top of fifteen animating layers,
@@ -70316,8 +70335,7 @@ function _wxHoldSceneForIntro(wrap, elapsedMs) {
     // `elapsedMs` is how far into the film a carried rebuild already is, so
     // the loops are released at the same moment they would have been.
     setTimeout(function () {
-      try { vid.play(); } catch (e) {}
-      for (var vq = 1; vq < vids.length; vq++) { try { vids[vq].play(); } catch (eVq) {} }
+      for (var vq = 0; vq < vids.length; vq++) _wxPlayLive(vids[vq]);
     }, Math.max(0, Math.round(3800 * _wxSpeed() - (elapsedMs || 0))));
   } catch (e) {}
 }
@@ -70362,7 +70380,7 @@ function _wxCarryEntrance(wrap) {
           var rate = _WX_INTRO_BG_SPAN / (introMs / 1000);
           bg.playbackRate = rate;
           try { bg.currentTime = el * rate; } catch (eT) {}
-          try { bg.play(); } catch (eP) {}
+          _wxPlayLive(bg);
           if (window._wxIntroBgTimer) { try { clearTimeout(window._wxIntroBgTimer); } catch (eK) {} }
           window._wxIntroBgTimer = setTimeout(function () {
             window._wxIntroBgTimer = null;
@@ -70394,13 +70412,13 @@ function _wxResumeMedia(wrap) {
     var bg = wrap.querySelector(':scope > .wxc-intro > video.wxc-intro-bg');
     if (bg && live && el < introS) {
       try { bg.currentTime = el * (_WX_INTRO_BG_SPAN / introS); } catch (eT) {}
-      try { bg.play(); } catch (eP) {}
+      _wxPlayLive(bg);
     }
     var one = wrap.classList && wrap.classList.contains('wxc-one');
     var loopsOn = one || (live && el >= 3.8 * sp && el < 19.7 * sp);
     if (loopsOn) {
       var vids = wrap.querySelectorAll(':scope > video.wxc-vid');
-      for (var i = 0; i < vids.length; i++) { try { vids[i].play(); } catch (eV) {} }
+      for (var i = 0; i < vids.length; i++) _wxPlayLive(vids[i]);
     }
   } catch (e) {}
 }
@@ -70652,7 +70670,7 @@ function _wxArmEntrance(wrap) {
         // be the one the last title used. Rewind before playing or the
         // backdrop opens partway through — past the clean stretch.
         try { _bg.currentTime = 0; } catch (eT) {}
-        try { _bg.play(); } catch (eP) {}
+        _wxPlayLive(_bg);
         // Stop it when it stops being SEEN, which is the end of the title at
         // six seconds — not the end of the entrance at eighteen. The overlay
         // is transparent from then on but stays in the layout, so without
@@ -71648,7 +71666,8 @@ function _renderWxCard(el) {
     //
     // It costs nothing while off screen: the slide rotation replaces this
     // element's innerHTML when it moves to the next slide (:38247, :38303),
-    // which destroys the <video> and stops the decode. The card is up 24s of a
+    // which pauses the <video> and stops the decode (as long as nothing starts
+    // it again off the page: _wxPlayLive). The card is up 24s of a
     // 132s cycle, so this decodes about 18% of the time and needs no separate
     // pause-on-hidden wiring.
     //

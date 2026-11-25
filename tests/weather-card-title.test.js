@@ -467,7 +467,7 @@ test('the backdrop stops when the title is taken out of the layout', () => {
   assert.match(ab, /_bg\.currentTime = 0/,
     'and arming rewinds too: the card does not always rebuild between visits, ' +
     'so the element can be the one the last title used');
-  assert.match(ab, /_bg\.play\(\)/, 'and starts it');
+  assert.match(ab, /_wxPlayLive\(_bg\);/, 'and starts it');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
