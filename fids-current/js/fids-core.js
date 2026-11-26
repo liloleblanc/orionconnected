@@ -51959,8 +51959,10 @@ var _MAP_PLANE_UNKNOWN = { jet: [38, 35, 4.8], prop: [30, 27, 3.5] };
 // 512 px PNG is centred on the fuselage half-way nose to tail and the aeroplane
 // is as long as the picture it stands in for (42.75 px for a jet, 34.88 px for
 // the Dash 8-400) in the 48 px box, so nothing changes size in flight; its span
-// is measured there too. The white paint of each is made neutral grey (the
-// renders carried a faint lilac cast), and the E175, CRJ900 and Dash 8-400 are
+// is measured there too. Every white and grey of each (paint, wings, tailplanes)
+// is made truly neutral, as the renders carried a faint lilac cast, while the
+// red and the black of the colours are kept; the A220-300 and the Dash 8-400 are
+// turned upright (they leaned 0.6 and 0.3 degrees); and the E175, CRJ900 and Dash 8-400 are
 // widened or narrowed to their real span for their length (they were 4, 3 and
 // 7 percent out). Which aeroplanes wear them: _mapPlaneAcArt below.
 var _MAP_PLANE_ART = {
@@ -51972,7 +51974,7 @@ var _MAP_PLANE_ART = {
   ac320: { src: '/logos/map-plane-ac-320.png', len: 42.75, span: 38.99 },
   ac321: { src: '/logos/map-plane-ac-321.png', len: 42.75, span: 34.32 },
   ac7m8: { src: '/logos/map-plane-ac-7m8.png', len: 42.75, span: 38.45 },
-  ac223: { src: '/logos/map-plane-ac-223.png', len: 42.75, span: 39.09 },
+  ac223: { src: '/logos/map-plane-ac-223.png', len: 42.75, span: 39.10 },
   ace75: { src: '/logos/map-plane-ac-e75.png', len: 42.75, span: 35.11 },
   accr9: { src: '/logos/map-plane-ac-cr9.png', len: 42.75, span: 29.42 },
   acdh4: { src: '/logos/map-plane-ac-dh4.png', len: 34.88, span: 30.27 }
@@ -51986,8 +51988,17 @@ var _MAP_PLANE_ART = {
 //                            A320 extras, AC 7000-7599)
 //   A321, 737 MAX 8          mainline below AC 1600 only: Rouge flies both, in
 //                            its own colours, under AC 1600-2299
-//   E175, CRJ900, Dash 8-400 Jazz or the Express brand by the ladder, or an
-//                            Express number, AC 7000-8999
+//   E175, CRJ900             Jazz or the Express brand by the ladder, or an
+//                            Express number, AC 7000-8999 (PAL flies neither)
+//   Dash 8-400               Jazz only, on positive evidence: the Jazz operator
+//                            by the ladder, or a Jazz callsign. PAL flies its
+//                            own Dash 8-400s, in its own colours, for Air
+//                            Canada Express too, under the brand (AC 7700-7799)
+//                            and under bare numbers (AC 7203 is PB 7203)
+// Every callsign on record (the feed, the row, the one FR24 saw) is read on its
+// own: Toronto writes ACA for Rouge too, so one ACA must not hide a ROU. An
+// aeroplane in special colours (AIRCRAFT_LIVERY_BY_REG, as C-GNBN in Trans-Canada
+// Air Lines colours) is never drawn in the everyday ones.
 // The rows are the inbound and the departure of the one aeroplane; any of them
 // that fails keeps the plain picture. Returns the picture key, or an empty
 // string.
@@ -52010,13 +52021,27 @@ function _mapPlaneAcArt(code, rows) {
       var op = String(r._opCode || '').trim().toUpperCase();
       var res = null;
       try { res = (typeof _acResolvedGet === 'function') ? _acResolvedGet(r) : null; } catch (eR) { res = null; }
-      var cs = String(r._feedCs || r._callSign || (res && res.seen && res.seen.cs) || '').replace(/\s+/g, '').toUpperCase();
-      var csP = (cs.match(/^([A-Z]{3})\d/) || [])[1] || '';
-      if (csP && csP !== 'ACA' && csP !== 'JZA') return '';
+      var seen = (res && res.seen) || {};
+      var jazz = false, cso = [r._feedCs, r._callSign, seen.cs];
+      for (var q = 0; q < cso.length; q++) {
+        var p = (String(cso[q] || '').replace(/\s+/g, '').toUpperCase().match(/^([A-Z]{3})\d/) || [])[1] || '';
+        if (!p) continue;
+        if (p !== 'ACA' && p !== 'JZA') return '';
+        if (p === 'JZA') jazz = true;
+      }
+      if (typeof AIRCRAFT_LIVERY_BY_REG !== 'undefined' && typeof _aircraftRegKey === 'function') {
+        var regs = [r._reg, res && res.reg, seen.reg];
+        for (var g = 0; g < regs.length; g++) {
+          var rk = _aircraftRegKey(regs[g]);
+          if (rk && Object.prototype.hasOwnProperty.call(AIRCRAFT_LIVERY_BY_REG, rk)) return '';
+        }
+      }
       if (kind === 'express') {
-        if (!(op === 'QK' || op === 'ACEX' || (!op && fn >= 7000 && fn <= 8999))) return '';
+        if (c === 'DH4') {
+          if (!(op === 'QK' || (jazz && (!op || op === 'ACEX')))) return '';
+        } else if (!(op === 'QK' || op === 'ACEX' || (!op && fn >= 7000 && fn <= 8999))) return '';
       } else {
-        if (op || csP === 'JZA') return '';
+        if (op || jazz) return '';
         var ok = fn >= 1 && fn <= 1599;
         if (!ok && c === '320' && fn >= 7000 && fn <= 7599) ok = true;
         if (!ok) return '';
@@ -55701,7 +55726,10 @@ function _gateApronPlan(ap, now) {
   }
   var placed = items.filter(function (it) { return !it.own && !!stands[it.id]; });
   placed.forEach(function (it) { it.stand = stands[it.id]; });
-  var val = { key: placed.map(function (it) { return it.id + '>' + it.stand + '>' + it.spec.key; }).join(';'), items: placed,
+  // v24182 — the picture is part of the key: when the colours of an aeroplane
+  // change (an operator answer lands after the first draw), its marker is drawn
+  // again, never left in the colours it was first given.
+  var val = { key: placed.map(function (it) { return it.id + '>' + it.stand + '>' + it.spec.key + '>' + ((it.spec.art && it.spec.art.src) || ''); }).join(';'), items: placed,
               own: ownRef, ownDoor: ownDoor };
   _GATE_APRON_CACHE = { sig: sig, arr: dA, dep: dD, kA: kA, kD: kD, f: f, val: val };
   return val;
