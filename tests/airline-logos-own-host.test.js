@@ -369,8 +369,6 @@ const NOT_LOGO_HOSTS = {
   // feeds the boards read themselves
   'tampaairportwebprod.prod.acquia-sites.com': { why: 'the flight feed of Tampa', at: ['/api/flight-status?'] },
   'raw.githubusercontent.com': { why: 'the open list of airports (their places), when the board has none: that one file of that one repository', at: ['/mwgg/Airports/master/airports.json'] },
-  // maps
-  'basemaps.cartocdn.com': { why: 'the map tiles of the Studio', at: ['/rastertiles/voyager/'] },
   // fonts and script libraries
   'fonts.googleapis.com': { why: 'the fonts of the boards', at: ['', '/css2?'] },
   'fonts.gstatic.com': { why: 'the font files those fonts load', at: [''] },

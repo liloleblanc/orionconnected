@@ -10,7 +10,7 @@ import proxy from "./workers/fids-proxy.js";
  * works on display networks that block public CDNs:
  *
  *   /mapcdn/<file>                 → the map engine (Leaflet / MapLibre / three)
- *   /maptiles/<z>/<x>/<y>[@2x].png → CARTO Voyager map tiles
+ *   /maptiles/<z>/<x>/<y>[@2x].png → OpenStreetMap map tiles (was CARTO Voyager)
  *   /demtiles/<z>/<x>/<y>.png      → AWS terrarium elevation tiles
  *   /tiles/<provider>/<z>/<x>/<y>.png → selectable base-map tiles
  *
@@ -65,32 +65,30 @@ const MAP_ENGINE = {
 // cache-poisoning class, third appearance).
 const NO_STORE = { 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' };
 
-const TILE_BASE = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/';
+// /maptiles/ once served CARTO Voyager. By 25 Nov 2026 CARTO answered every
+// request without a paid account key with a picture saying so, on every board
+// map built on it. The route now serves OpenStreetMap, the map the gate maps
+// already use. OSM has no @2x tiles: a retina request gets the normal one.
+const TILE_BASE = 'https://tile.openstreetmap.org/';
+// OSM's tile policy asks each request to name the application and a contact
+// that is ours (v23909: one that named Orlando airport's site read as faked).
+const TILE_UA = 'OrionConnectedFIDS/1.0 (airport display boards; +https://fids.orionconnected.com)';
 // AWS open elevation tiles (terrarium encoding) — free, no API key.
 const DEM_BASE = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/';
 // 2026-10-12 — the precipitation radar upstream that stood here is removed
 // (its free terms allow personal and educational use only; see /wxradar below).
 
-// Selectable base-map providers for the 3D route map (all free, no key).
-// Requested as /tiles/<provider>/{z}/{x}/{y}.png; the Worker reorders the
-// axes per provider (Esri uses z/y/x) and proxies from this origin.
+// Selectable base-map providers for the 3D route map. Requested as
+// /tiles/<provider>/{z}/{x}/{y}.png; the Worker reorders the axes per
+// provider (Esri uses z/y/x) and proxies from this origin. The four CARTO
+// styles (voyager, dark, positron, citylabels) are gone: CARTO now asks for a
+// paid key and answered each of them with a picture saying so (25 Nov 2026).
 const TILE_PROVIDERS = {
-  voyager:   'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-  dark:      'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-  positron:  'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
   satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   topo:      'https://a.tile.opentopomap.org/{z}/{x}/{y}.png',
   // Classic OpenStreetMap street cartography (no API key). OSM's tile policy
   // requires a valid User-Agent — set on the proxy fetch below.
   osm:       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-  // Transparent place-name labels ONLY — overlaid on satellite for a
-  // "satellite with names" view. Uses CARTO's labels-only tiles: city/town
-  // text, NO boundary lines. (The old `labels` provider was Esri
-  // Boundaries_and_Places, whose bold white country borders read like flight
-  // paths on the route map — ) New key so the edge
-  // cache serves fresh tiles instead of the day-cached bordered ones. Standard
-  // XYZ axes.
-  citylabels: 'https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png',
 };
 
 const DAY = 86400;
@@ -1064,7 +1062,10 @@ export default {
         return new Response('Bad tile path', { status: 400 });
       }
       try {
-        const r = await fetch(TILE_BASE + rest, { cf: { cacheEverything: true, cacheTtl: DAY } });
+        const r = await fetch(TILE_BASE + rest.replace('@2x', ''), {
+          cf: { cacheEverything: true, cacheTtl: DAY },
+          headers: { 'User-Agent': TILE_UA },
+        });
         if (!r.ok) return new Response('Tile upstream ' + r.status, { status: 502, headers: NO_STORE });
         return new Response(r.body, {
           status: 200,
@@ -1125,17 +1126,17 @@ export default {
     if (path.startsWith('/tiles/')) {
       const m = path.slice('/tiles/'.length).match(/^([a-z]+)\/(\d+)\/(\d+)\/(\d+)\.png$/);
       if (!m) return new Response('Bad tile path', { status: 400 });
-      const tpl = TILE_PROVIDERS[m[1]];
+      // Own names only: a plain lookup also finds what every object inherits,
+      // and /tiles/constructor/... then threw instead of answering 404.
+      const tpl = Object.prototype.hasOwnProperty.call(TILE_PROVIDERS, m[1]) ? TILE_PROVIDERS[m[1]] : null;
       if (!tpl) return new Response('Unknown provider', { status: 404 });
       const upstream = tpl.replace('{z}', m[2]).replace('{x}', m[3]).replace('{y}', m[4]);
       try {
         // OSM (and some others) reject requests without a descriptive
-        // User-Agent per their tile-usage policy — always send one. It must
-        // name THIS application and a contact that is ours (v23909: it gave
-        // Orlando airport's site, which the policy treats as a faked UA).
+        // User-Agent per their tile-usage policy: always send one (TILE_UA).
         const r = await fetch(upstream, {
           cf: { cacheEverything: true, cacheTtl: DAY },
-          headers: { 'User-Agent': 'OrionConnectedFIDS/1.0 (airport display boards; +https://fids.orionconnected.com)' }
+          headers: { 'User-Agent': TILE_UA }
         });
         if (!r.ok) return new Response('Tile upstream ' + r.status, { status: 502, headers: NO_STORE });
         return new Response(r.body, {
