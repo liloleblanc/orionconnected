@@ -484,8 +484,9 @@ test('the in-place parked paths fly the camera down to the ground view and point
   const el = { firstChild: { style: {} } };
   view.marker.getElement = () => el;
   // (_mapToRawCopy: v24095, a no-op off the date line — tested in gate-map-dateline)
-  const apply = lift('_gateApplyParked', ['_gcFullRoute', '_gateHeading', '_gateGroundHeading', '_gateGroundZoomNow', '_mapPlaneFit', '_mapToRawCopy'],
-    [() => ['route'], (h) => h, () => 310, () => 17, () => { calls.fit++; }, () => {}]);
+  // (_gateCamFly: v24181, the one way a live map flies — tested in gate-map-camera)
+  const apply = lift('_gateApplyParked', ['_gcFullRoute', '_gateHeading', '_gateGroundHeading', '_gateGroundZoomNow', '_mapPlaneFit', '_mapToRawCopy', '_gateCamFly'],
+    [() => ['route'], (h) => h, () => 310, () => 17, () => { calls.fit++; }, () => {}, (m, ll, z, d) => { m.flyTo(ll, z, { duration: d }); return true; }]);
   apply(view, 46.1156, -64.6877, [43.68, -79.62]);
   assert.deepEqual(calls.fly, [[46.1156, -64.6877], 17], 'down to stand zoom — these paths never changed zoom before');
   assert.equal(el.firstChild.style.transform, 'rotate(310deg)', 'the stand\'s heading');
@@ -575,7 +576,8 @@ function liveWorld(type) {
     '  _gateGlide.views[map === gateMap ? "mini" : "big"] = { map: map, marker: mk, a1: a1, a2: a2 }; mk._map = map; _gateGlide.raf = 1; }',
     ...['aircraftCodeToIata', '_gcNm', '_gateGlideNoteFix', '_gateGlideSameLeg', '_stopGateMapGlide', '_gateParkedAtOrigin',
         '_gateGroundSpeed', '_gateOnGroundNow', '_gateGroundZoomNow', '_gateGroundZoom',
-        '_mapPlaneSpecFor', '_mapPlaneScale', '_mapPlaneFit', '_gateMapFixSpd', '_lngNear', '_lngChain', 'initGateMapLive', '_bigMapCloneLive'].map(fnSource),
+        '_mapPlaneSpecFor', '_mapPlaneScale', '_mapPlaneFit', '_gateMapFixSpd', '_lngNear', '_lngChain', 'initGateMapLive', '_bigMapCloneLive',
+        '_gateCamFly', '_gateCamSnap', '_gateCamWantNow'].map(fnSource),   // v24181 — the camera's flight, for a zoom no glide is left to fly
     'return { mini: initGateMapLive, big: _bigMapCloneLive, gateMap: function(){ return gateMap; }, glide: _gateGlide };',
   ].join('\n');
   const api = new Function('L', 'document', 'window', 'console', 'setTimeout', 'AIRPORTS', 'TYPE', 'LOG', src)(
@@ -588,7 +590,9 @@ function liveWorld(type) {
     log.length = 0;
     api.mini('YYZ', 'YQM', lat, lng, Date.now());
     const m = api.gateMap();
-    return { z: m.getZoom(), rec: window._GATE_MAP_VIEW && window._GATE_MAP_VIEW.zoom,
+    // v24181 — an in-place re-anchor asks the glide for its new zoom (the glide
+    // is stubbed here): the zoom the map is at, or has been asked to fly to
+    return { z: (typeof m._fidsWantZoom === 'number' ? m._fidsWantZoom : m.getZoom()), rec: window._GATE_MAP_VIEW && window._GATE_MAP_VIEW.zoom,
              ky: +containers.gateMapBox.style.props['--fids-plane-ky'], kx: +containers.gateMapBox.style.props['--fids-plane-kx'], log: log.slice() };
   };
   return { window, api, fix, log, L, containers };
@@ -634,8 +638,10 @@ test('after take-off the big map\'s in-place re-anchor comes out of the ground z
   w.window._gateMapWhere = { kind: 'fix', onGround: false, spd: 165, lat: air[0], lng: air[1], at: Date.now() };
   w.log.length = 0;
   w.api.big('YYZ', 'YQM', air[0], air[1], Date.now());
-  assert.ok(w.log.includes('bigCraftMap flyTo z15'), 'flown out to 15: ' + w.log.join(', '));
-  assert.equal(big.getZoom(), 15);
+  // v24181 — asked of the glide, which flies it to where it draws the
+  // aeroplane (tests/gate-map-camera.test.js); never flown to the raw fix
+  assert.equal(big._fidsWantZoom, 15, 'asked out to 15: ' + w.log.join(', '));
+  assert.ok(!w.log.some((s) => /flyTo/.test(s)), 'not flown to the raw fix: ' + w.log.join(', '));
   // In the air at the ladder's zooms it keeps its zoom and only follows the aeroplane.
   big.setView(air, 13);
   w.log.length = 0;
