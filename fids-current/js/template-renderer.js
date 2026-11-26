@@ -458,8 +458,11 @@
         keyboard: false, touchZoom: false, fadeAnimation: false, zoomAnimation: false
       });
     } catch (e) { note(_w('mapUnavailable')); return null; }
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-      { subdomains: 'abcd', maxZoom: 18, crossOrigin: true }).addTo(map);
+    // The OpenStreetMap map of the gate maps, from our own address. CARTO, the
+    // map this used, now answers every request without a paid key with a
+    // picture saying so.
+    L.tileLayer('/tiles/osm/{z}/{x}/{y}.png',
+      { maxZoom: 18, crossOrigin: true }).addTo(map);
     let arc;
     try {
       arc = (L.Polyline && typeof L.Polyline.Arc === 'function')
