@@ -37,7 +37,7 @@ function fnSource(name) {
   const end = CORE.indexOf('\n}\n', at);
   return CORE.slice(at + 1, end + 2);
 }
-const CAM = ['_gateCamFly', '_gateCamFresh', '_gateCamSpot', '_gateCamCentre', '_gateCamAim', '_gateCamSnap', '_gateCamFollow', '_gateCamBusy', '_gateCamIdle', '_gateCamWantNow'];
+const CAM = ['_gateCamFly', '_gateCamFresh', '_gateCamSpot', '_gateCamCentre', '_gateCamAim', '_gateCamSnap', '_gateCamRest', '_gateCamFollow', '_gateCamBusy', '_gateCamIdle', '_gateCamWantNow'];
 
 // ── Web Mercator in 256-px tiles, as Leaflet projects ─────────────────────
 const R = Math.PI / 180;
@@ -91,7 +91,17 @@ class FakeMap {
     this.fire('move'); this.fire('moveend');
     return this;
   }
-  setView(ll, z) { this.views.push({ ll: llOf(ll), z }); this._reset(ll, z); return this; }
+  setView(ll, z) {
+    this.views.push({ ll: llOf(ll), z });
+    // as Leaflet does: at the same zoom and inside the map, a whole-pixel pan
+    // (_tryAnimatedPan truncates the offset), so a fraction of the pane stays
+    const p = this.project(ll, z), c = this._c, o = { x: Math.trunc(p.x - c.x), y: Math.trunc(p.y - c.y) };
+    if (this.leafletSetView && z === this._zoom && Math.abs(o.x) <= this._size[0] && Math.abs(o.y) <= this._size[1]) {
+      this._pane = { x: this._pane.x - o.x, y: this._pane.y - o.y };
+      return this;
+    }
+    this._reset(ll, z); return this;
+  }
   // a flight lands at once here, with the pane where it was (as Leaflet does)
   flyTo(ll, z, opt) {
     const q = llOf(ll), p = merc(q.lat, q.lng, z);
@@ -109,7 +119,7 @@ function camWorld() {
   const clock = { t: 1700000000000 };
   const src = ['var _gateGlide = { raf: null, timer: null };', 'var _gateTaxi = { on: false };',
     ...CAM.map(fnSource),
-    'return { fly: _gateCamFly, fresh: _gateCamFresh, spot: _gateCamSpot, centre: _gateCamCentre, aim: _gateCamAim, snap: _gateCamSnap, follow: _gateCamFollow, busy: _gateCamBusy, idle: _gateCamIdle, wantNow: _gateCamWantNow, glide: _gateGlide, taxi: _gateTaxi };'].join('\n');
+    'return { fly: _gateCamFly, fresh: _gateCamFresh, spot: _gateCamSpot, centre: _gateCamCentre, aim: _gateCamAim, snap: _gateCamSnap, rest: _gateCamRest, follow: _gateCamFollow, busy: _gateCamBusy, idle: _gateCamIdle, wantNow: _gateCamWantNow, glide: _gateGlide, taxi: _gateTaxi };'].join('\n');
   return Object.assign({ clock }, new Function('Date', src)({ now: () => clock.t }));
 }
 
@@ -585,6 +595,88 @@ test('the real taxi loop: at the stand mid-glide it runs on until the camera lan
     }
   }
   assert.ok(midGlide > 0, 'some arrivals reach the stand mid-glide (' + midGlide + ' of ' + runs + ')');
+});
+
+test('a view that takes the map mid-glide (the parked view at the stand) gets it on whole pixels at once', () => {
+  // a glide in the air, then the parked view's setView inside the map: in
+  // Leaflet that is a whole-pixel pan, which keeps the fraction the glide left
+  const w = camWorld(), m = new FakeMap(YQM, 16, [288, 180]);
+  m.leafletSetView = true;
+  let p = m.project(YQM);
+  w.aim(m, YQM, 90, 0.2);
+  let took = false;
+  for (let f = 0; f < 60 * 40 && !took; f++) {
+    w.clock.t += DT; p = { x: p.x + 12 / FPS, y: p.y }; const q = m.unproject(p);
+    w.follow(m, [q.lat, q.lng], DT, 90, 0.2);
+    if (m._fidsCam && m._fidsCam.gl && (frac(m._pane.x) > 0.2 || frac(m._pane.y) > 0.2)) {
+      const stand = m.unproject({ x: p.x + 7, y: p.y - 3 });
+      m.setView([stand.lat, stand.lng], 16);
+      assert.ok(frac(m._pane.x) > 0.01 || frac(m._pane.y) > 0.01, 'Leaflet kept the fraction');
+      assert.equal(w.rest(m), true);
+      took = true;
+    }
+  }
+  assert.ok(took, 'caught a glide with the pane off whole pixels');
+  assert.ok(frac(m._pane.x) < 1e-9 && frac(m._pane.y) < 1e-9, 'whole pixels at once');
+  assert.equal(m._fidsCam.gl, null, 'and no glide left to carry on');
+  assert.equal(w.rest(null), false);
+  // the parked and empty-stand views, and the estimates on both maps, take the camera so
+  for (const n of ['_gateDrawParkedEstimate', '_gateDrawEmptyStand']) {
+    assert.match(fnSource(n), /map\.setView\(c, spot\.zoom, \{ animate: false \}\);\s*try \{ _gateCamRest\(map\); \} catch \(eCR\) \{\}/, n);
+  }
+  assert.equal((fnSource('initGateMap').match(/gateMap\.setView\([^;]+;\s*try \{ _gateCamRest\(gateMap\); \} catch \(eCR\) \{\}/g) || []).length, 2, 'the small map estimate');
+  assert.equal((fnSource('_bigMapClone').match(/window\._bigCraftMap\.setView\([^;]+;\s*try \{ _gateCamRest\(window\._bigCraftMap\); \} catch \(eCR\) \{\}/g) || []).length, 2, 'the big map estimate');
+});
+
+test('the camera clock takes a quarter of a second at most a frame; a stopped aeroplane has no speed at once; a pixel-sized hop is no speed', () => {
+  const w = camWorld(), m = new FakeMap(YQM, 13, [288, 180]);
+  let p = m.project(YQM);
+  w.aim(m, YQM, 90, 0.2);
+  const step = (dx, dtMs) => { w.clock.t += dtMs; p = { x: p.x + dx, y: p.y }; const q = m.unproject(p); w.follow(m, [q.lat, q.lng], dtMs, 90, 0.2); };
+  for (let f = 0; f < 60 * 40 && !(m._fidsCam && m._fidsCam.gl); f++) step(6.2 / FPS, DT);
+  assert.ok(m._fidsCam.gl, 'a glide');
+  // a pause of 3 s (a hidden page; the caller has no frame time of its own)
+  const ck0 = m._fidsCam.ck;
+  w.clock.t += 3000; { const q = m.unproject(p); w.follow(m, [q.lat, q.lng], 0, 90, 0.2); }
+  assert.equal(Math.round(m._fidsCam.ck - ck0), 250, 'the glide went on by a quarter of a second, not three');
+  // the aeroplane stops: its speed is nothing on the first still frame
+  step(6.2 / FPS, DT);
+  step(0, DT);
+  assert.deepEqual([m._fidsCam.ux, m._fidsCam.uy], [0, 0]);
+  // moving again; a two-pixel hop sideways (a fix a few metres off the line) is not a speed
+  for (let f = 0; f < 120; f++) step(6.2 / FPS, DT);
+  const u0 = [m._fidsCam.ux, m._fidsCam.uy];
+  w.clock.t += DT; p = { x: p.x + 6.2 / FPS, y: p.y + 2 }; { const q = m.unproject(p); w.follow(m, [q.lat, q.lng], DT, 90, 0.2); }
+  assert.ok(Math.abs(m._fidsCam.ux - u0[0]) < 0.5 && Math.abs(m._fidsCam.uy - u0[1]) < 0.5, 'the speed did not take the hop: ' + [m._fidsCam.ux, m._fidsCam.uy].map((v) => v.toFixed(2)));
+});
+
+test('a resize mid-glide and a long frame at its start cost no step', () => {
+  // the map resized from even to odd in the middle of a glide: it still ends on whole pixels with no snap
+  let resized = false, lastSteps = [];
+  const r = drive({ secs: 40, speed: 6.2, zoom: 13, hdgAt: () => 90,
+    onFrame: (t, m) => {
+      if (!resized && m._fidsCam && m._fidsCam.gl && m._fidsCam.ck - m._fidsCam.gl.t0 > 1000) { m._size = [287, 179]; resized = true; }
+    } });
+  assert.ok(resized, 'resized mid-glide');
+  assert.ok(r.worstDvAll < 0.05, 'no snap at the end: ' + r.worstDvAll.toFixed(4));
+  assert.equal(r.softAtRest, 0);
+  // a glide that starts on a frame a quarter of a second long opens with no jump
+  const w = camWorld(), m = new FakeMap(YQM, 13, [288, 180]);
+  let p = m.project(YQM);
+  w.aim(m, YQM, 90, 0.2);
+  let first = null;
+  for (let f = 0; f < 60 * 40 && first === null; f++) {
+    const c0 = m._c;
+    const before = !!(m._fidsCam && m._fidsCam.gl);
+    // frames of 250 ms around the moment it reaches the side
+    const s = m.screen((() => { const q = m.unproject(p); return [q.lat, q.lng]; })());
+    const dtMs = s.x - 144 > 0.27 * 288 ? 250 : DT;
+    w.clock.t += dtMs; p = { x: p.x + 6.2 * dtMs / 1000, y: p.y }; const q = m.unproject(p);
+    w.follow(m, [q.lat, q.lng], dtMs, 90, 0.2);
+    if (!before && m._fidsCam && m._fidsCam.gl) first = Math.hypot(m._c.x - c0.x, m._c.y - c0.y);
+  }
+  assert.ok(first !== null, 'a glide started');
+  assert.ok(first < 0.05, 'its first frame moved ' + first.toFixed(3) + ' px');
 });
 
 // ── the real glide, sliced out as tests/gate-glide-resume.test.js does ─────

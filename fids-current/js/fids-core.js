@@ -52287,6 +52287,7 @@ function initGateMap(org,dst,prog,waitAt,note){
   } else {
     try { delete gateMap._fidsParkView; } catch (e) {}
     gateMap.setView(center, zoom, { animate: false });
+    try { _gateCamRest(gateMap); } catch (eCR) {}   // v24181 — the camera is this view now
     if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); if(arc)_estOv.push(arc); }
   }
   // No pin on the airport the map is standing at: the aeroplane (or the empty
@@ -52314,6 +52315,7 @@ function initGateMap(org,dst,prog,waitAt,note){
       // The field stays in frame anyway once the plane is close.
       if (p >= 0.12 && p < 0.995) {
         gateMap.setView(planePos, zoom);
+        try { _gateCamRest(gateMap); } catch (eCR) {}   // v24181 — the camera is this view now
       }
   }_gateMapSettle(o,d,p,500);}
 
@@ -55077,6 +55079,7 @@ function _gateDrawParkedEstimate(map, spot, d) {
     }
     out.push(L.marker(c, { zIndexOffset: 1000, icon: L.divIcon({ html: '<div style="transform:rotate(' + pl.hdg + 'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="' + _mapPlaneIcon() + '" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>', iconSize: [48, 48], iconAnchor: [24, 24], className: '' }) }).addTo(map));
     map.setView(c, spot.zoom, { animate: false });
+    try { _gateCamRest(map); } catch (eCR) {}   // v24181 — the camera is this view now, on whole pixels
     map._fidsParkView = { lat: c[0], lng: c[1], zoom: spot.zoom, src: spot.src };
     _mapPlaneFit(map);
   } catch (e) {}
@@ -55120,6 +55123,7 @@ function _gateDrawEmptyStand(map, spot, d, note) {
     var c = s;
     try { var pl = _gateParkPlace(spot, d); if (isFinite(pl.lat) && isFinite(pl.lng)) c = [pl.lat, pl.lng]; } catch (eP) { c = s; }
     map.setView(c, spot.zoom, { animate: false });
+    try { _gateCamRest(map); } catch (eCR) {}   // v24181 — the camera is this view now, on whole pixels
     map._fidsParkView = { lat: c[0], lng: c[1], zoom: spot.zoom, src: spot.src, empty: true, ring: [s[0], s[1]] };
     // v23962 — the stand label is fitted to where the stand lands in the map
     try { _fidsSchedulePairPass(); } catch (eF) {}
@@ -57539,6 +57543,17 @@ function _gateCamSnap(m) {
     return true;
   } catch (e) { return false; }
 }
+// Another view takes the map (the parked view, the empty stand, an estimate):
+// the camera is theirs. A glide in the air is dropped, and the map is put on
+// whole pixels at once (a setView inside the map moves it by whole pixels, so
+// it keeps any fraction a glide left, and the map would be drawn soft).
+function _gateCamRest(m) {
+  try {
+    if (!m) return false;
+    if (m._fidsCam) m._fidsCam.gl = null;
+    return _gateCamSnap(m);
+  } catch (e) { return false; }
+}
 // The follower, called on every frame of the glide and of the taxi with the
 // spot just drawn (in this map world copy), the time since the last frame,
 // the way the nose points and the lead.
@@ -57590,13 +57605,16 @@ function _gateCamFollow(m, ll, dtMs, hdg, lead) {
     // moved by something else since this ran: that view has the camera now
     if (st.cx !== null && (Math.abs(c.x - st.cx) > 1.5 || Math.abs(c.y - st.cy) > 1.5)) st.gl = null;
     // the speed of the aeroplane across the map, from where it is drawn,
-    // smoothed over half a second; held still, it is nothing at once
+    // smoothed over half a second; held still, it is nothing at once. A frame
+    // far off the speed so far (a hop at a new fix, even a pixel or two) is
+    // not a speed unless the frame after it moves the same way.
     var jumped = false, still = false;
     if (st.px !== null && dtRaw < 1) {
       still = p.x === st.px && p.y === st.py;
       var ux = (p.x - st.px) / dtRaw, uy = (p.y - st.py) / dtRaw;
       var same = st.lx !== null && Math.abs(ux - st.lx) + Math.abs(uy - st.ly) < 0.3 * (Math.abs(ux) + Math.abs(uy));
-      if (ux * ux + uy * uy < 22500 || same) {
+      var calm = Math.abs(ux - st.ux) + Math.abs(uy - st.uy) < Math.max(20, 2 * (Math.abs(st.ux) + Math.abs(st.uy)));
+      if ((ux * ux + uy * uy < 22500 && calm) || same) {
         var kf = Math.min(1, dtRaw / 0.5);
         st.ux += (ux - st.ux) * kf; st.uy += (uy - st.uy) * kf;
       } else jumped = true;
@@ -57617,10 +57635,12 @@ function _gateCamFollow(m, ll, dtMs, hdg, lead) {
     var gu = gl ? Math.sqrt(gl.ux * gl.ux + gl.uy * gl.uy) : 0;
     var du = gl ? Math.sqrt((st.ux - gl.ux) * (st.ux - gl.ux) + (st.uy - gl.uy) * (st.uy - gl.uy)) : 0;
     var stale = !!(gl && !gl.fast && !gl.brake && (still || du > Math.max(3, 0.35 * gu)));
-    if ((off && !(gl && gl.fast)) || (!gl && out) || (gl && jumped) || stale) {
-      // from where the camera was a frame ago, at the speed it had then, so
-      // this frame already moves on the new plan
-      var t0 = ck - dt * 1000, v0x = 0, v0y = 0;
+    // a map resized since the plan (its whole pixels have moved with it)
+    var resized = !!(gl && (gl.w !== sz.x || gl.h !== sz.y));
+    if ((off && !(gl && gl.fast)) || (!gl && out) || (gl && jumped) || stale || resized) {
+      // planned again: from where the camera was a frame ago, at the speed it
+      // had then, so this frame already moves on the new plan; from rest, now
+      var t0 = gl ? ck - dt * 1000 : ck, v0x = 0, v0y = 0;
       if (gl) {
         var u0 = Math.max(0, Math.min(1, (t0 - gl.t0) / (gl.T * 1000)));
         var a0 = (6 * u0 * u0 - 6 * u0) / gl.T, b0 = 3 * u0 * u0 - 4 * u0 + 1, d0 = (6 * u0 - 6 * u0 * u0) / gl.T;
@@ -57632,7 +57652,7 @@ function _gateCamFollow(m, ll, dtMs, hdg, lead) {
         sx = -Math.sin(ah) * lead * sz.x; sy = Math.cos(ah) * lead * sz.y;
       }
       var fast = off || !!(gl && gl.fast);
-      var brake = !fast && still && !!gl;
+      var brake = !fast && !!gl && (still || !!gl.brake);
       var T = 1.0, c1x, c1y;
       if (brake) {
         // stopped mid-glide: to rest within 1.5 s along the way it was going
@@ -57656,7 +57676,7 @@ function _gateCamFollow(m, ll, dtMs, hdg, lead) {
         c1x = c.x + pp.x - qx(pp.x - (c1x - c.x));
         c1y = c.y + pp.y - qy(pp.y - (c1y - c.y));
       }
-      st.gl = gl = { t0: t0, T: T, fast: fast, brake: brake, ux: st.ux, uy: st.uy,
+      st.gl = gl = { t0: t0, T: T, fast: fast, brake: brake, ux: st.ux, uy: st.uy, w: sz.x, h: sz.y,
         c0x: c.x, c0y: c.y, v0x: v0x, v0y: v0y, c1x: c1x, c1y: c1y };
     }
     if (!gl) {
@@ -72454,6 +72474,7 @@ function _bigMapClone(org,dst,prog,waitAt,note){var _p0=(typeof prog==='number'&
     else _gateDrawEmptyStand(window._bigCraftMap, _bcSpot, _bcThC, note);
   } else {
     window._bigCraftMap.setView(center, zoom, { animate: false });
+    try { _gateCamRest(window._bigCraftMap); } catch (eCR) {}   // v24181 — the camera is this view now
     if(_gateMapShowOverlay('route')){ arc=_gcAddArc(window._bigCraftMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }
   }
   // No pin where the map stands (see initGateMap); the far end keeps its pin.
@@ -72477,6 +72498,7 @@ function _bigMapClone(org,dst,prog,waitAt,note){var _p0=(typeof prog==='number'&
       // field, plane sliding out of the corner).
       if (p >= 0.12 && p < 0.995) {
         window._bigCraftMap.setView(planePos, zoom);
+        try { _gateCamRest(window._bigCraftMap); } catch (eCR) {}   // v24181 — the camera is this view now
       }
   }_bigMapSettle(o,d,p,500);}
 
