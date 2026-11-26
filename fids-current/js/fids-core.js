@@ -57652,7 +57652,9 @@ function _gateCamFollow(m, ll, dtMs, hdg, lead) {
         sx = -Math.sin(ah) * lead * sz.x; sy = Math.cos(ah) * lead * sz.y;
       }
       var fast = off || !!(gl && gl.fast);
-      var brake = !fast && !!gl && (still || !!gl.brake);
+      // braking only while it is still: on the move again (a new fix after a
+      // hold) it is followed, not braked for (a resize of a still one, still)
+      var brake = !fast && !!gl && still;
       var T = 1.0, c1x, c1y;
       if (brake) {
         // stopped mid-glide: to rest within 1.5 s along the way it was going

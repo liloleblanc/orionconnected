@@ -679,6 +679,40 @@ test('a resize mid-glide and a long frame at its start cost no step', () => {
   assert.ok(first < 0.05, 'its first frame moved ' + first.toFixed(3) + ' px');
 });
 
+test('a brake ends when the aeroplane moves on again (a new fix after a hold); a resize while it is still keeps the brake', () => {
+  // moving again 0.3 s into a brake, with the hop of the new fix: followed, not braked for another 1.5 s
+  for (const zoom of [14, 15]) {
+    let stopAt = null, goAt = null, brakingAfter = 0, fastAfter = 0;
+    const r = drive({ secs: 30, zoom, hdgAt: () => 0, size: [288, 180],
+      speedAt: (t, m) => {
+        if (stopAt === null && m._fidsCam && m._fidsCam.gl && m._fidsCam.ck - m._fidsCam.gl.t0 > 1000) stopAt = t;
+        if (stopAt !== null && goAt === null && t >= stopAt + 0.3) goAt = t;
+        return stopAt !== null && goAt === null ? 0 : 21.7;
+      },
+      hop: { dx: 0, dy: -6, when: () => goAt !== null },
+      onFrame: (t, m) => {
+        const gl = m._fidsCam && m._fidsCam.gl;
+        if (goAt !== null && t > goAt + 0.1 && t < goAt + 1.5 && gl && gl.brake) brakingAfter++;
+        if (goAt !== null && t > goAt && gl && gl.fast) fastAfter++;
+      } });
+    assert.ok(stopAt !== null && goAt !== null, 'stopped mid-glide, then moved on');
+    assert.equal(brakingAfter, 0, 'z' + zoom + ': still braking ' + (brakingAfter / FPS).toFixed(2) + ' s after it moved on');
+    assert.equal(fastAfter, 0, 'z' + zoom + ': no 1 s catch-up needed');
+    assert.deepEqual([r.outOfView, r.outOfMiddle], [0, 0], 'z' + zoom);
+  }
+  // still, and the map resized during the brake: a brake again, slowing all the way
+  let stopAt = null, resized = false, kinds = [];
+  drive({ secs: 30, zoom: 13, hdgAt: () => 90,
+    speedAt: (t, m) => { if (stopAt === null && m._fidsCam && m._fidsCam.gl && m._fidsCam.ck - m._fidsCam.gl.t0 > 800) stopAt = t; return stopAt !== null ? 0 : 6.2; },
+    onFrame: (t, m) => {
+      if (stopAt !== null && !resized && t > stopAt + 0.4) { m._size = [287, 179]; resized = true; }
+      const gl = m._fidsCam && m._fidsCam.gl;
+      if (resized && gl && kinds.length < 3) kinds.push(gl.brake);
+    } });
+  assert.ok(resized, 'resized during the brake');
+  assert.deepEqual(kinds, [true, true, true], 'still a brake after the resize');
+});
+
 // ── the real glide, sliced out as tests/gate-glide-resume.test.js does ─────
 function glideWorld() {
   let T = 1700000000000;
