@@ -127,22 +127,30 @@ test('the CRJ900 and E175 wear Air Canada Express colours for Jazz and the Expre
   assert.equal(src('E75L', [row('AC8902', { _opCode: 'QK', _feedCs: 'SKW8902' })]), JET, 'another airline on the callsign');
 });
 
-test('the Dash 8-400 wears them only on positive Jazz evidence: PAL flies its own for Air Canada Express', () => {
+test('the Dash 8-400 wears them only on Jazz evidence on every row: PAL flies its own for Air Canada Express', () => {
   // Jazz by the ladder, or a Jazz callsign
   assert.equal(src('DH8D', [row('AC8615', { _opCode: 'QK' })]), AC('dh4'));
   assert.equal(src('DH8D', [row('AC8615', { _feedCs: 'JZA8615' })]), AC('dh4'));
   assert.equal(src('DH8D', [row('AC7754', { _opCode: 'ACEX', _feedCs: 'JZA7754' })]), AC('dh4'), 'the brand, flown by Jazz');
-  // the Jazz callsign is heard on the inbound only (a departure is seen once it flies): it speaks for the aeroplane
+  // the gate pairs by the door, not the airframe: one row never lends its Jazz evidence to the other
   SEEN.AC7754 = { cs: 'JZA7754', reg: 'C-GGOY' };
-  assert.equal(src('DH8D', [row('AC7754', { _opCode: 'ACEX' }), row('AC7753', { _opCode: 'ACEX' })]), AC('dh4'), 'Jazz on one row, nothing against it on the other');
+  assert.equal(src('DH8D', [row('AC7754', { _opCode: 'ACEX' })]), AC('dh4'), 'the inbound alone, seen as Jazz');
+  assert.equal(src('DH8D', [row('AC7754', { _opCode: 'ACEX' }), row('AC7753', { _opCode: 'ACEX' })]), DH4, 'the departure has no Jazz evidence of its own');
   assert.equal(src('DH8D', [row('AC7754', { _opCode: 'ACEX' }), row('AC7753', { _opCode: 'PB' })]), DH4, 'one row naming PAL keeps it plain');
   delete SEEN.AC7754;
+  // a Jazz row paired at the door with a PAL row (the brand, a bare number): plain, whichever way round
+  assert.equal(src('DH8D', [row('AC7754', { _opCode: 'ACEX' }), row('AC8612', { _opCode: 'QK' })]), DH4);
+  assert.equal(src('DH8D', [row('AC8611', { _opCode: 'QK' }), row('AC7753', { _opCode: 'ACEX' })]), DH4);
+  assert.equal(src('DH8D', [row('AC7203', { _opCode: null }), row('AC8612', { _opCode: 'QK' })]), DH4);
   // a row the gate kept across a reload has no _opCode: the ladder answers for it
   const kept = (flight) => ({ flight, airline: 'AC', gate: '28', status: 'Arrived', _sortTs: 0, _locIata: 'YYZ' });
   assert.equal(src('DH8D', [kept('AC8612'), row('AC8611', { _opCode: 'QK' })]), AC('dh4'), 'a remembered Jazz inbound');
   assert.equal(src('DH8D', [kept('AC8612')]), AC('dh4'), 'the ladder says Jazz for the kept row');
   assert.equal(src('DH8D', [kept('AC7754'), row('AC7753', { _opCode: 'ACEX' })]), DH4, 'a remembered brand row is no Jazz evidence');
   assert.equal(src('DH8D', [kept('AC7680')]), DH4, 'a remembered PAL row stays plain');
+  assert.equal(src('DH8D', [kept('AC7680'), row('AC8611', { _opCode: 'QK' })]), DH4, 'a remembered PAL row beside a Jazz one');
+  assert.equal(src('DH8D', [kept('AC7680'), row('AC8611', { _feedCs: 'JZA8611' })]), DH4);
+  assert.equal(src('DH8D', [kept('AC7203'), row('AC8612', { _opCode: 'QK' })]), DH4, 'a remembered bare number is no Jazz evidence');
   // PAL: the brand block (AC7754 / AC7753 at Moncton), bare numbers (AC7203 is PB7203), its band, its callsign
   assert.equal(src('DH8D', [row('AC7754', { _opCode: 'ACEX' }), row('AC7753', { _opCode: 'ACEX' })]), DH4);
   assert.equal(src('DH8D', [row('AC7203')]), DH4);
@@ -227,8 +235,8 @@ function hue(r, g, b) {
   const h = mx === r ? 60 * (((g - b) / d) % 6) : mx === g ? 60 * ((b - r) / d + 2) : 60 * ((r - g) / d + 4);
   return (h + 360) % 360;
 }
-// the red of each livery as supplied (maple leaves, exit outlines), less a tenth: the grey pass keeps it
-const RED_MIN = { ac320: 590, ac321: 150, ac7m8: 200, ac223: 225, ace75: 29, accr9: 67, acdh4: 20 };
+// the red of each livery (maple leaves, exit outlines) as the grey pass leaves it, less a tenth
+const RED_MIN = { ac320: 580, ac321: 142, ac7m8: 202, ac223: 225, ace75: 27, accr9: 63, acdh4: 13 };
 
 test('the seven pictures: light 512 px RGBA squares, framed, upright, neutral, the reds kept', () => {
   for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4']) {
@@ -239,16 +247,21 @@ test('the seven pictures: light 512 px RGBA squares, framed, upright, neutral, t
     const { w, h, rows } = readPng(file);
     assert.deepEqual([w, h], [512, 512], key);
     const solid = (x, y) => rows[y][x * 4 + 3] >= 128;
-    let top = -1, bot = -1, minX = w, maxX = -1, nearGrey = 0, lilac = 0, red = 0;
+    let top = -1, bot = -1, minX = w, maxX = -1, nearGrey = 0, red = 0;
+    const strong = new Set(), soft = [];
     for (let y = 0; y < h; y++) {
       let any = false;
       for (let x = 0; x < w; x++) {
-        if (!solid(x, y)) continue;
-        any = true; if (x < minX) minX = x; if (x > maxX) maxX = x;
         const i = x * 4, r = rows[y][i], g = rows[y][i + 1], b = rows[y][i + 2];
+        if (!rows[y][i + 3]) continue;
+        // the colour of every drawn pixel, its soft edge included, as the grey pass reads it
         const c = Math.max(r, g, b) - Math.min(r, g, b);
         if (c > 0 && c <= 12) nearGrey++;
-        if (c > 0 && c <= 30) { const hu = hue(r, g, b); if (hu >= 200 && hu <= 335) lilac++; }
+        if (c > 12 && c <= 30) soft.push([x, y]);
+        if (c > 30) { const hu = hue(r, g, b); if (hu >= 330 || hu < 25) strong.add(y * w + x); }
+        if (!solid(x, y)) continue;
+        // the shape, from the solid pixels
+        any = true; if (x < minX) minX = x; if (x > maxX) maxX = x;
         if (r - Math.max(g, b) >= 20) red++;
       }
       if (any) { if (top < 0) top = y; bot = y; }
@@ -266,9 +279,11 @@ test('the seven pictures: light 512 px RGBA squares, framed, upright, neutral, t
     const fore = axis(top + Math.round(0.2 * (bot - top))), aft = axis(top + Math.round(0.75 * (bot - top)));
     assert.ok(fore !== null && aft !== null && Math.abs(fore - 256) <= 2 && Math.abs(aft - 256) <= 2, key + ' fuselage axis ' + fore + ' / ' + aft);
     assert.ok(Math.abs(aft - fore) <= 2, key + ' stands upright: ' + fore + ' to ' + aft);
-    // every white and grey is neutral, no lilac left, and the reds of the colours are kept
+    // every white and grey is neutral; a soft tint is left only on the edge of red paint (3 px)
     assert.equal(nearGrey, 0, key + ' near-grey pixels with a tint');
-    assert.equal(lilac, 0, key + ' pixels in the lilac cast');
+    const nearRed = ([x, y]) => { for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (strong.has((y + dy) * w + (x + dx))) return true; return false; };
+    const stray = soft.filter((pt) => !nearRed(pt));
+    assert.equal(stray.length, 0, key + ' tinted pixels away from any red, e.g. ' + JSON.stringify(stray.slice(0, 3)));
     assert.ok(red >= RED_MIN[key], key + ' red pixels ' + red + ', at least ' + RED_MIN[key]);
   }
 });

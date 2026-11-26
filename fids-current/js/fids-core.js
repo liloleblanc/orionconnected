@@ -51990,14 +51990,16 @@ var _MAP_PLANE_ART = {
 //                            its own colours, under AC 1600-2299
 //   E175, CRJ900             Jazz or the Express brand by the ladder, or an
 //                            Express number, AC 7000-8999 (PAL flies neither)
-//   Dash 8-400               Jazz only, on positive evidence for the aeroplane:
-//                            the Jazz operator by the ladder or a Jazz callsign
-//                            on any of its rows, and no row naming anyone else.
-//                            PAL flies its own Dash 8-400s, in its own colours,
-//                            for Air Canada Express too, under the brand (AC
-//                            7700-7799) and under bare numbers (AC 7203 is PB
-//                            7203). A Jazz callsign is often heard on the
-//                            inbound only, as a departure is seen once it flies
+//   Dash 8-400               Jazz only, on positive evidence on EVERY row: the
+//                            Jazz operator by the ladder, or a Jazz callsign with
+//                            the brand or no operator. PAL flies its own Dash
+//                            8-400s, in its own colours, for Air Canada Express
+//                            too, under the brand (AC 7700-7799) and under bare
+//                            numbers (AC 7203 is PB 7203), and the gate pairs an
+//                            inbound with a departure by the door, which is not
+//                            the airframe (a Jazz arrival and the PAL AC7753 at
+//                            Moncton gate 4), so one row never lends its Jazz
+//                            evidence to the other
 // Every callsign on record (the feed, the row, the one FR24 saw) is read on its
 // own: Toronto writes ACA for Rouge too, so one ACA must not hide a ROU. An
 // aeroplane in special colours (AIRCRAFT_LIVERY_BY_REG, as C-GNBN in Trans-Canada
@@ -52017,7 +52019,6 @@ function _mapPlaneAcArt(code, rows) {
     var list = [];
     for (var k = 0; k < (rows || []).length; k++) { if (rows[k] && rows[k].flight) list.push(rows[k]); }
     if (!list.length) return '';
-    var jazzAny = false;
     for (var i = 0; i < list.length; i++) {
       var r = list[i];
       if (String(r.airline || '').trim().toUpperCase() !== 'AC') return '';
@@ -52046,8 +52047,7 @@ function _mapPlaneAcArt(code, rows) {
       }
       if (kind === 'express') {
         if (c === 'DH4') {
-          if (op && op !== 'QK' && op !== 'ACEX') return '';
-          if (op === 'QK' || jazz) jazzAny = true;
+          if (!(op === 'QK' || (jazz && (!op || op === 'ACEX')))) return '';
         } else if (!(op === 'QK' || op === 'ACEX' || (!op && fn >= 7000 && fn <= 8999))) return '';
       } else {
         if (op || jazz) return '';
@@ -52056,7 +52056,6 @@ function _mapPlaneAcArt(code, rows) {
         if (!ok) return '';
       }
     }
-    if (c === 'DH4' && !jazzAny) return '';
     var key = { '320': 'ac320', '223': 'ac223', '321': 'ac321', '32Q': 'ac321', '7M8': 'ac7m8',
                 'E75': 'ace75', 'CR9': 'accr9', 'DH4': 'acdh4' }[c] || '';
     return (key && _MAP_PLANE_ART[key]) ? key : '';
