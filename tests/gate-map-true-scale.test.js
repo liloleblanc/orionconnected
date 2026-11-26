@@ -577,7 +577,7 @@ function liveWorld(type) {
     ...['aircraftCodeToIata', '_gcNm', '_gateGlideNoteFix', '_gateGlideSameLeg', '_stopGateMapGlide', '_gateParkedAtOrigin',
         '_gateGroundSpeed', '_gateOnGroundNow', '_gateGroundZoomNow', '_gateGroundZoom',
         '_mapPlaneSpecFor', '_mapPlaneScale', '_mapPlaneFit', '_gateMapFixSpd', '_lngNear', '_lngChain', 'initGateMapLive', '_bigMapCloneLive',
-        '_gateCamFly', '_gateCamWantNow'].map(fnSource),   // v24181 — the camera's flight, for a zoom no glide is left to fly
+        '_gateCamFly', '_gateCamSnap', '_gateCamWantNow'].map(fnSource),   // v24181 — the camera's flight, for a zoom no glide is left to fly
     'return { mini: initGateMapLive, big: _bigMapCloneLive, gateMap: function(){ return gateMap; }, glide: _gateGlide };',
   ].join('\n');
   const api = new Function('L', 'document', 'window', 'console', 'setTimeout', 'AIRPORTS', 'TYPE', 'LOG', src)(

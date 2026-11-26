@@ -57391,20 +57391,21 @@ function _gateTaxiDraw(v, at, plan, left, dt) {
     }
   } catch (e) {}
   // the camera (v24181): in to the ground as it lands and to the stand as it
-  // arrives, one flight a level (_gateCamFly), and between them it flows with
-  // the aeroplane (_gateCamFollow) instead of a lurching pan every few seconds
+  // arrives, one flight a level (_gateCamFly), and between them the map holds
+  // still and one smooth glide reframes the aeroplane near the side
+  // (_gateCamFollow), instead of a pan fast off the mark every few seconds
   try {
     if (!vmap.getZoom || !vmap.flyTo) return;
     var z = vmap.getZoom(), want = left < 220 ? 17 : left < 700 ? 16 : 15;
     var now = Date.now(), here = [ll[0], ll[1] + vk];
     vmap._fidsWantZoom = null;   // on the ground the taxi sets the zoom
     if (z < want - 0.01 && !(vmap._fidsCamFly > now)) {
-      _gateCamFly(vmap, _gateCamSpot(vmap, here, v.hdg, want, 0.1), want, 2.0);
+      _gateCamFly(vmap, _gateCamSpot(vmap, here, v.hdg, want, 0.2), want, 2.0);
       vmap.once('zoomend', function () { try { _mapPlaneFit(vmap); } catch (e) {} });
       try { vmap._fidsLastView = { lat: ll[0], lng: ll[1] + vk, zoom: want }; } catch (e) {}
       return;
     }
-    if (_gateCamFollow(vmap, here, dt * 1000, v.hdg, 0.1) && !(v.lvAt > now - 1000)) {
+    if (_gateCamFollow(vmap, here, dt * 1000, v.hdg, 0.2) && !(v.lvAt > now - 1000)) {
       v.lvAt = now;
       try { vmap._fidsLastView = { lat: ll[0], lng: ll[1] + vk, zoom: vmap.getZoom() }; } catch (e) {}
     }
@@ -57444,24 +57445,37 @@ function _gateGlideRunwayPick(rw, fixAt, fl) {
 // pan then cut that flight short (in Leaflet a setView, panTo or panInside
 // stops a running flyTo, and with zoomAnimation off the cut lands as an
 // instant reset that drops every tile). And it followed in eased pans that
-// set off at five times their average speed, every 6 to 48 seconds. Now
-// every flight of a live map goes through _gateCamFly, which the follower
-// never cuts short, and between flights _gateCamFollow moves the camera a
-// fraction of a pixel each frame with the aeroplane, so the ground flows
-// under it at its own speed.
+// set off at five times their average speed, every 6 to 48 seconds.
+// Now every flight of a live map goes through _gateCamFly, which the follower
+// never cuts short. Between flights the map HOLDS STILL on whole pixels while
+// the aeroplane glides across it, and when the aeroplane nears the side of
+// the picture one smooth glide, starting and ending at rest, reframes it
+// (_gateCamFollow). Not a camera on the move every frame: Leaflet draws the
+// map soft between whole pixels (measured in Chrome: half a pixel off loses
+// more than half the fine detail of the tiles), so a camera always on the
+// move would blur the map and make its lettering shimmer.
 // ──────────────────────────────────────────────────────────────────────
 // The one way a live map flies. The follower leaves the map alone while it
-// flies, and starts again from rest when the flight is over.
+// flies, and starts again from rest when the flight is over. Always to a
+// whole zoom: a zoom between two levels would leave the map soft.
 function _gateCamFly(m, ll, z, durS) {
   try {
     if (!m || typeof m.flyTo !== 'function' || !ll) return false;
     var dur = (durS > 0) ? durS : 1.6;
-    var zz = (typeof z === 'number' && isFinite(z)) ? z : m.getZoom();
+    var zz = Math.round((typeof z === 'number' && isFinite(z)) ? z : m.getZoom());
     m._fidsCamFly = Date.now() + dur * 1000 + 300;
     m._fidsCam = null;
+    _gateCamSnap(m);   // on whole pixels as it sets off (a flight keeps the pane where it is)
     m.flyTo(ll, zz, { duration: dur });
     return true;
   } catch (e) { return false; }
+}
+// Is a glide view new to its map? Only a view on a new marker is (a load, a
+// gate switch, a big-map visit). The same marker after a re-anchor, a stall
+// or a dropped runway pick keeps the camera it has, and the zoom its fix
+// asked for. A view still waiting for its first aim stays new.
+function _gateCamFresh(prev, marker) {
+  return !(prev && prev.marker === marker) || !!(prev && prev.fresh);
 }
 // Where the camera centre goes so that the aeroplane at ll, pointing hdg,
 // sits at the follow spot: lead (a share of the map size) behind the middle,
@@ -57477,11 +57491,13 @@ function _gateCamSpot(m, ll, hdg, z, lead) {
     return [q.lat, q.lng];
   } catch (e) { return ll; }
 }
-// A new view: the camera goes at once, before the first paint, to where the
-// follower keeps it, instead of staying on the raw fix the map was built on.
-// What the old view left (a flight, a speed, a zoom asked for) is dropped:
-// the build that made this view has just set the camera itself. False while
-// the map cannot be used yet (not loaded, or hidden), so it is tried again.
+// A new view: the camera goes at once, before the first paint, to the follow
+// spot, instead of staying on the raw fix the map was built on. A setView,
+// not a panBy: it also stops a pan or a flight the build left running, which
+// would otherwise carry on and undo it. What the old view left (a flight, a
+// glide, a zoom asked for) is dropped: the build that made this view has just
+// set the camera itself. False while the map cannot be used yet (not loaded,
+// or hidden), so it is tried again on the next frame.
 function _gateCamAim(m, ll, hdg, lead) {
   try {
     if (!m || !m._loaded || !ll || typeof m.project !== 'function' || typeof m.getSize !== 'function') return false;
@@ -57490,23 +57506,37 @@ function _gateCamAim(m, ll, hdg, lead) {
     m._fidsCamFly = 0; m._fidsCam = null; m._fidsWantZoom = null;
     var z = m.getZoom(), at = _gateCamSpot(m, ll, hdg, z, lead);
     var t = m.project(at, z), c = m.project(m.getCenter(), z);
-    var dx = Math.round(t.x - c.x), dy = Math.round(t.y - c.y);
-    if (dx || dy) {
-      if (typeof m.panBy === 'function') m.panBy([dx, dy], { animate: false });
-      else m.setView(at, z, { animate: false });
-    }
+    if (Math.round(t.x - c.x) || Math.round(t.y - c.y)) m.setView(at, z, { animate: false });
+    else _gateCamSnap(m);
+    return true;
+  } catch (e) { return false; }
+}
+// The map back on whole pixels, where Leaflet draws it sharp: a shift of half
+// a pixel at most, made only while the camera is at rest.
+function _gateCamSnap(m) {
+  try {
+    if (typeof m._getMapPanePos !== 'function' || typeof m._rawPanBy !== 'function') return false;
+    var q = m._getMapPanePos(), fx = q.x - Math.round(q.x), fy = q.y - Math.round(q.y);
+    if (Math.abs(fx) < 0.001 && Math.abs(fy) < 0.001) return false;
+    m._rawPanBy([fx, fy]);
+    if (typeof m.fire === 'function') m.fire('move');
     return true;
   } catch (e) { return false; }
 }
 // The follower, called on every frame of the glide and of the taxi with the
-// spot just drawn (in this map world copy), the time since the last frame
-// and the way the nose points. The aeroplane is kept in a box a tenth of the
-// map size either side of the follow spot. The camera moves with it at its
-// measured speed and, while it is outside the box, also closes the gap over
-// about 2.5 s; its own speed eases toward that over 0.8 s, so it never
-// starts, stops or turns in one frame. A jump of the drawn spot (a new fix)
-// is not a speed: the box takes it, or the gap is closed as above. More than
-// a map away, it is one short flight instead. True when the camera moved.
+// spot just drawn (in this map world copy), the time since the last frame,
+// the way the nose points and the lead.
+//   - Within 28% of the middle the camera does not move: the map stays still
+//     and sharp, and the aeroplane glides across it.
+//   - Past that, moving outward, one glide reframes it at the lead behind the
+//     middle, where it will be when the glide ends: a cubic from the speed
+//     the camera has to rest, over 1.5 to 5 s by the distance, so it never
+//     starts, stops or turns in one frame. It ends on whole pixels.
+//   - Off the picture or at its edge (a jump at a new fix), the glide takes
+//     one second; more than a map away, it is one short flight.
+// A jump of the drawn spot is not a speed: under 150 px/s a frame is flying,
+// and so is a faster one that the frame before it matched. True when the
+// camera moved.
 function _gateCamFollow(m, ll, dtMs, hdg, lead) {
   try {
     if (!m || !m._loaded || !ll || typeof m.project !== 'function' || typeof m.getSize !== 'function' || typeof m.getCenter !== 'function') return false;
@@ -57514,29 +57544,35 @@ function _gateCamFollow(m, ll, dtMs, hdg, lead) {
     if (m._fidsCamFly > now) return false;
     var sz = m.getSize();
     if (!sz || !(sz.x >= 40) || !(sz.y >= 40)) return false;
-    var z = m.getZoom(), p = m.project(ll, z), c = m.project(m.getCenter(), z);
+    var z = m.getZoom();
+    // between two zoom levels a flight is still landing: wait for a whole one
+    if (!(typeof z === 'number' && Math.abs(z - Math.round(z)) < 1e-6)) return false;
+    var p = m.project(ll, z), c = m.project(m.getCenter(), z);
     var st = m._fidsCam;
     if (!st || st.z !== z) {
-      st = m._fidsCam = { vx: 0, vy: 0, ux: 0, uy: 0, px: null, py: null, z: z, acc: 0, endAt: 0, moving: false, fx: 0, fy: 0, t: 0 };
+      st = m._fidsCam = { ux: 0, uy: 0, px: null, py: null, lx: null, ly: null, z: z, t: 0, ck: 0, gl: null, acc: 0, endAt: 0, fx: 0, fy: 0 };
     }
     // the frame time; on the first frame of a new glide or taxi (no time of
-    // its own yet) the time since this map last moved, so the camera does not
-    // pause for a frame at every new fix
+    // its own yet) the time since this map last ran
     var dtRaw = dtMs / 1000;
     if (!(dtRaw > 0) && st.t > 0) dtRaw = (now - st.t) / 1000;
     st.t = now;
     if (!(dtRaw > 0)) return false;
-    var dt = Math.min(0.25, dtRaw);
+    // the glides run on the frame clock the aeroplane is drawn by, not on
+    // Date.now: its whole milliseconds would shake a moving map
+    st.ck += dtRaw * 1000;
+    var ck = st.ck;
     // the speed of the aeroplane across the map, from where it is drawn,
-    // smoothed over half a second (under 150 px/s it is flying; more is a jump
-    // to a new fix). Smoothed from rest, a frame that slips through moves the
-    // camera by no more than it moved the aeroplane.
+    // smoothed over half a second
+    var jumped = false;
     if (st.px !== null && dtRaw < 1) {
       var ux = (p.x - st.px) / dtRaw, uy = (p.y - st.py) / dtRaw;
-      if (ux * ux + uy * uy < 22500) {
+      var same = st.lx !== null && Math.abs(ux - st.lx) + Math.abs(uy - st.ly) < 0.3 * (Math.abs(ux) + Math.abs(uy));
+      if (ux * ux + uy * uy < 22500 || same) {
         var kf = Math.min(1, dtRaw / 0.5);
         st.ux += (ux - st.ux) * kf; st.uy += (uy - st.uy) * kf;
-      }
+      } else jumped = true;
+      st.lx = ux; st.ly = uy;
     }
     st.px = p.x; st.py = p.y;
     var rx = p.x - c.x, ry = p.y - c.y;
@@ -57544,27 +57580,54 @@ function _gateCamFollow(m, ll, dtMs, hdg, lead) {
       _gateCamFly(m, _gateCamSpot(m, ll, hdg, z, lead), z, 1.6);
       return true;
     }
-    // where it should sit from the middle, and how far it is outside the box
-    var sx = 0, sy = 0;
-    if (typeof hdg === 'number' && isFinite(hdg) && lead > 0) {
-      var a = hdg * Math.PI / 180;
-      sx = -Math.sin(a) * lead * sz.x; sy = Math.cos(a) * lead * sz.y;
+    var gl = st.gl;
+    var off = Math.abs(rx) > sz.x / 2 - Math.min(24, sz.x / 4) || Math.abs(ry) > sz.y / 2 - Math.min(24, sz.y / 4);
+    var out = (Math.abs(rx) > 0.28 * sz.x || Math.abs(ry) > 0.28 * sz.y) && (rx * st.ux + ry * st.uy > 0);
+    if ((off && !(gl && gl.fast)) || (!gl && out) || (gl && jumped)) {
+      // a glide from where the camera is, at the speed it has now
+      var v0x = 0, v0y = 0;
+      if (gl) {
+        var u0 = Math.min(1, (ck - gl.t0) / (gl.T * 1000));
+        var a0 = (6 * u0 * u0 - 6 * u0) / gl.T, b0 = 3 * u0 * u0 - 4 * u0 + 1, d0 = (6 * u0 - 6 * u0 * u0) / gl.T;
+        v0x = a0 * gl.c0x + b0 * gl.v0x + d0 * gl.c1x; v0y = a0 * gl.c0y + b0 * gl.v0y + d0 * gl.c1y;
+      }
+      var sx = 0, sy = 0;
+      if (typeof hdg === 'number' && isFinite(hdg) && lead > 0) {
+        var ah = hdg * Math.PI / 180;
+        sx = -Math.sin(ah) * lead * sz.x; sy = Math.cos(ah) * lead * sz.y;
+      }
+      var fast = off || !!(gl && gl.fast);
+      var T = 1.0;
+      if (!fast) {
+        var dn = Math.max(Math.abs(p.x + st.ux * 3 - sx - c.x) / sz.x, Math.abs(p.y + st.uy * 3 - sy - c.y) / sz.y);
+        T = Math.max(1.5, Math.min(5, 10 * dn));
+      }
+      // to where the aeroplane will be when the glide ends, at its speed, and
+      // so that the map ends on whole pixels by itself (the pane moves against
+      // the camera): no snap at the end, so no step as it comes to rest
+      var c1x = p.x + st.ux * T - sx, c1y = p.y + st.uy * T - sy;
+      if (typeof m._getMapPanePos === 'function') {
+        var pp = m._getMapPanePos();
+        c1x = c.x + pp.x - Math.round(pp.x - (c1x - c.x));
+        c1y = c.y + pp.y - Math.round(pp.y - (c1y - c.y));
+      }
+      st.gl = gl = { t0: ck, T: T, fast: fast, c0x: c.x, c0y: c.y, v0x: v0x, v0y: v0y, c1x: c1x, c1y: c1y };
     }
-    var hx = 0.10 * sz.x, hy = 0.10 * sz.y, ex = rx - sx, ey = ry - sy;
-    ex = ex > hx ? ex - hx : (ex < -hx ? ex + hx : 0);
-    ey = ey > hy ? ey - hy : (ey < -hy ? ey + hy : 0);
-    var k = Math.min(1, dt / 0.8);
-    st.vx += (st.ux + ex / 2.5 - st.vx) * k;
-    st.vy += (st.uy + ey / 2.5 - st.vy) * k;
-    if (Math.abs(st.vx) + Math.abs(st.vy) < 0.02) {
-      // at rest: one moveend where it stopped, so the tiles and lines settle
-      if (st.moving) { st.moving = false; st.acc = 0; st.endAt = now; if (typeof m.fire === 'function') m.fire('moveend'); }
+    if (!gl) {
+      // at rest: the moveend still owed for the last few pixels (at most one
+      // a second), and the map on whole pixels
+      if (st.acc > 0 && now - st.endAt >= 900) { st.acc = 0; st.endAt = now; if (typeof m.fire === 'function') m.fire('moveend'); }
+      _gateCamSnap(m);
       return false;
     }
-    var dx = st.vx * dt, dy = st.vy * dt;
+    var u = Math.min(1, (ck - gl.t0) / (gl.T * 1000));
+    var h00 = 2 * u * u * u - 3 * u * u + 1, h10 = u * u * u - 2 * u * u + u, h01 = 3 * u * u - 2 * u * u * u;
+    var dx = h00 * gl.c0x + h10 * gl.T * gl.v0x + h01 * gl.c1x - c.x;
+    var dy = h00 * gl.c0y + h10 * gl.T * gl.v0y + h01 * gl.c1y - c.y;
+    if (u >= 1) st.gl = null;
     if (typeof m._rawPanBy === 'function') {
       m._rawPanBy([dx, dy]);
-      st.moving = true;
+      if (!st.gl) _gateCamSnap(m);
       st.acc += Math.abs(dx) + Math.abs(dy);
       if (typeof m.fire === 'function') {
         m.fire('move');
@@ -57584,12 +57647,12 @@ function _gateCamFollow(m, ll, dtMs, hdg, lead) {
 }
 // A zoom asked for at a new fix when no glide is left to fly it (no live
 // speed, so none was started): one flight, to the aeroplane where it is drawn.
-// On the taxi the taxi sets the zoom itself.
+// It waits while a flight is landing; on the taxi the taxi sets the zoom.
 function _gateCamWantNow(m, mk) {
   try {
     var z = m && m._fidsWantZoom;
     if (typeof z !== 'number' || !isFinite(z)) return false;
-    if (_gateGlide.raf || _gateGlide.timer) return false;
+    if (_gateGlide.raf || _gateGlide.timer || m._fidsCamFly > Date.now()) return false;
     m._fidsWantZoom = null;
     if (typeof _gateTaxi !== 'undefined' && _gateTaxi && _gateTaxi.on) return false;
     var ll = mk && typeof mk.getLatLng === 'function' ? mk.getLatLng() : null;
@@ -57616,8 +57679,11 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     try {
       if (_gateGlide.raf && _gateGlide.o && _gateGlide.d &&
           _gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d)) {
+        // v24181 — new only on a new marker (_gateCamFresh): the same marker
+        // keeps its camera, and the zoom its re-anchor asked for
+        var _jv = _gateGlide.views[_viewKey];
         _gateGlide.views[_viewKey] = { map: map, marker: marker, a1: a1, a2: a2,
-          hdg: null, seg: 0, arcIdx: -1, last: 0, fresh: true };
+          hdg: null, seg: 0, arcIdx: -1, last: 0, fresh: _gateCamFresh(_jv, marker) };
         try { console.log('[GLIDE] no live speed — joined the running glide as "' + _viewKey + '"'); } catch (e) {}
         return;
       }
@@ -57875,6 +57941,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // CHANGE drops foreign views — their routes no longer exist, and their
   // surfaces re-attach on their own next init.
   try {
+    var _prevView = _gateGlide.views[_viewKey];   // v24181 — for _gateCamFresh, before any reset
     if (!_sameLeg) _gateGlide.views = {};
     // v24034 — a same-leg re-anchor keeps the nose's heading: it turns from
     // where it points (slewed) instead of snapping onto the new route's bend.
@@ -57886,7 +57953,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     // starts with its camera on the drawn aeroplane, not on the raw fix
     _gateGlide.views[_viewKey] = { map: map, marker: marker, a1: a1, a2: a2,
       hdg: _keepHdg, kept: _keepHdg !== null, bank: _keepBank, seg: 0, arcIdx: -1, last: 0,
-      fresh: !(_oldView && _oldView.marker === marker) || !!(_oldView && _oldView.fresh) };
+      fresh: _gateCamFresh(_prevView, marker) };
   } catch (e) {}
   var _nowFn = (typeof performance !== 'undefined' && performance.now) ? function () { return performance.now(); } : function () { return Date.now(); };
 
@@ -58203,20 +58270,23 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
         }
         // v24181 — THE CAMERA FOLLOWS THE AEROPLANE AS IT IS DRAWN. A new view
         // goes to it before its first paint (_gateCamAim); a zoom asked for at
-        // a new fix is one flight, to where the aeroplane is drawn now
-        // (_gateCamFly); otherwise the camera flows with it (_gateCamFollow).
-        // Nothing here flies to the raw fix or cuts a flight short. (Before:
-        // a 2.2 s eased pan whenever it drifted 28% off the middle.)
+        // a new fix is one flight, to where the aeroplane is drawn now, once
+        // any flight has landed (_gateCamFly); otherwise the map holds still
+        // and one smooth glide reframes the aeroplane near the side
+        // (_gateCamFollow). Nothing here flies to the raw fix or cuts a flight
+        // short. (Before: a 2.2 s pan, fast off the mark, at 28% off the middle.)
         try {
           var _wz = vmap._fidsWantZoom;
           if (v.fresh) {
-            if (_gateCamAim(vmap, [lat, vlng], v.hdg, 0.15)) v.fresh = false;
+            if (_gateCamAim(vmap, [lat, vlng], v.hdg, 0.2)) v.fresh = false;
+          } else if (vmap._fidsCamFly > Date.now()) {
+            // a flight has the camera: a zoom asked meanwhile waits for it to land
           } else if (typeof _wz === 'number' && isFinite(_wz) && Math.abs(_wz - vmap.getZoom()) > 0.01) {
             vmap._fidsWantZoom = null;
-            _gateCamFly(vmap, _gateCamSpot(vmap, [lat, vlng], v.hdg, _wz, 0.15), _wz, 3.0);
+            _gateCamFly(vmap, _gateCamSpot(vmap, [lat, vlng], v.hdg, _wz, 0.2), _wz, 3.0);
           } else {
             if (_wz !== null && _wz !== undefined) vmap._fidsWantZoom = null;
-            if (_gateCamFollow(vmap, [lat, vlng], _dtMs, v.hdg, 0.15) && !(v.lvAt > Date.now() - 1000)) {
+            if (_gateCamFollow(vmap, [lat, vlng], _dtMs, v.hdg, 0.2) && !(v.lvAt > Date.now() - 1000)) {
               v.lvAt = Date.now();
               // the followed view, PER MAP, at most once a second
               vmap._fidsLastView = { lat: lat, lng: vlng, zoom: vmap.getZoom() };
