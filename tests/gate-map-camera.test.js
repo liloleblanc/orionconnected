@@ -37,7 +37,7 @@ function fnSource(name) {
   const end = CORE.indexOf('\n}\n', at);
   return CORE.slice(at + 1, end + 2);
 }
-const CAM = ['_gateCamFly', '_gateCamFresh', '_gateCamSpot', '_gateCamAim', '_gateCamSnap', '_gateCamFollow', '_gateCamWantNow'];
+const CAM = ['_gateCamFly', '_gateCamFresh', '_gateCamSpot', '_gateCamCentre', '_gateCamAim', '_gateCamSnap', '_gateCamFollow', '_gateCamBusy', '_gateCamIdle', '_gateCamWantNow'];
 
 // ── Web Mercator in 256-px tiles, as Leaflet projects ─────────────────────
 const R = Math.PI / 180;
@@ -58,54 +58,69 @@ const nm = (a, b) => {
 };
 const frac = (v) => Math.abs(v - Math.round(v));
 
-// A map with the parts of Leaflet the camera uses. The centre is kept as a
-// projected point, so a raw pan of a fraction of a pixel is exact; the pane
-// moves against it, as Leaflet's map pane does (a setView here starts it
-// again at 0, as a reset does).
+// A map with the parts of Leaflet the camera uses, kept as Leaflet keeps it:
+// a whole-pixel origin, a pane that moves against the camera (a raw pan of a
+// fraction of a pixel is exact), and after a reset getCenter answers the
+// centre asked for, not the one drawn (up to half a pixel apart).
 class FakeMap {
   constructor(center, zoom, size) {
-    this._zoom = zoom; this._size = size; this._loaded = true;
-    this._c = merc(center[0], center[1], zoom); this._pane = { x: 0, y: 0 };
+    this._size = size; this._loaded = true;
     this.raw = []; this.panBys = []; this.flights = []; this.views = []; this.events = [];
+    this._reset(center, zoom);
   }
+  _reset(ll, z) {
+    const q = llOf(ll), p = merc(q.lat, q.lng, z);
+    this._zoom = z; this._pane = { x: 0, y: 0 }; this._lastCenter = q;
+    this._po = { x: Math.round(p.x - this._size[0] / 2), y: Math.round(p.y - this._size[1] / 2) };
+  }
+  get _c() { return { x: this._po.x + this._size[0] / 2 - this._pane.x, y: this._po.y + this._size[1] / 2 - this._pane.y }; }   // drawn
   getSize() { return { x: this._size[0], y: this._size[1] }; }
   getZoom() { return this._zoom; }
-  getCenter() { return unmerc(this._c.x, this._c.y, this._zoom); }
+  getCenter() {
+    if (this._lastCenter && this._pane.x === 0 && this._pane.y === 0) return { lat: this._lastCenter.lat, lng: this._lastCenter.lng };
+    const c = this._c; return unmerc(c.x, c.y, this._zoom);
+  }
+  getPixelOrigin() { return { x: this._po.x, y: this._po.y }; }
+  _getMapPanePos() { return { x: this._pane.x, y: this._pane.y }; }
   project(ll, z) { const q = llOf(ll); return merc(q.lat, q.lng, z === undefined ? this._zoom : z); }
   unproject(p, z) { const q = Array.isArray(p) ? { x: p[0], y: p[1] } : p; return unmerc(q.x, q.y, z === undefined ? this._zoom : z); }
-  _getMapPanePos() { return { x: this._pane.x, y: this._pane.y }; }
-  _move(d) { this._c = { x: this._c.x + d[0], y: this._c.y + d[1] }; this._pane = { x: this._pane.x - d[0], y: this._pane.y - d[1] }; }
-  _rawPanBy(o) { const d = Array.isArray(o) ? o : [o.x, o.y]; this._move(d); this.raw.push(d); }
+  _rawPanBy(o) { const d = Array.isArray(o) ? o : [o.x, o.y]; this._pane = { x: this._pane.x - d[0], y: this._pane.y - d[1] }; this.raw.push(d); }
   panBy(o, opt) {
-    const d = Array.isArray(o) ? o : [o.x, o.y];
-    this.panBys.push({ d, opt }); this._move(d);
+    const d = (Array.isArray(o) ? o : [o.x, o.y]).map(Math.round);
+    this.panBys.push({ d, opt }); this._pane = { x: this._pane.x - d[0], y: this._pane.y - d[1] };
     this.fire('move'); this.fire('moveend');
     return this;
   }
-  setView(ll, z) { const q = llOf(ll); this.views.push({ ll: q, z }); this._zoom = z; this._c = merc(q.lat, q.lng, z); this._pane = { x: 0, y: 0 }; return this; }
-  // a flight lands at once here; the guard it leaves is what the tests read
-  flyTo(ll, z, opt) { const q = llOf(ll); this.flights.push({ ll: q, z, opt }); this._zoom = z; this._c = merc(q.lat, q.lng, z); return this; }
+  setView(ll, z) { this.views.push({ ll: llOf(ll), z }); this._reset(ll, z); return this; }
+  // a flight lands at once here, with the pane where it was (as Leaflet does)
+  flyTo(ll, z, opt) {
+    const q = llOf(ll), p = merc(q.lat, q.lng, z);
+    this.flights.push({ ll: q, z, opt }); this._zoom = z; this._lastCenter = q;
+    this._po = { x: Math.round(p.x - this._size[0] / 2 + this._pane.x), y: Math.round(p.y - this._size[1] / 2 + this._pane.y) };
+    return this;
+  }
   once() { return this; }
   fire(t) { this.events.push(t); return this; }
   // where a point is on the screen, unrounded
-  screen(ll) { const p = this.project(ll); return { x: p.x - this._c.x + this._size[0] / 2, y: p.y - this._c.y + this._size[1] / 2 }; }
+  screen(ll) { const p = this.project(ll), c = this._c; return { x: p.x - c.x + this._size[0] / 2, y: p.y - c.y + this._size[1] / 2 }; }
 }
 
 function camWorld() {
   const clock = { t: 1700000000000 };
   const src = ['var _gateGlide = { raf: null, timer: null };', 'var _gateTaxi = { on: false };',
     ...CAM.map(fnSource),
-    'return { fly: _gateCamFly, fresh: _gateCamFresh, spot: _gateCamSpot, aim: _gateCamAim, snap: _gateCamSnap, follow: _gateCamFollow, wantNow: _gateCamWantNow, glide: _gateGlide, taxi: _gateTaxi };'].join('\n');
+    'return { fly: _gateCamFly, fresh: _gateCamFresh, spot: _gateCamSpot, centre: _gateCamCentre, aim: _gateCamAim, snap: _gateCamSnap, follow: _gateCamFollow, busy: _gateCamBusy, idle: _gateCamIdle, wantNow: _gateCamWantNow, glide: _gateGlide, taxi: _gateTaxi };'].join('\n');
   return Object.assign({ clock }, new Function('Date', src)({ now: () => clock.t }));
 }
 
 const YQM = [46.1122, -64.6786];
 const FPS = 60, DT = 1000 / FPS;
 
-// Drives an aeroplane across a map at `speed` px/s on the screen, heading
+// Drives an aeroplane across a map at speedAt(t) px/s on the screen, heading
 // hdgAt(t) degrees, for `secs` seconds, the follower called every frame as the
-// glide calls it. Returns what the camera did.
-function drive({ speed, secs, hdgAt, lead = 0.2, zoom = 11, size = [288, 180], hop = null }) {
+// glide calls it (onFrame may change the world between frames). Returns what
+// the camera did.
+function drive({ speed = 0, speedAt = null, secs, hdgAt, lead = 0.2, zoom = 11, size = [288, 180], hop = null, onFrame = null }) {
   const w = camWorld();
   const m = new FakeMap(YQM, zoom, size);
   let hdg = hdgAt(0);
@@ -114,35 +129,47 @@ function drive({ speed, secs, hdgAt, lead = 0.2, zoom = 11, size = [288, 180], h
   assert.equal(w.aim(m, ll, hdg, lead), true);
   m.views.length = 0; m.events.length = 0;   // the start; what follows is the follower
   const [W, H] = size;
-  const out = { m, w, worstDv: 0, worstStep: 0, outOfView: 0, outOfMiddle: 0, softAtRest: 0, movingFrames: 0, glides: 0, moveend: 0, offAfterHop: 0 };
-  let last = null, wasMoving = false;
+  const out = { m, w, worstDv: 0, worstDvAll: 0, worstStep: 0, outOfView: 0, outOfMiddle: 0, softAtRest: 0, movingFrames: 0, glides: 0, moveend: 0, offAfterHop: 0, stallFrames: 0, maxBetweenEnds: 0 };
+  let last = null, wasMoving = false, sinceEnd = 0;
   for (let f = 1; f <= secs * FPS; f++) {
     const t = f / FPS;
     hdg = hdgAt(t);
-    p = { x: p.x + Math.sin(hdg * R) * speed / FPS, y: p.y - Math.cos(hdg * R) * speed / FPS };
-    if (hop && f === Math.round(hop.at * FPS)) p = { x: p.x + hop.dx, y: p.y + hop.dy };
+    const v = speedAt ? speedAt(t, m) : speed;
+    p = { x: p.x + Math.sin(hdg * R) * v / FPS, y: p.y - Math.cos(hdg * R) * v / FPS };
+    if (hop && !hop.done && (hop.when ? hop.when(t, m) : f === Math.round(hop.at * FPS))) { hop.done = true; hop.at = t; p = { x: p.x + hop.dx, y: p.y + hop.dy }; }
     const q = m.unproject(p);
     ll = [q.lat, q.lng];
     w.clock.t += DT;
-    const c0 = { x: m._c.x, y: m._c.y };
+    if (onFrame) onFrame(t, m, w);
+    const c0 = m._c;
     const ev0 = m.events.length;
     w.follow(m, ll, DT, hdg, lead);
-    out.moveend += m.events.slice(ev0).filter((e) => e === 'moveend').length;
-    const step = { x: m._c.x - c0.x, y: m._c.y - c0.y };
+    const c1 = m._c;
+    const step = { x: c1.x - c0.x, y: c1.y - c0.y };
+    sinceEnd += Math.abs(step.x) + Math.abs(step.y);
+    out.worstStepL1 = Math.max(out.worstStepL1 || 0, Math.abs(step.x) + Math.abs(step.y));
+    for (const e of m.events.slice(ev0)) if (e === 'moveend') { out.moveend++; out.maxBetweenEnds = Math.max(out.maxBetweenEnds, sinceEnd); sinceEnd = 0; }
     const moving = Math.hypot(step.x, step.y) > 0.6;   // a glide, not the half-pixel snap
     if (moving && !wasMoving) out.glides++;
     wasMoving = moving;
     if (moving) out.movingFrames++;
-    const nearHop = hop && t >= hop.at - 1e-9 && t < hop.at + 1.5;
-    if (last && !nearHop) out.worstDv = Math.max(out.worstDv, Math.hypot(step.x - last.x, step.y - last.y));
+    const nearHop = hop && hop.done && t >= hop.at - 1e-9 && t < hop.at + 1.5;
+    if (last) {
+      const dv = Math.hypot(step.x - last.x, step.y - last.y);
+      out.worstDvAll = Math.max(out.worstDvAll, dv);
+      if (!nearHop) out.worstDv = Math.max(out.worstDv, dv);
+      // a frame standing still between two moving ones: a stall
+      if (Math.hypot(last.x, last.y) > 0.2 && Math.hypot(step.x, step.y) < 0.02 && m._fidsCam && m._fidsCam.gl) out.stallFrames++;
+    }
     if (!nearHop) out.worstStep = Math.max(out.worstStep, Math.hypot(step.x, step.y));
     last = step;
     const s = m.screen(ll);
-    if (s.x < 0 || s.y < 0 || s.x > W || s.y > H) { out.outOfView++; if (hop && t >= hop.at) out.offAfterHop++; }
+    if (s.x < 0 || s.y < 0 || s.x > W || s.y > H) { out.outOfView++; if (hop && hop.done && t >= hop.at) out.offAfterHop++; }
     if (!nearHop && (Math.abs(s.x - W / 2) > 0.4 * W || Math.abs(s.y - H / 2) > 0.4 * H)) out.outOfMiddle++;
     // at rest the map is on whole pixels, where Leaflet draws it sharp
     if (!m._fidsCam || !m._fidsCam.gl) { const pp = m._getMapPanePos(); if (frac(pp.x) > 1e-6 || frac(pp.y) > 1e-6) out.softAtRest++; }
   }
+  out.p = p; out.ll = ll;
   return out;
 }
 
@@ -275,7 +302,7 @@ test('a new view starts on the drawn aeroplane at once, with a setView; the flig
   assert.equal(m.views.length, 1, 'one setView (it stops a pan or flight still running, a panBy would not)');
   assert.equal(m.panBys.length + m.raw.length, 0);
   const s = m.screen(drawn);
-  assert.ok(Math.abs(s.x - (144 - 0.2 * 288)) < 1e-6 && Math.abs(s.y - 90) < 1e-6, 'the aeroplane at the follow spot: ' + s.x.toFixed(2) + ',' + s.y.toFixed(2));
+  assert.ok(Math.abs(s.x - (144 - 0.2 * 288)) <= 0.5 && Math.abs(s.y - 90) <= 0.5, 'the aeroplane at the follow spot (Leaflet rounds the origin): ' + s.x.toFixed(2) + ',' + s.y.toFixed(2));
   assert.deepEqual([m._fidsWantZoom, m._fidsCamFly, m._fidsCam], [null, 0, null], 'what the old view left is dropped');
   assert.equal(w.aim(m, drawn, 90, 0.2), true);
   assert.equal(m.views.length, 1, 'already there: no second move');
@@ -342,6 +369,9 @@ test('the camera never flies to the raw fix, never pans the old way, and only _g
   assert.match(glide, /var _jv = _gateGlide\.views\[_viewKey\];\s*_gateGlide\.views\[_viewKey\] = \{[^}]*fresh: _gateCamFresh\(_jv, marker\) \};/, 'the no-speed join too');
   assert.match(taxi, /_gateCamFollow\(vmap, here, dt \* 1000, v\.hdg, 0\.2\)/);
   assert.match(taxi, /var lp = vmap\.project\(\[ll\[0\], ll\[1\] \+ vk\]\);/);
+  assert.match(fnSource('_gateTaxiRun'), /if \(st\.done && !_gateCamBusy\(live\)\) return;/, 'done, the taxi loop runs on while a camera glide is in the air');
+  assert.match(CORE, /setInterval\(function \(\) \{\s*var n = Date\.now\(\);\s*try \{ if \(typeof gateMap !== 'undefined'\) _gateCamIdle\(gateMap, n\); \} catch \(e\) \{\}\s*try \{ _gateCamIdle\(window\._bigCraftMap, n\); \} catch \(e\) \{\}\s*\}, 2000\);/, 'a glide nobody drives is dropped and the map put on whole pixels');
+  assert.match(fnSource('_gateCamFollow'), /var p = m\.project\(ll, z\), c = _gateCamCentre\(m, z\);/, 'the drawn centre, not getCenter');
   assert.match(fnSource('_gateApplyParked'), /_gateCamFly\(vm, \[lat, lng\], gz, 1\.6\)/);
   assert.match(fnSource('_gateCamAim'), /m\.setView\(at, z, \{ animate: false \}\)/);
   assert.doesNotMatch(fnSource('_gateCamAim'), /panBy/);
@@ -357,6 +387,204 @@ test('the camera never flies to the raw fix, never pans the old way, and only _g
   const head = CORE.slice(CORE.indexOf('// v24181 — THE CAMERA FOLLOWS THE AEROPLANE AS IT IS DRAWN.'), CORE.indexOf('\nfunction _gateCamFly('));
   assert.ok(head.length > 200);
   assert.doesNotMatch(head, /['{}]/);
+});
+
+test('an aeroplane that stops mid-glide (held at its cap, at the stand): the camera comes to rest within 1.5 s, never turning back', () => {
+  for (const [hdg, size, zoom, v] of [[90, [288, 180], 13, 6.2], [0, [288, 180], 15, 12], [200, [1280, 640], 13, 30]]) {
+    let stopAt = null;
+    const cams = [];
+    const r = drive({ secs: 60, hdgAt: () => hdg, size, zoom,
+      speedAt: (t, m) => { if (stopAt === null && m._fidsCam && m._fidsCam.gl) stopAt = t + 0.5; return stopAt !== null && t >= stopAt ? 0 : v; },
+      onFrame: (t, m) => cams.push([t, m._c.x, m._c.y]) });
+    const tag = hdg + '° ' + v + ' px/s ' + size.join('x');
+    assert.ok(stopAt !== null, tag + ': a glide started');
+    const i0 = cams.findIndex((c) => c[0] >= stopAt);
+    const dir = [cams[i0][1] - cams[i0 - 1][1], cams[i0][2] - cams[i0 - 1][2]];
+    let restAt = null, back = 0;
+    for (let i = i0 + 1; i < cams.length; i++) {
+      const st = [cams[i][1] - cams[i - 1][1], cams[i][2] - cams[i - 1][2]];
+      if (st[0] * dir[0] + st[1] * dir[1] < -1e-6) back++;
+      if (restAt === null && Math.hypot(st[0], st[1]) < 1e-6) restAt = cams[i][0];
+    }
+    assert.equal(back, 0, tag + ': never back the way it came');
+    assert.ok(restAt !== null && restAt - stopAt <= 1.6, tag + ': at rest ' + (restAt - stopAt).toFixed(2) + ' s after it stopped');
+    assert.deepEqual([r.outOfView, r.outOfMiddle, r.softAtRest], [0, 0, 0], tag);
+    assert.ok(r.worstDvAll < 0.05, tag + ': ' + r.worstDvAll.toFixed(4));
+  }
+});
+
+test('a reversal mid-glide (a circling approach, a U-turn on the taxi): the camera turns round smoothly and keeps it in the middle', () => {
+  for (const [v, zoom, size] of [[10.8, 14, [288, 180]], [12, 17, [288, 180]], [30, 13, [1280, 640]]]) {
+    let flipAt = null;
+    const r = drive({ secs: 40, speed: v, zoom, size, hdgAt: (t) => (flipAt !== null && t >= flipAt ? 270 : 90),
+      onFrame: (t, m) => { if (flipAt === null && m._fidsCam && m._fidsCam.gl) flipAt = t + 0.3; } });
+    const tag = v + ' px/s z' + zoom;
+    assert.ok(flipAt !== null, tag + ': a glide started');
+    assert.deepEqual([r.outOfView, r.outOfMiddle, r.softAtRest], [0, 0, 0], tag);
+    assert.ok(r.worstDvAll < 0.08, tag + ': the camera step changes by ' + r.worstDvAll.toFixed(4));
+  }
+});
+
+test('a glide planned again (a jump at a new fix mid-glide) carries on in the same frame: no frame standing still', () => {
+  for (const [dx, dy] of [[0, 30], [-25, 10], [20, -20]]) {
+    const r = drive({ secs: 40, speed: 6.2, zoom: 13, hdgAt: () => 90,
+      hop: { dx, dy, when: (t, m) => !!(m._fidsCam && m._fidsCam.gl && m._fidsCam.ck - m._fidsCam.gl.t0 > 800) } });
+    assert.ok(r.m._fidsCam && r.p, 'ran');
+    assert.equal(r.stallFrames, 0, dx + ',' + dy + ': no stall');
+    assert.ok(r.worstDvAll < 0.06, dx + ',' + dy + ': the camera step changes by ' + r.worstDvAll.toFixed(4));
+    assert.deepEqual([r.outOfView, r.softAtRest], [0, 0]);
+  }
+});
+
+test('another view moving the camera (a parked or estimate view) ends a glide: it is never carried on from where it was', () => {
+  // mid-glide, another view centres the map on the aeroplane, as the parked view does
+  let movedAt = null, firstAfter = null, c0 = null;
+  const r = drive({ secs: 30, speed: 6.2, zoom: 13, hdgAt: () => 90,
+    onFrame: (t, m) => {
+      if (c0 && firstAfter === null) { const c = m._c; firstAfter = Math.hypot(c.x - c0.x, c.y - c0.y); }
+      if (movedAt === null && m._fidsCam && m._fidsCam.gl && m._fidsCam.ck - m._fidsCam.gl.t0 > 600 && m._fidsCam.px !== null) {
+        const q = m.unproject({ x: m._fidsCam.px, y: m._fidsCam.py });
+        m.setView([q.lat, q.lng], m.getZoom());
+        movedAt = t;
+      }
+    } });
+  assert.ok(movedAt !== null, 'moved by another view mid-glide');
+  assert.deepEqual([r.outOfView, r.softAtRest], [0, 0]);
+  // the follower ran once since: it held the camera where the other view put it
+  const w = camWorld(), m = new FakeMap(YQM, 13, [288, 180]);
+  let p = m.project(YQM);
+  w.aim(m, YQM, 90, 0.2);
+  let moved = false, after = null;
+  for (let f = 0; f < 60 * 40; f++) {
+    w.clock.t += DT; p = { x: p.x + 6.2 / FPS, y: p.y }; const q = m.unproject(p);
+    if (!moved && m._fidsCam && m._fidsCam.gl && m._fidsCam.ck - m._fidsCam.gl.t0 > 600) {
+      m.setView([q.lat, q.lng], 13); moved = true;
+      const cs = m._c; w.follow(m, [q.lat, q.lng], DT, 90, 0.2);
+      after = { step: Math.hypot(m._c.x - cs.x, m._c.y - cs.y), glide: m._fidsCam.gl };
+      continue;
+    }
+    w.follow(m, [q.lat, q.lng], DT, 90, 0.2);
+  }
+  assert.ok(moved, 'a glide was running');
+  assert.ok(after.step < 1e-6, 'the frame after: ' + after.step.toFixed(4) + ' px, not a step back on to the old glide');
+  assert.equal(after.glide, null, 'the old glide is dropped');
+});
+
+test('a glide nothing drives any more is dropped after a second and the map put on whole pixels; never while a flight lands', () => {
+  const w = camWorld(), m = new FakeMap(YQM, 11, [288, 180]);
+  m._rawPanBy([0.37, -0.21]);
+  m._fidsCam = { gl: { t0: 0 }, t: w.clock.t };
+  assert.equal(w.idle(m, w.clock.t + 500), false, 'driven a moment ago: left alone');
+  assert.equal(w.idle(m, w.clock.t + 1500), true, 'nobody for a second and a half: dropped and snapped');
+  assert.equal(m._fidsCam.gl, null);
+  assert.ok(frac(m._pane.x) < 1e-9 && frac(m._pane.y) < 1e-9);
+  m._rawPanBy([0.3, 0]); m._fidsCamFly = w.clock.t + 5000;
+  assert.equal(w.idle(m, w.clock.t + 1600), false, 'not while a flight lands');
+  assert.equal(w.idle(null, w.clock.t), false);
+  assert.equal(w.busy([{ map: m }]), false);
+  m._fidsCam.gl = { t0: 1 };
+  assert.equal(w.busy([{ marker: { _map: m } }]), true);
+});
+
+test('the lines are redrawn before the camera outruns their margin, even in the one-second glide after a jump', () => {
+  for (const [h, dx, dy, size] of [[0, 200, 0, [288, 180]], [90, 0, 140, [288, 180]], [90, 0, 600, [1280, 640]]]) {
+    const r = drive({ speed: 2.4, secs: 20, hdgAt: () => h, size, zoom: size[0] > 300 ? 13 : 11, hop: { at: 5, dx, dy } });
+    const lim = 0.08 * Math.min(size[0], size[1]) + r.worstStepL1 + 0.5;
+    assert.ok(r.maxBetweenEnds <= lim, size.join('x') + ': ' + r.maxBetweenEnds.toFixed(1) + ' px between two moveend (limit ' + lim.toFixed(1) + ')');
+  }
+});
+
+// ── the real taxi loop: it reaches the stand in the middle of a glide ──────
+function taxiWorld() {
+  let T = 1700000000000;
+  const rafQ = []; let rafId = 0; const timers = [];
+  const ctx = {
+    console: { log() {} }, Math, isFinite, Object, Array, String, Number, JSON,
+    Date: { now: () => T },
+    requestAnimationFrame: (cb) => { rafQ.push({ id: ++rafId, cb }); return rafId; },
+    cancelAnimationFrame: (id) => { const k = rafQ.findIndex((r) => r.id === id); if (k >= 0) rafQ.splice(k, 1); },
+    setTimeout: (cb, ms) => { timers.push({ cb, at: T + ms }); return timers.length; },
+  };
+  ctx.window = ctx;
+  vm.createContext(ctx);
+  const names = ['_gateTaxiRun', '_gateTaxiDraw', '_taxiSAtT', '_taxiIdx', '_taxiVAtS', '_taxiAtS', '_gcBrgDeg', '_taxiProfile', '_taxiLL', ...CAM];
+  vm.runInContext([
+    'var _gateTaxi = { on: false, fl: "", key: "", plan: null, t0: 0, s: 0, anchor: "", anchorAt: 0, views: {}, gen: 0, raf: null, done: false, since: 0, last: 0 };',
+    'var _gateGlide = { raf: null, timer: null, views: {}, ll: null, at: 0 };',
+    'function _mapPlaneFit(){}',
+    'var APPLIED = 0; function _gateMapApply(){ APPLIED++; } function _gateAircraftWhere(){ return null; }',
+  ].concat(names.map(fnSource)).join('\n'), ctx);
+  return {
+    run: (s) => vm.runInContext(s, ctx), now: () => T, advance: (ms) => { T += ms; },
+    frame: (dt) => { T += dt; const q = rafQ.splice(0, rafQ.length); for (const r of q) r.cb(); return q.length; },
+  };
+}
+function taxiArrival({ len, h0, turnAt }) {
+  const w = taxiWorld();
+  const O = [46.1122, -64.6786];
+  const xy = [];
+  let x = 0, y = 0, h = h0;
+  for (let s = 0; s <= len; s += 1) {
+    xy.push([x, y]);
+    const left = len - s;
+    if (left < turnAt && left > turnAt - 47) h = h0 + Math.min(90, (turnAt - left) / 47 * 90);
+    x += Math.sin(h * R); y += Math.cos(h * R);
+  }
+  const prof = w.run('_taxiProfile')(xy, null, 6);
+  const pts = prof.xy.map((q) => w.run('_taxiLL')(q, O));
+  const plan = { pts, s: prof.s, v: prof.v, t: prof.t, total: prof.total, hdg: null };
+  const m = new FakeMap(pts[0], 16, [288, 180]);
+  const div = { style: { transform: '' } };
+  const marker = { _map: m, _ll: pts[0], _icon: { querySelector: () => div }, setLatLng(ll) { this._ll = ll; }, getLatLng() { return { lat: this._ll[0], lng: this._ll[1] }; } };
+  const v = { map: m, marker, a1: { setLatLngs() {} }, a2: { setLatLngs() {} }, hdg: null, seg: -1 };
+  const st = w.run('_gateTaxi');
+  st.on = true; st.fl = 'AC1'; st.plan = plan; st.t0 = w.now(); st.s = 0; st.views = { mini: v }; st.anchor = 'model';
+  w.run('_gateCamAim')(m, pts[0], h0, 0.2);
+  w.run('_gateTaxiRun')();
+  let frames = 0, glideAtStand = false, worstAfter = 0, prev = m._c, afterDone = 0;
+  while (frames < 60 * 600) {
+    const n = w.frame(DT); frames++;
+    const c = m._c;
+    if (st.done) {
+      if (!afterDone) glideAtStand = !!(m._fidsCam && m._fidsCam.gl);
+      afterDone++;
+      worstAfter = Math.max(worstAfter, Math.hypot(c.x - prev.x, c.y - prev.y));
+    }
+    prev = c;
+    if (!n) break;   // the loop has stopped
+  }
+  const stoppedWith = { glide: !!(m._fidsCam && m._fidsCam.gl), whole: frac(m._pane.x) < 1e-6 && frac(m._pane.y) < 1e-6, afterDoneS: afterDone / FPS };
+  // the 400 ms hand-over and the 10 s ticks re-run the taxi with the answer still 'taxi'
+  const jumps = [];
+  for (const wait of [400, 10000, 10000]) {
+    w.advance(wait);
+    const a = m._c;
+    w.run('_gateTaxiRun')();
+    for (let f = 0; f < 3; f++) w.frame(DT);
+    jumps.push(Math.hypot(m._c.x - a.x, m._c.y - a.y));
+  }
+  return { glideAtStand, worstAfter, stoppedWith, jumps, done: st.done };
+}
+
+test('the real taxi loop: at the stand mid-glide it runs on until the camera lands, on whole pixels; nothing jumps later', () => {
+  let midGlide = 0, runs = 0;
+  for (const len of [260, 330, 400, 470]) {
+    for (let h0 = 0; h0 < 360; h0 += 45) {
+      for (const turnAt of [60, 120, 400]) {
+        const r = taxiArrival({ len, h0, turnAt });
+        const tag = len + ' m, ' + h0 + '°, turn ' + turnAt + ' m out';
+        runs++;
+        assert.ok(r.done, tag + ': reached the stand');
+        if (r.glideAtStand) midGlide++;
+        assert.equal(r.stoppedWith.glide, false, tag + ': the loop stopped with a glide still in the air');
+        assert.equal(r.stoppedWith.whole, true, tag + ': the map left off whole pixels');
+        assert.ok(r.stoppedWith.afterDoneS <= 1.7, tag + ': it ran on ' + r.stoppedWith.afterDoneS.toFixed(2) + ' s after the stand');
+        assert.ok(r.worstAfter < 1.5, tag + ': a step of ' + r.worstAfter.toFixed(2) + ' px after the stand');
+        assert.ok(Math.max(...r.jumps) < 0.01, tag + ': later re-runs moved the camera ' + r.jumps.map((j) => j.toFixed(2)).join(', '));
+      }
+    }
+  }
+  assert.ok(midGlide > 0, 'some arrivals reach the stand mid-glide (' + midGlide + ' of ' + runs + ')');
 });
 
 // ── the real glide, sliced out as tests/gate-glide-resume.test.js does ─────
