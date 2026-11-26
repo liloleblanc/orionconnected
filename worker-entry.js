@@ -1126,7 +1126,9 @@ export default {
     if (path.startsWith('/tiles/')) {
       const m = path.slice('/tiles/'.length).match(/^([a-z]+)\/(\d+)\/(\d+)\/(\d+)\.png$/);
       if (!m) return new Response('Bad tile path', { status: 400 });
-      const tpl = TILE_PROVIDERS[m[1]];
+      // Own names only: a plain lookup also finds what every object inherits,
+      // and /tiles/constructor/... then threw instead of answering 404.
+      const tpl = Object.prototype.hasOwnProperty.call(TILE_PROVIDERS, m[1]) ? TILE_PROVIDERS[m[1]] : null;
       if (!tpl) return new Response('Unknown provider', { status: 404 });
       const upstream = tpl.replace('{z}', m[2]).replace('{x}', m[3]).replace('{y}', m[4]);
       try {

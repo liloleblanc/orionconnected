@@ -65,7 +65,8 @@ test('the worker serves /maptiles/ and /tiles/osm/ from OpenStreetMap with our U
       assert.deepEqual(asked.map((a) => a.url), ['https://tile.openstreetmap.org/8/82/90.png'], p);
       assert.match(asked[0].ua, /^OrionConnectedFIDS\/1\.0 \(.+; \+https:\/\/fids\.orionconnected\.com\)$/, p + ' names us, as the tile policy asks');
     }
-    for (const style of ['voyager', 'dark', 'positron', 'citylabels']) {
+    // the four CARTO styles, and a name every object inherits (it threw before)
+    for (const style of ['voyager', 'dark', 'positron', 'citylabels', 'constructor']) {
       asked.length = 0;
       const res = await ask('/tiles/' + style + '/8/82/90.png');
       assert.equal(res.status, 404, style);
