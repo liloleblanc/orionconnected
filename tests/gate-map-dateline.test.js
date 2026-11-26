@@ -134,11 +134,13 @@ test('each map draws the glide in its own camera copy, and the in-place camera t
   assert.match(SRC, /_vk = Math\.round\(\(vmap\.getCenter\(\)\.lng - lng\) \/ 360\) \* 360;/);
   assert.match(SRC, /vmarker\.setLatLng\(\[lat, vlng\]\);\n\s*_gateGlide\.ll = \[lat, lng\];/);
   assert.match(SRC, /v\.a1\.setLatLngs\(_vk \? route\.slice\(0, i1\)\.map\(_vsh\) : route\.slice\(0, i1\)\)/);
-  assert.match(SRC, /vmap\.panInside\(\[lat, vlng\]/);
-  assert.match(SRC, /var _camFix = \[planeLat, _lngNear\(planeLng, gateMap\.getCenter\(\)\.lng\)\];/);
-  assert.match(SRC, /gateMap\.flyTo\(_camFix, zoom/);
-  assert.match(SRC, /var _bcCamFix = \[planeLat, _lngNear\(planeLng, window\._bigCraftMap\.getCenter\(\)\.lng\)\];/);
-  assert.match(SRC, /window\._bigCraftMap\.flyTo\(_bcCamFix, _bcAirZ/);
+  // v24181 — the camera follows the drawn point in this view's copy ([lat,
+  // vlng]); the in-place re-anchors no longer aim it at the raw fix at all
+  // (tests/gate-map-camera.test.js), so no raw fix can fly it round the world
+  assert.match(SRC, /_gateCamFollow\(vmap, \[lat, vlng\], _dtMs/);
+  assert.match(SRC, /_gateCamAim\(vmap, \[lat, vlng\]/);
+  assert.match(SRC, /_gateCamFly\(vmap, _gateCamSpot\(vmap, \[lat, vlng\]/);
+  assert.doesNotMatch(SRC, /_camFix|_bcCamFix/);
   assert.match(SRC, /_dLng = Math\.abs\(_lngNear\(_ref\.lng, planeLng\) - planeLng\)/);
 });
 
