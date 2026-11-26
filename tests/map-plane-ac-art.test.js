@@ -60,7 +60,10 @@ const regKey = lift('_aircraftRegKey', [], []);
 // the resolved store: a row whose flight is listed here was seen by FR24 (callsign, registration)
 const SEEN = {};
 const resolved = (row) => (row && SEEN[row.flight] ? { cd: '', nm: '', reg: SEEN[row.flight].reg || '', seen: SEEN[row.flight] } : null);
-const acArt = lift('_mapPlaneAcArt', ['_MAP_PLANE_ART', '_acResolvedGet', 'AIRCRAFT_LIVERY_BY_REG', '_aircraftRegKey'], [ART, resolved, LIVERY, regKey]);
+// the ladder for a row kept across a reload, which carries no _opCode (here: the bands by number)
+const LADDER = { AC8612: 'QK', AC8611: 'QK', AC7754: 'ACEX', AC7753: 'ACEX', AC7680: 'PB' };
+const opOf = (r) => LADDER[r.flight] || '';
+const acArt = lift('_mapPlaneAcArt', ['_MAP_PLANE_ART', '_acResolvedGet', 'AIRCRAFT_LIVERY_BY_REG', '_aircraftRegKey', '_gateOpOf'], [ART, resolved, LIVERY, regKey, opOf]);
 const specFor = lift('_mapPlaneSpecFor', ['aircraftCodeToIata', '_MAP_PLANE_DIMS', '_MAP_PLANE_ART', '_MAP_PLANE_UNKNOWN', '_mapPlaneAcArt'],
   [toIata, DIMS, ART, UNKNOWN, acArt]);
 const scale = lift('_mapPlaneScale', [], []);
@@ -129,6 +132,17 @@ test('the Dash 8-400 wears them only on positive Jazz evidence: PAL flies its ow
   assert.equal(src('DH8D', [row('AC8615', { _opCode: 'QK' })]), AC('dh4'));
   assert.equal(src('DH8D', [row('AC8615', { _feedCs: 'JZA8615' })]), AC('dh4'));
   assert.equal(src('DH8D', [row('AC7754', { _opCode: 'ACEX', _feedCs: 'JZA7754' })]), AC('dh4'), 'the brand, flown by Jazz');
+  // the Jazz callsign is heard on the inbound only (a departure is seen once it flies): it speaks for the aeroplane
+  SEEN.AC7754 = { cs: 'JZA7754', reg: 'C-GGOY' };
+  assert.equal(src('DH8D', [row('AC7754', { _opCode: 'ACEX' }), row('AC7753', { _opCode: 'ACEX' })]), AC('dh4'), 'Jazz on one row, nothing against it on the other');
+  assert.equal(src('DH8D', [row('AC7754', { _opCode: 'ACEX' }), row('AC7753', { _opCode: 'PB' })]), DH4, 'one row naming PAL keeps it plain');
+  delete SEEN.AC7754;
+  // a row the gate kept across a reload has no _opCode: the ladder answers for it
+  const kept = (flight) => ({ flight, airline: 'AC', gate: '28', status: 'Arrived', _sortTs: 0, _locIata: 'YYZ' });
+  assert.equal(src('DH8D', [kept('AC8612'), row('AC8611', { _opCode: 'QK' })]), AC('dh4'), 'a remembered Jazz inbound');
+  assert.equal(src('DH8D', [kept('AC8612')]), AC('dh4'), 'the ladder says Jazz for the kept row');
+  assert.equal(src('DH8D', [kept('AC7754'), row('AC7753', { _opCode: 'ACEX' })]), DH4, 'a remembered brand row is no Jazz evidence');
+  assert.equal(src('DH8D', [kept('AC7680')]), DH4, 'a remembered PAL row stays plain');
   // PAL: the brand block (AC7754 / AC7753 at Moncton), bare numbers (AC7203 is PB7203), its band, its callsign
   assert.equal(src('DH8D', [row('AC7754', { _opCode: 'ACEX' }), row('AC7753', { _opCode: 'ACEX' })]), DH4);
   assert.equal(src('DH8D', [row('AC7203')]), DH4);
@@ -207,7 +221,16 @@ function readPng(file) {
   return { w, h, rows };
 }
 
-test('the seven pictures: light 512 px RGBA squares, framed, upright, neutral', () => {
+function hue(r, g, b) {
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  if (!d) return 0;
+  const h = mx === r ? 60 * (((g - b) / d) % 6) : mx === g ? 60 * ((b - r) / d + 2) : 60 * ((r - g) / d + 4);
+  return (h + 360) % 360;
+}
+// the red of each livery as supplied (maple leaves, exit outlines), less a tenth: the grey pass keeps it
+const RED_MIN = { ac320: 590, ac321: 150, ac7m8: 200, ac223: 225, ace75: 29, accr9: 67, acdh4: 20 };
+
+test('the seven pictures: light 512 px RGBA squares, framed, upright, neutral, the reds kept', () => {
   for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4']) {
     const a = ART[key];
     assert.ok(a && /^\/logos\/map-plane-ac-[0-9a-z]+\.png$/.test(a.src), key);
@@ -216,7 +239,7 @@ test('the seven pictures: light 512 px RGBA squares, framed, upright, neutral', 
     const { w, h, rows } = readPng(file);
     assert.deepEqual([w, h], [512, 512], key);
     const solid = (x, y) => rows[y][x * 4 + 3] >= 128;
-    let top = -1, bot = -1, minX = w, maxX = -1, chroma = 0, greys = 0;
+    let top = -1, bot = -1, minX = w, maxX = -1, nearGrey = 0, lilac = 0, red = 0;
     for (let y = 0; y < h; y++) {
       let any = false;
       for (let x = 0; x < w; x++) {
@@ -224,7 +247,9 @@ test('the seven pictures: light 512 px RGBA squares, framed, upright, neutral', 
         any = true; if (x < minX) minX = x; if (x > maxX) maxX = x;
         const i = x * 4, r = rows[y][i], g = rows[y][i + 1], b = rows[y][i + 2];
         const c = Math.max(r, g, b) - Math.min(r, g, b);
-        if (c <= 30) { chroma += c; greys++; }
+        if (c > 0 && c <= 12) nearGrey++;
+        if (c > 0 && c <= 30) { const hu = hue(r, g, b); if (hu >= 200 && hu <= 335) lilac++; }
+        if (r - Math.max(g, b) >= 20) red++;
       }
       if (any) { if (top < 0) top = y; bot = y; }
     }
@@ -241,8 +266,10 @@ test('the seven pictures: light 512 px RGBA squares, framed, upright, neutral', 
     const fore = axis(top + Math.round(0.2 * (bot - top))), aft = axis(top + Math.round(0.75 * (bot - top)));
     assert.ok(fore !== null && aft !== null && Math.abs(fore - 256) <= 2 && Math.abs(aft - 256) <= 2, key + ' fuselage axis ' + fore + ' / ' + aft);
     assert.ok(Math.abs(aft - fore) <= 2, key + ' stands upright: ' + fore + ' to ' + aft);
-    // every white and grey is neutral: no lilac left
-    assert.ok(chroma / greys <= 1, key + ' grey tint ' + (chroma / greys).toFixed(2));
+    // every white and grey is neutral, no lilac left, and the reds of the colours are kept
+    assert.equal(nearGrey, 0, key + ' near-grey pixels with a tint');
+    assert.equal(lilac, 0, key + ' pixels in the lilac cast');
+    assert.ok(red >= RED_MIN[key], key + ' red pixels ' + red + ', at least ' + RED_MIN[key]);
   }
 });
 
