@@ -128,9 +128,15 @@ test('the A320 and A321 of Rouge wear pictures of their own, the same on every r
   // the A320 extras in AC 7000-7599 are mainline; the A321 has none
   assert.equal(src('A320', [row('AC7050')]), AC('320'));
   assert.equal(src('A321', [row('AC7050')]), JET);
-  // Rouge flies no A321neo, and has no A319 picture yet
+  // Rouge flies no A321neo
   assert.equal(src('A21N', [row('AC1986', { _opCode: 'RV' })]), JET);
-  assert.equal(src('A319', [row('AC1650', { _opCode: 'RV' })]), JET);
+  // the A319: Rouge colours only, as there is no Air Canada picture of it
+  assert.equal(src('A319', [row('AC1650', { _opCode: 'RV' })]), RV('319'));
+  assert.equal(src('A319', [row('AC2124')]), RV('319'), 'a Rouge sun flight');
+  assert.equal(src('A319', [row('AC306', { _feedCs: 'ROU306' })]), RV('319'), 'Rouge on a mainline number');
+  assert.equal(src('A319', [row('AC306')]), JET, 'a mainline A319 keeps the plain picture');
+  assert.equal(src('A319', [row('AC1650', { _opCode: 'RV' }), row('AC306')]), JET, 'rows that disagree');
+  assert.equal(src('A319', [row('AC1650', { _opCode: 'QK' })]), JET);
   // never Jazz, PAL, the Express brand, another callsign, special colours, or a number outside the blocks
   assert.equal(src('A320', [row('AC1650', { _opCode: 'QK' })]), JET);
   assert.equal(src('A320', [row('AC1650', { _opCode: 'PB' })]), JET);
@@ -252,6 +258,7 @@ test('the same size in flight, the true size and shape close in', () => {
     ['B738', [row('AC1096')], 'ac7m8', 39.5, 35.8],
     ['A320', [row('AC1650', { _opCode: 'RV' })], 'rv320', 37.6, 34.1],
     ['A321', [row('AC1986', { _opCode: 'RV' })], 'rv321', 44.5, 35.8],
+    ['A319', [row('AC1650', { _opCode: 'RV' })], 'rv319', 33.8, 34.1],
     ['BCS3', [row('AC345')], 'ac223', 38.7, 35.1],
     ['E75L', [row('AC8902', { _opCode: 'QK' })], 'ace75', 31.7, 26.0],
     ['CRJ9', [row('AC8803', { _opCode: 'QK' })], 'accr9', 36.2, 24.9],
@@ -307,10 +314,10 @@ function hue(r, g, b) {
   return (h + 360) % 360;
 }
 // the red of each livery (maple leaves, exit outlines) as the grey pass leaves it, less a tenth
-const RED_MIN = { ac320: 580, ac321: 142, ac7m8: 202, ac223: 225, ace75: 27, accr9: 63, acdh4: 13, rv320: 5054, rv321: 3015 };
+const RED_MIN = { ac320: 585, ac321: 142, ac7m8: 183, ac223: 225, ace75: 27, accr9: 63, acdh4: 13, rv320: 5023, rv321: 3015, rv319: 4149 };
 
-test('the nine pictures: light 512 px RGBA squares, framed, upright, neutral, the reds kept', () => {
-  for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4', 'rv320', 'rv321']) {
+test('the ten pictures: light 512 px RGBA squares, framed, upright, neutral, the reds kept', () => {
+  for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4', 'rv320', 'rv321', 'rv319']) {
     const a = ART[key];
     assert.ok(a && /^\/logos\/map-plane-(ac|rv)-[0-9a-z]+\.png$/.test(a.src), key);
     const file = path.join(root, 'fids-current', a.src);
@@ -319,7 +326,7 @@ test('the nine pictures: light 512 px RGBA squares, framed, upright, neutral, th
     assert.deepEqual([w, h], [512, 512], key);
     const solid = (x, y) => rows[y][x * 4 + 3] >= 128;
     let top = -1, bot = -1, minX = w, maxX = -1, nearGrey = 0, red = 0;
-    const strong = new Set(), soft = [];
+    const strong = new Set(), tinted = [];
     for (let y = 0; y < h; y++) {
       let any = false;
       for (let x = 0; x < w; x++) {
@@ -328,8 +335,13 @@ test('the nine pictures: light 512 px RGBA squares, framed, upright, neutral, th
         // the colour of every drawn pixel, its soft edge included, as the grey pass reads it
         const c = Math.max(r, g, b) - Math.min(r, g, b);
         if (c > 0 && c <= 12) nearGrey++;
-        if (c > 12 && c <= 30) soft.push([x, y]);
-        if (c > 30) { const hu = hue(r, g, b); if (hu >= 330 || hu < 25) strong.add(y * w + x); }
+        // v24184: any tint at all, however strong; red paint counts as such only where it is SOLID,
+        // so a near-invisible fringe pixel (alpha 3) can no longer excuse the tint beside it
+        if (c > 12) {
+          const hu = hue(r, g, b), isRed = hu >= 330 || hu < 25;
+          tinted.push([x, y, isRed]);
+          if (c > 30 && isRed && rows[y][i + 3] >= 128) strong.add(y * w + x);
+        }
         if (!solid(x, y)) continue;
         // the shape, from the solid pixels
         any = true; if (x < minX) minX = x; if (x > maxX) maxX = x;
@@ -350,11 +362,12 @@ test('the nine pictures: light 512 px RGBA squares, framed, upright, neutral, th
     const fore = axis(top + Math.round(0.2 * (bot - top))), aft = axis(top + Math.round(0.75 * (bot - top)));
     assert.ok(fore !== null && aft !== null && Math.abs(fore - 256) <= 2 && Math.abs(aft - 256) <= 2, key + ' fuselage axis ' + fore + ' / ' + aft);
     assert.ok(Math.abs(aft - fore) <= 2, key + ' stands upright: ' + fore + ' to ' + aft);
-    // every white and grey is neutral; a soft tint is left only on the edge of red paint (3 px)
+    // every white and grey is neutral: a colour is left only on red, as solid red paint or its
+    // edge within 3 px of solid red paint; a lilac or pink cast anywhere else fails, whatever its strength
     assert.equal(nearGrey, 0, key + ' near-grey pixels with a tint');
     const nearRed = ([x, y]) => { for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (strong.has((y + dy) * w + (x + dx))) return true; return false; };
-    const stray = soft.filter((pt) => !nearRed(pt));
-    assert.equal(stray.length, 0, key + ' tinted pixels away from any red, e.g. ' + JSON.stringify(stray.slice(0, 3)));
+    const stray = tinted.filter(([x, y, isRed]) => !(isRed && nearRed([x, y])));
+    assert.equal(stray.length, 0, key + ' tinted pixels that are not red paint or its edge, e.g. ' + JSON.stringify(stray.slice(0, 3)));
     assert.ok(red >= RED_MIN[key], key + ' red pixels ' + red + ', at least ' + RED_MIN[key]);
   }
 });

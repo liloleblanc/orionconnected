@@ -51967,14 +51967,18 @@ var _MAP_PLANE_UNKNOWN = { jet: [38, 35, 4.8], prop: [30, 27, 3.5] };
 // turned upright (they leaned 0.6 and 0.3 degrees); and the E175, CRJ900 and Dash 8-400 are
 // widened or narrowed to their real span for their length (they were 4, 3 and
 // 7 percent out). Which aeroplanes wear them: _mapPlaneAcArt below.
-// v24184 — AND THE A320 AND A321 IN ROUGE COLOURS (supplied art): red engines,
-// the red aft fuselage and tail, all seen from above, and on the A321 red
-// sharklets, on the same aeroplanes as the Air Canada ones (the same length,
-// fences or sharklets and engines, upright), framed and made neutral the same
+// v24184 — AND THE A319, A320 AND A321 IN ROUGE COLOURS (supplied art): red
+// engines, the red aft fuselage and tail, all seen from above, red fences on the
+// A319 and A320 and red sharklets on the A321, on the same aeroplanes as the Air
+// Canada ones (the same length, wingtips and engines, upright), framed the same
 // way. The Rouge A321 came 3.5 percent wide tip to tip, its sharklets drawn
 // flared, and is narrowed to the real span for its length, as the E175 was. Its
-// 737 MAX 8 is the Air Canada picture (v24183); its A319 keeps the plain picture
-// until one exists.
+// 737 MAX 8 is the Air Canada picture (v24183).
+// v24184 — ALL TEN ARE GREYED BY ONE STRICTER RULE: a pixel keeps its colour only
+// when it is red paint, or a red edge within 3 px of SOLID red paint; every other
+// tint goes to grey, however strong. The first pass greyed only faint tints and
+// let a near-invisible fringe pixel count as red, so a lilac line was left along
+// the Rouge A320 slats and a pink one on the Rouge A321 leading edge.
 var _MAP_PLANE_ART = {
   jet:  { src: '/logos/map-plane-jet.png',  len: 42.75, span: 35.63 },
   prop: { src: '/logos/map-plane-prop.png', len: 34.88, span: 29.63 },
@@ -51989,7 +51993,8 @@ var _MAP_PLANE_ART = {
   accr9: { src: '/logos/map-plane-ac-cr9.png', len: 42.75, span: 29.42 },
   acdh4: { src: '/logos/map-plane-ac-dh4.png', len: 34.88, span: 30.27 },
   rv320: { src: '/logos/map-plane-rv-320.png', len: 42.75, span: 39.02 },
-  rv321: { src: '/logos/map-plane-rv-321.png', len: 42.75, span: 34.32 }
+  rv321: { src: '/logos/map-plane-rv-321.png', len: 42.75, span: 34.32 },
+  rv319: { src: '/logos/map-plane-rv-319.png', len: 42.75, span: 43.08 }
 };
 // v24182 — WHO WEARS THEM. Only an aeroplane every row of which says Air Canada
 // colours: an Air Canada number; an operator, by the ladder the boards already
@@ -51998,7 +52003,7 @@ var _MAP_PLANE_ART = {
 // callsign of another airline; and a number in the block where that type flies
 // in those colours:
 //   A220-300                 mainline, no other operator, AC 1-1599
-//   A320, A321               v24184, in the colours of Air Canada or of Rouge,
+//   A319, A320, A321         v24184, in the colours of Air Canada or of Rouge,
 //                            the same on every row. Rouge: Rouge by the ladder, a
 //                            ROU callsign, or a Rouge number, AC 1600-2299 (the
 //                            sun flights in 2100-2299 carry no band). Air Canada:
@@ -52006,7 +52011,9 @@ var _MAP_PLANE_ART = {
 //                            A320 the extras in AC 7000-7599 too. The gate pairs
 //                            by the door, so a Rouge row beside an Air Canada row
 //                            keeps the plain picture: they may be two aeroplanes.
-//                            The A321neo (32Q) is mainline only: Rouge flies none
+//                            The A319 is drawn in Rouge colours only (there is no
+//                            Air Canada picture of it), and the A321neo (32Q) in
+//                            Air Canada colours only: Rouge flies none
 //   737 MAX 8               v24183, Air Canada and Rouge alike: Rouge paints its
 //                            MAX 8s as Air Canada does (the white body, the black
 //                            tail, engines and winglets) but for a small rouge
@@ -52043,7 +52050,7 @@ var _MAP_PLANE_ART = {
 function _mapPlaneAcArt(code, rows) {
   try {
     var c = String(code || '').toUpperCase();
-    var kind = (c === '320' || c === '321' || c === '32Q') ? 'pair'
+    var kind = (c === '319' || c === '320' || c === '321' || c === '32Q') ? 'pair'
              : (c === '223') ? 'main'
              : (c === '7M8' || c === '738' || c === '73H') ? 'max'
              : (c === 'E75' || c === 'CR9' || c === 'DH4') ? 'express' : '';
@@ -52097,7 +52104,8 @@ function _mapPlaneAcArt(code, rows) {
         if (!(fn >= 1 && fn <= 1599)) return '';
       }
     }
-    var key = kind === 'pair' ? ((c === '32Q' && paint === 'rv') ? '' : paint + (c === '320' ? '320' : '321'))
+    var key = kind === 'pair' ? (((c === '32Q' && paint === 'rv') || (c === '319' && paint === 'ac')) ? ''
+                                 : paint + (c === '32Q' ? '321' : c))
             : ({ '223': 'ac223', '7M8': 'ac7m8', '738': 'ac7m8', '73H': 'ac7m8',
                  'E75': 'ace75', 'CR9': 'accr9', 'DH4': 'acdh4' }[c] || '');
     return (key && _MAP_PLANE_ART[key]) ? key : '';
@@ -52113,7 +52121,7 @@ function _mapPlaneAcArt(code, rows) {
 // type with a picture in Air Canada colours takes it where _mapPlaneAcArt says
 // the aeroplane wears them. The Air Canada A320s carry the old wingtip fences,
 // not sharklets, so that picture is sized to their 34.1 m span, not 35.8; so
-// do those of Rouge (v24184), as its picture shows.
+// do the A319 and A320 of Rouge (v24184), as their pictures show.
 function _mapPlaneSpecFor(raw, rows) {
   var r = String(raw == null ? '' : raw), code = '';
   try { code = r ? String((typeof aircraftCodeToIata === 'function' ? aircraftCodeToIata(r) : r) || '').toUpperCase() : ''; } catch (e) { code = r.toUpperCase(); }
@@ -52130,7 +52138,7 @@ function _mapPlaneSpecFor(raw, rows) {
   var acArt = '';
   try { acArt = (rows && dimCode && typeof _mapPlaneAcArt === 'function') ? _mapPlaneAcArt(dimCode, rows) : ''; } catch (eA) { acArt = ''; }
   if (acArt) art = acArt;
-  return { code: dimCode, prop: prop, known: !!dimCode, len: use[0], span: (art === 'ac320' || art === 'rv320') ? 34.1 : use[1], ng: use[2],
+  return { code: dimCode, prop: prop, known: !!dimCode, len: use[0], span: (art === 'ac320' || art === 'rv320' || art === 'rv319') ? 34.1 : use[1], ng: use[2],
            art: _MAP_PLANE_ART[art], key: dimCode || (prop ? 'prop' : 'jet') };
 }
 // The type of the aeroplane the gate maps draw, from everywhere it lives.
