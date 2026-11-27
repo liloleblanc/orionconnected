@@ -706,17 +706,20 @@ test('the boards\' side keeps its rules, written where it is read (oskyWant; v24
 });
 
 // ═══ THE RELAY, AGAINST THE REAL WORKER CODE AND A FAKE OPENSKY ═══════════
-// a fake OpenSky: the OAuth token endpoint and /api/states/all
+// a fake OpenSky: the OAuth token endpoint and /api/states/all. slowMs: each
+// login and data call is counted at once and answered that much later, the
+// way a loaded machine stretches the time between OpenSky seeing a call and
+// the relay reading the answer.
 function fakeOpenSky(host = '127.0.0.1') {
   const f = {
     tokenCalls: 0, statesCalls: 0, issued: 0, tokens: new Set(), revoked: new Set(),
     mode: 'ok', loginMode: 'ok', queries: [], agents: [], date: null, statesDate: null, timeFn: null,
-    stateFile: null, diskCounts: [],
+    stateFile: null, diskCounts: [], slowMs: 0,
   };
   f.server = http.createServer((req, res) => {
     let body = '';
     req.on('data', (c) => { body += c; });
-    req.on('end', () => {
+    req.on('end', async () => {
       // no real Date header: OpenSky's clock past the stop is a stop, so the
       // fake only sends one when a test sets it (date: every answer;
       // statesDate: the data answers only)
@@ -726,6 +729,7 @@ function fakeOpenSky(host = '127.0.0.1') {
       const u = new URL(req.url, 'http://fake');
       if (req.method === 'POST' && u.pathname === '/auth/token') {
         f.tokenCalls++;
+        if (f.slowMs) await sleep(f.slowMs);
         if (f.loginMode === '403') { res.writeHead(403); res.end(); return; }
         const form = new URLSearchParams(body);
         if (form.get('grant_type') !== 'client_credentials' || form.get('client_id') !== CLIENT_ID
@@ -747,6 +751,7 @@ function fakeOpenSky(host = '127.0.0.1') {
         for (const [k, v] of u.searchParams) (q[k] = q[k] || []).push(v);
         f.queries.push(q);
         if (f.stateFile) f.diskCounts.push(JSON.parse(fs.readFileSync(f.stateFile, 'utf8')).count);
+        if (f.slowMs) await sleep(f.slowMs);
         const tok = String(req.headers.authorization || '').replace(/^Bearer /, '');
         if (!f.tokens.has(tok) || f.revoked.has(tok)) { res.writeHead(401); res.end(); return; }
         if (f.mode === 'forbidden') { res.writeHead(403); res.end(); return; }
@@ -786,6 +791,11 @@ async function fakeWorker(envExtra = {}, host = '127.0.0.1') {
       OSKY_STOP_AT: FAR_STOP, OSKY_RELAY_IPV4: '127.0.0.1', ...envExtra },
   };
   w.server = http.createServer(async (req, res) => {
+    if (w.nextRound && req.method === 'GET' && req.url.split('?')[0] === '/osky/report') {
+      const step = w.nextRound;
+      w.nextRound = null;
+      step();
+    }
     const chunks = [];
     for await (const c of req) chunks.push(c);
     const body = Buffer.concat(chunks);
@@ -826,6 +836,29 @@ async function fakeWorker(envExtra = {}, host = '127.0.0.1') {
   w.pos = (box = BOX) => w.kv.json('osky:pos:' + mod.oskyBoxKey(box));
   w.report = () => w.kv.json('osky:report') || {};
   w.status = async () => (await (await mod.default.fetch(new Request('https://fids-proxy.test/osky/status'), w.env, {})).json());
+  // THE RELAY'S CLOCK MOVES BETWEEN TWO OF ITS ROUNDS, NEVER INSIDE ONE.
+  // The relay reads its clock many times a round. A test that waits for a
+  // call and then moves the clock at once moves it while that round is still
+  // reading the answer: the answer is dated the new time, looks fresh, and
+  // the call the test waits for next never comes. A registered relay starts
+  // every round with its heartbeat, so w.betweenRounds(step) runs step() the
+  // moment the next heartbeat arrives: the round before it is over, and the
+  // relay, waiting for that answer, reads the rest of its round after step().
+  w.betweenRounds = (step, ms = 8000) => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      w.nextRound = null;
+      reject(new assert.AssertionError({ message: 'timed out waiting for the next round' }));
+    }, ms);
+    w.nextRound = () => {
+      clearTimeout(timer);
+      try { step(); resolve(); } catch (e) { reject(e); }
+    };
+  });
+  // n more heartbeats: at least n - 1 whole rounds, however slow the machine
+  w.beats = (n) => {
+    const b = w.count('GET /osky/report');
+    return until(() => w.count('GET /osky/report') >= b + n, n + ' more rounds');
+  };
   return w;
 }
 
@@ -878,7 +911,9 @@ function startRelay(fake, worker, opts = {}) {
   // written whole, then renamed into place: the relay reads this file many times a
   // round, and a read between writeFileSync's truncate and its write finds it empty
   // and falls back to the real clock, a later UTC day than any test sets, which moves
-  // the relay's day forward for good (the test's own day then counts as spent)
+  // the relay's day forward for good (the test's own day then counts as spent).
+  // Moved right after a call the relay is still answering, it splits that
+  // round: move it with w.betweenRounds(() => r.setClock(t)) there.
   r.setClock = (t) => {
     r.now = t;
     const f = path.join(r.dir, 'clock');
@@ -1230,12 +1265,16 @@ test('OpenSky\'s 429 is obeyed, across a restart too; a refused server holds eve
     assert.equal(fake.statesCalls, 2);
 
     fake.mode = 'forbidden';                     // not whitelisted
-    r.setClock(T0 + 601 + 121);
+    fake.slowMs = 200;                           // the 403 is seen well before the relay reads it
+    await w.betweenRounds(() => r.setClock(T0 + 601 + 121));
     await until(() => fake.statesCalls === 3, 'the 403');
-    r.setClock(T0 + 601 + 121 + 300);
-    await rounds();
+    // between rounds: the 10 minutes count from the 403, not from this move
+    await w.betweenRounds(() => r.setClock(T0 + 601 + 121 + 300));
+    await w.beats(6);
     assert.equal(fake.statesCalls, 3, 'held for 10 minutes');
     await until(() => w.report().last_status === 403, 'OpenSky\'s 403 reported');
+    await w.betweenRounds(() => r.setClock(T0 + 601 + 121 + 601));
+    await until(() => fake.statesCalls === 4, 'asked again once the 10 minutes are over');
   } finally { await r.stop(); await fake.close(); await w.close(); }
 });
 
@@ -1407,30 +1446,38 @@ test('OpenSky\'s own clock past the stop (its Date header on the login or the da
 
 test('login: kept in memory and renewed before its 30-minute expiry; a refused client is asked of the Worker again', PYT, async () => {
   const fake = await fakeOpenSky();
+  // every call is seen well before it is answered: each clock move below must
+  // wait for the round that made the call to end (w.betweenRounds), or that
+  // round dates its answer at the new time and the next call never comes
+  fake.slowMs = 200;
   const w = await fakeWorker();
   await w.want();
   const r = startRelay(fake, w);
   try {
     await until(() => w.pos(), 'the first answer');
-    r.setClock(T0 + 121);
+    await w.betweenRounds(() => r.setClock(T0 + 121));
     await until(() => fake.statesCalls === 2, 'a second call');
     assert.equal(fake.tokenCalls, 1, 'the token is reused');
-    r.setClock(T0 + 1700);                       // past 30 min minus the 2 min margin
+    await w.betweenRounds(() => r.setClock(T0 + 1700));   // past 30 min minus the 2 min margin
     await until(() => fake.statesCalls === 3, 'a third call');
     assert.equal(fake.tokenCalls, 2, 'renewed before it expires');
     assert.equal(w.count('GET /osky/creds'), 1, 'the client stays in memory for 30 minutes');
 
     // a wrong client in the Worker: one login, a 10-minute hold, and the Worker is asked again
-    w.env.OPENSKY_CLIENT_SECRET = 'wrong-secret-0000';
-    r.setClock(T0 + 3601);
+    await w.betweenRounds(() => {
+      w.env.OPENSKY_CLIENT_SECRET = 'wrong-secret-0000';
+      r.setClock(T0 + 3601);
+    });
     await until(() => fake.tokenCalls === 3, 'one login with the wrong client');
-    await rounds();
+    await w.beats(6);
     assert.equal(fake.tokenCalls, 3, 'then a 10-minute hold');
     assert.equal(fake.statesCalls, 3);
     assert.equal(w.count('GET /osky/creds'), 2, 'not asked again during the hold');
     await until(() => w.report().state === 'hold', 'reported as a hold');
-    w.env.OPENSKY_CLIENT_SECRET = SECRET;
-    r.setClock(T0 + 3601 + 601);
+    await w.betweenRounds(() => {
+      w.env.OPENSKY_CLIENT_SECRET = SECRET;
+      r.setClock(T0 + 3601 + 601);
+    });
     await until(() => fake.tokenCalls === 4 && fake.statesCalls === 4, 'the fixed client in use');
     assert.equal(w.count('GET /osky/creds'), 3, 'the client is asked of the Worker again after the hold');
   } finally { await r.stop(); await fake.close(); await w.close(); }
