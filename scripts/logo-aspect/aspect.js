@@ -6,19 +6,23 @@
 // loaded, and then takes the picture's width: whatever sits after it on the
 // line moves along when the art lands. That is the "logos move left to right"
 // seen as a board first comes up. Two surfaces draw their art that way: the hall
-// line of the bags board (the lettering, both cuts) and the wordmark slot of the
-// gate band (img.g8-r1-logo, and the member lockup in its place). The board
-// carries the width-to-height ratio of every file those two can draw
-// (LOGO_ASPECT in fids-current/js/fids-core.js) and gives the box that shape
-// before the picture arrives.
+// line of the bags board (its emblem, and the lettering, both cuts) and the
+// wordmark slot of the gate band (img.g8-r1-logo, and the member lockup in its
+// place). The board carries the width-to-height ratio of every file those can
+// draw (LOGO_ASPECT in fids-current/js/fids-core.js) and gives the box that
+// shape before the picture arrives.
 //
 // Which files: asked of the board itself, run in a page of its own (drawn
 // below): the lettering of every carrier with lettering (wordmarkSrc, both
-// cuts), and what the band can put in its wordmark slot (the address of each
-// carrier, carrierLogoUrl; the tables of the band builder; the heritage marks;
-// the member lockups, both twins). Only files of ours on disk: a file named
-// nowhere else is never named here, so no file a test keeps out of the board
-// script comes in through this table.
+// cuts); the emblem of the hall line, the picture the board draws in it for
+// every code its logo tables know (_beltLogo: the row tile built from
+// IATA_TO_TILE_ICAO, the emblem of IATA_TO_EMBLEM, the square mark of the strip,
+// _BW_EMBLEM, where the row has a lockup of LOCAL_LOGOS); and what the band can
+// put in its wordmark slot (the address of each carrier, carrierLogoUrl; the
+// tables of the band builder; the heritage marks; the member lockups, both
+// twins). Only files of ours on disk that the board names or builds: a file
+// named nowhere else is never named here, so no file a test keeps out of the
+// board script comes in through this table.
 //
 // The ratio is the one a browser takes as the picture's own:
 //   svg   the width and height of the root <svg> where both are absolute
@@ -152,7 +156,21 @@ function loadBoard(siteRoot) {
 const bare = (u) => String(u || '').split('#')[0].split('?')[0];
 const plain = (o) => JSON.parse(JSON.stringify(o));
 
-// every file of ours the hall lettering and the gate wordmark slot can draw, in path order
+// the codes the logo tables of the board know: every code a row can draw a picture for
+const HALL_TABLES = ['AIRLINE_NAME', 'IATA_TO_WORDMARK', 'IATA_TO_TILE_ICAO', 'IATA_TO_EMBLEM', 'LOCAL_LOGOS', '_BW_EMBLEM', '_AIRLINE_EMBLEM_FILES'];
+function hallCodes(board) {
+  const codes = new Set();
+  for (const t of HALL_TABLES) for (const c of Object.keys(plain(board.__the(t) || {}))) codes.add(c);
+  return [...codes].sort();
+}
+// the picture the emblem of a hall line draws for a code (_beltLogo), or '' for a
+// monogram or an empty slot, as the img of the line names it
+function hallEmblemSrc(board, code) {
+  const m = /^<img\b[^>]*?\ssrc="([^"]*)"/.exec(String(board.__the('_beltLogo')(code, '')));
+  return m ? bare(m[1].replace(/&amp;/g, '&')) : '';
+}
+
+// every file of ours the hall emblem and lettering and the gate wordmark slot can draw, in path order
 function drawn(siteRoot, board) {
   const B = board || loadBoard(siteRoot);
   const the = (n) => B.__the(n);
@@ -161,6 +179,8 @@ function drawn(siteRoot, board) {
   // the lettering of every carrier with lettering, both cuts (the hall line and the band)
   const wordmarkSrc = the('wordmarkSrc');
   for (const base of new Set(Object.values(plain(the('IATA_TO_WORDMARK'))))) for (const v of ['light', 'dark']) want.add(bare(wordmarkSrc(base, v)));
+  // the emblem of the hall line, for every code the logo tables know
+  for (const code of hallCodes(B)) { const u = hallEmblemSrc(B, code); if (u) want.add(u); }
   // the address of each carrier the band starts from (carrierLogoUrl)
   for (const u of Object.values(plain(the('LOCAL_LOGOS')))) want.add(bare(u));
   // the tables of the band builder, up to where the emblem beside the wordmark is chosen
@@ -209,4 +229,4 @@ function embedded(src) {
   return out;
 }
 
-module.exports = { START, END, svgRatio, pngRatio, webpRatio, ratioOf, round, loadBoard, drawn, collect, build, render, embedded };
+module.exports = { START, END, svgRatio, pngRatio, webpRatio, ratioOf, round, loadBoard, HALL_TABLES, hallCodes, hallEmblemSrc, drawn, collect, build, render, embedded };

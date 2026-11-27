@@ -11,11 +11,14 @@
 //     and the fit of the line (--b5-k) only ran as each lettering loaded, taking
 //     the whole line down a moment later;
 //   - the gate band: the wordmark (img.g8-r1-logo) took its width late, and the
-//     alliance badge after it jumped right by the width of the wordmark.
-// Now the emblem art is a 1em square, every lettering and wordmark img carries the
-// shape of its file (LOGO_ASPECT, read from the files by scripts/logo-aspect), and
-// the hall fits each line as it is drawn. This file holds the table to the files,
-// and each surface to the table.
+//     alliance badge after it jumped right by the width of the wordmark; the SkyTeam
+//     badge itself took its width late, and the wordmark before it gave way.
+// Now the hall emblem, every lettering and every wordmark img carries the shape of
+// its file (LOGO_ASPECT, read from the files by scripts/logo-aspect), the emblem at
+// the size the line always gave it (one line high, up to 1.6 of that wide), the
+// SkyTeam badge is a square of its height from the first frame, and the hall fits
+// each line as it is drawn. This file holds the table to the files, and each surface
+// to the table.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -39,10 +42,18 @@ const plain = (o) => JSON.parse(JSON.stringify(o));
 let TABLE = {};
 try { TABLE = plain(the('LOGO_ASPECT')); } catch (e) { /* before v24188 there is no table: every test below says what is missing */ }
 
+// every code the logo tables of the board know, and the picture the emblem of a hall line
+// draws for it: the img _beltLogo returns, or none for a monogram or an empty slot. Asked
+// here of the tables themselves, not of the generator, so a table the generator forgot
+// shows up as a missing file below.
+const HALL_TABLES = ['AIRLINE_NAME', 'IATA_TO_WORDMARK', 'IATA_TO_TILE_ICAO', 'IATA_TO_EMBLEM', 'LOCAL_LOGOS', '_BW_EMBLEM', '_AIRLINE_EMBLEM_FILES'];
+const HALL_CODES = [...new Set(HALL_TABLES.flatMap((t) => Object.keys(plain(the(t)))))].sort();
+const embImg = (code) => { const m = /^<img\b[^>]*?\ssrc="([^"]*)"/.exec(String(the('_beltLogo')(code, ''))); return m ? bare(m[1].replace(/&amp;/g, '&')) : ''; };
+
 // ── 1. the table is the files ──────────────────────────────────────────────
-test('LOGO_ASPECT is the shape of every file the hall lettering and the gate wordmark slot can draw, read from the file', () => {
+test('LOGO_ASPECT is the shape of every file the hall emblem, the hall lettering and the gate wordmark slot can draw, read from the file', () => {
   const files = A.build(FC, B);
-  assert.ok(Object.keys(files).length > 200, Object.keys(files).length + ' files');
+  assert.ok(Object.keys(files).length > 380, Object.keys(files).length + ' files');
   assert.deepEqual(TABLE, files, 'stale: run node scripts/logo-aspect/build.js');
   // the block in fids-core.js is exactly what the generator writes (so --check is green)
   const a = CORE.indexOf(A.START), b = CORE.indexOf(A.END);
@@ -55,13 +66,17 @@ test('LOGO_ASPECT is the shape of every file the hall lettering and the gate wor
     assert.ok(r > 0 && isFinite(r) && Number(r.toFixed(4)) === r, k + ': ' + r);
   }
   // and no file the board script names nowhere else: outside the table, every one is named
-  // (a literal) or built by a resolver the generator asks (wordmarkSrc, starLockupSrc)
+  // (a literal) or built by a resolver the generator asks (wordmarkSrc, starLockupSrc, and
+  // _beltLogo, which builds the row tile of a code from IATA_TO_TILE_ICAO)
   const rest = CORE.slice(0, a) + CORE.slice(b);
   const built = new Set();
   const wordmarkSrc = the('wordmarkSrc'), star = the('starLockupSrc');
   for (const base of new Set(Object.values(plain(the('IATA_TO_WORDMARK'))))) for (const v of ['light', 'dark']) built.add(bare(wordmarkSrc(base, v)));
   for (const code of Object.keys(plain(the('STAR_ALLIANCE_LOCKUP')))) for (const dark of [false, true]) built.add(bare(star(code, dark)));
+  for (const code of HALL_CODES) { const u = embImg(code); if (u) built.add(u); }
   assert.deepEqual(Object.keys(TABLE).filter((k) => !rest.includes("'" + k) && !built.has(k)), []);
+  // the generator asks the same tables
+  assert.deepEqual(A.HALL_TABLES, HALL_TABLES);
 });
 
 test('the reader takes the shape a browser takes', () => {
@@ -144,28 +159,67 @@ test('the hall line: each cut of the lettering carries the shape of its file bef
   assert.match(ac, /<img class="b5-wm-n" alt="AIR CANADA" src="\/logos\/airlines\/canadian\/air-canada-wordmark-light\.svg\?v=[^"]*" style="aspect-ratio:auto 10\.9834;" onload=/);
 });
 
-test('the hall line: the emblem art is a 1em square, as the tags of the strip are', () => {
-  // the rule after the one that sized it by its picture (height 1em, width auto up to 1.6em),
-  // and as specific as its .full-logo selector, which a tile img also matches
-  const at = BAGS_CSS.indexOf('#baggageView .b5 .b5-emb img, #baggageView .b5 .b5-emb .full-logo {');
-  const sq = BAGS_CSS.indexOf('#baggageView .b5 .b5-emb img, #baggageView .b5 .b5-emb img.full-logo { width: 1em !important; min-width: 1em !important; max-width: 1em !important; }');
-  assert.ok(at > 0 && sq > at, 'the square comes after the rule it overrides');
-  assert.match(BAGS_CSS.slice(at, sq), /height: 1em !important;[^}]*max-height: 1em !important;[^}]*object-fit: contain !important;/, 'a square of 1em, the picture whole inside it');
-  // a monogram is type: it keeps its own width (the old rule, for .full-logo that is not an img)
-  assert.doesNotMatch(BAGS_CSS.slice(sq, sq + 300), /\.b5-emb \.full-logo|\.logo-monogram/);
-  // the strip's tags, the model
-  assert.match(BAGS_CSS, /#baggageView \.b5 \.b5-temb img, #baggageView \.b5 \.b5-temb \.full-logo \{\s*width: 100% !important; height: 100% !important;/);
+test('the hall line: the emblem keeps the size the line gives it, and has the shape of its file before it loads', () => {
+  // the size: one line high, as wide as its picture up to 1.6 of that, the picture whole
+  // inside, and no later rule that fixes its width (a 1em square took El Al down to half
+  // the line, below the flight number beside it)
+  assert.match(BAGS_CSS, /#baggageView \.b5 \.b5-emb img, #baggageView \.b5 \.b5-emb \.full-logo \{\s*height: 1em !important; min-height: 0 !important; max-height: 1em !important; width: auto !important; min-width: 0 !important; max-width: 1\.6em !important;\s*object-fit: contain !important;/);
+  const embRules = [...BAGS_CSS.matchAll(/([^{}]*\.b5-emb[^{}]*)\{([^}]*)\}/g)];
+  assert.ok(embRules.length >= 3, embRules.length + ' rules');
+  for (const [, sel, body] of embRules) assert.doesNotMatch(body, /(?:^|[;\s])(?:min-|max-)?width:\s*1em/, sel.trim() + ': no rule fixes the width of the emblem');
+  // every code the logo tables know: the picture its hall line draws has its shape in the
+  // table (so a new tile, emblem or square mark that is not in it fails here), and the img
+  // carries it as aspect-ratio auto R, R until the picture is in
+  const b5 = the('_b5Airline');
+  const missing = [];
+  const em = {};
+  let pictures = 0, monograms = 0;
+  for (const code of HALL_CODES) {
+    const src = embImg(code);
+    const slot = /^<span class="b5-emb">([\s\S]*?)<\/span><span class="b5-(?:wm|aname)"/.exec(b5({ airline: code, _airlineName: '' }));
+    assert.ok(slot, code + ': the emblem slot of the line');
+    if (!src) { assert.doesNotMatch(slot[1], /<img\b/, code + ': no picture, no img'); monograms++; continue; }
+    pictures++;
+    if (!own(TABLE, src)) { missing.push(code + ' ' + src); continue; }
+    assert.ok(onDisk(src), src + ' is on disk');
+    assert.match(slot[1], new RegExp('^<img style="aspect-ratio:auto ' + String(TABLE[src]).replace('.', '\\.') + ';" class="full-logo'), code + ': ' + src);
+    assert.equal(bare(/\ssrc="([^"]*)"/.exec(slot[1])[1]), src, code + ': the picture asked is the picture measured');
+    em[code] = Math.min(TABLE[src], 1.6);
+  }
+  assert.deepEqual(missing, [], 'drawn in the emblem slot but not in the table: run node scripts/logo-aspect/build.js');
+  assert.ok(pictures > 150 && monograms > 50, pictures + ' pictures, ' + monograms + ' monograms');
+  // the box each reserves from the first frame (height 1em; width R, at most 1.6): El Al the
+  // full 1.6em of main, the WestJet leaf of Encore 1.19em, Avelo 0.55em, Caribbean 0.70em,
+  // a row tile 1em
+  assert.equal(em.LY, 1.6);
+  assert.equal(em.WR, 1.1875);
+  assert.equal(em.XP, 0.5547);
+  assert.equal(em.BW, 0.6972);
+  for (const code of ['AA', 'AC', 'WS', 'BA', 'DL', 'NH']) assert.equal(em[code], 1, code + ': a square tile');
+  assert.equal(Object.values(em).filter((w) => Math.abs(w - 1) > 0.05).length, 4, 'four marks are not square');
+  // a picture the table does not hold is a square until it loads: never no width, never held at 1em
+  const box = the('_b5EmbBox');
+  assert.equal(box('<img class="full-logo" data-code="ZZ" src="/logos/airline-tiles/ZZZ.svg" onerror="logoFallback(this)">'),
+    '<img style="aspect-ratio:auto 1;" class="full-logo" data-code="ZZ" src="/logos/airline-tiles/ZZZ.svg" onerror="logoFallback(this)">');
+  assert.equal(box('<img class="full-logo" style="opacity:1" src="/logos/symbols/airlines/LY.svg">'),
+    '<img class="full-logo" style="aspect-ratio:auto 1.9882;opacity:1" src="/logos/symbols/airlines/LY.svg">', 'a style of its own is kept');
+  // a monogram is type, sized at once, and an empty slot stays empty
+  const mono = '<div class="full-logo logo-monogram" data-code="ZG" style="background:#123456;">ZG</div>';
+  assert.equal(box(mono), mono);
+  assert.equal(box(''), '');
 });
 
-// a hall in a page of its own: rows whose line is wider than its cell, none of their pictures in yet
+// a hall in a page of its own: rows whose line is wider than its cell, none of their pictures in yet;
+// a row of a carrier with lettering (.b5-wm), or with its name typed (.b5-aname, a third entry 'typed')
 function hall(lines) {
-  const rows = lines.map(([need, room]) => {
+  const rows = lines.map(([need, room, kind]) => {
     const props = {};
     const l1 = { scrollWidth: need }, main = { clientWidth: room };
+    const name = { className: kind === 'typed' ? 'b5-aname' : 'b5-wm' };
     return {
       props,
       style: { getPropertyValue: (k) => props[k] || '', setProperty: (k, v) => { props[k] = String(v); } },
-      querySelector: (s) => (s === '.b5-main' ? main : s === '.b5-l1' ? l1 : null),
+      querySelector: (s) => (s === '.b5-main' ? main : s === '.b5-l1' ? l1 : s === '.' + name.className ? name : null),
       querySelectorAll: () => [],
       closest: () => null,
     };
@@ -180,12 +234,29 @@ function hall(lines) {
 }
 
 test('the hall line is fitted as it is drawn, before any picture of it has loaded', () => {
-  const h = hall([[1200, 1000], [900, 1000], [1001, 1000]]);
+  // the third row: NORSE ATLANTIC AIRWAYS typed, no lettering (about 531 px of name and flight
+  // number on a 7-row page at 1920x1080, in a cell of 409.5 px). Main fitted the name alone, by
+  // its own right edge, and left the flight number over the time beside it
+  const h = hall([[1200, 1000], [900, 1000], [1001, 1000], [531, 409.5, 'typed']]);
   the('_b5Render')(h.view, 'YQM', new Date());
   assert.match(h.view.innerHTML, /class="b5 /, 'the hall was drawn');
   assert.equal(h.rows[0].props['--b5-k'], '0.833', 'a line too wide is taken down at once, in the frame it is drawn in');
   assert.equal(h.rows[1].props['--b5-k'], undefined, 'a line that fits is left as it is');
   assert.equal(h.rows[2].props['--b5-k'], undefined, 'within a pixel it fits');
+  // a typed name is fitted the same way: the whole line, city included, takes --b5-k below 1,
+  // so the name and the flight number end inside the cell and never run over the time
+  const typed = h.rows[3];
+  assert.equal(typed.querySelector('.b5-wm'), null);
+  assert.ok(typed.querySelector('.b5-aname'));
+  const k = parseFloat(typed.props['--b5-k']);
+  assert.ok(k > 0.5 && k < 1, 'k ' + k);
+  assert.equal(typed.props['--b5-k'], '0.771');
+  assert.ok(531 * k <= 409.5 + 1, 'the line ends inside its cell');
+  const n0 = the('_b5Airline')({ airline: 'N0', _airlineName: '' });
+  assert.match(n0, /<span class="b5-aname">NORSE ATLANTIC AIRWAYS<\/span>$/, 'Norse types its name');
+  assert.doesNotMatch(n0, /b5-wm/, 'and draws no lettering');
+  // the step takes the city line down with it (rule 1: the mark stays at the size of the city)
+  assert.match(BAGS_CSS, /--b5-city: calc\(var\(--b5-base\) \* var\(--b5-k, 1\)\);/);
   // the load of a lettering fits its line again: nothing to do where it already fits
   h.rows[0].querySelector('.b5-l1').scrollWidth = 1000;
   the('_b5WmFit')(h.imgs[0]);
@@ -207,4 +278,38 @@ test('the gate band: the wordmark, and the member lockup, carry the shape of the
   assert.match(CORE, /var _logoStyle = 'height:' \+ _logoH \+ 'px !important;max-height:' \+ _logoH \+ 'px !important;'\n\s*\+ 'width:auto;max-width:/);
   // the slot it reserves for, in the order the band draws: wordmark, then the badge
   assert.match(CORE, /return r1LogoHtml \+ _skyTeamOnBand\(starHtml\);/);
+});
+
+test('the gate band: the SkyTeam badge is a square of its height before its file decodes', () => {
+  const OVR = fs.readFileSync(path.join(FC, 'css', 'display-overrides.css'), 'utf8');
+  const ids = (sel) => (sel.match(/:not\(#_\)/g) || []).length;
+  const body = (line) => { const at = OVR.indexOf(line); return OVR.slice(at, OVR.indexOf('}', at)); };
+  // its height: the strongest rule on img.g8-r1-star, a clamp of the screen height
+  const heightRule = 'html body:not(#_):not(#_):not(#_) .g8-wrap img.g8-r1-star {';
+  const h = /height: (clamp\(48px, 7vh, 82px\)) !important;/.exec(body(heightRule));
+  assert.ok(h, 'the badge height rule');
+  // the reserve: a square, its width never under that same clamp, and stronger than the
+  // rules that leave it width auto and min-width 0 (v22601, v23333) and than the height rule
+  const lines = OVR.split('\n').filter((l) => /g8-r1-alliance-skyteam\b[^{]*\{$/.test(l));
+  const top = Math.max(...lines.map(ids));
+  const reserve = lines.filter((l) => ids(l) === top);
+  assert.equal(reserve.length, 1, 'one strongest SkyTeam rule: ' + reserve.join(' | '));
+  assert.ok(top >= 4 && top > ids(heightRule), top + ' x :not');
+  const r = body(reserve[0]);
+  assert.match(r, /aspect-ratio: 1 \/ 1 !important;/);
+  assert.match(r, new RegExp('min-width: ' + h[1].replace(/[()]/g, '\\$&') + ' !important;'), 'the width floor is the height clamp itself');
+  assert.match(reserve[0], /\.g8-wrap:not\(\.g8-takeover\) img\.g8-r1-star\.g8-r1-alliance-skyteam \{$/, 'the takeover band keeps its own width');
+  for (const l of lines.filter((x) => x !== reserve[0])) assert.ok(ids(l) < top, l);
+  assert.match(body('html body .g8-wrap .g8-r1-star.g8-r1-alliance-skyteam,'), /width: auto !important;\s*min-width: 0 !important;/, 'the rule it outranks');
+  // beside the reserve rules it works with, not at the end of the file
+  const at = OVR.indexOf(reserve[0]);
+  assert.ok(at > OVR.indexOf(heightRule) && at - OVR.indexOf(heightRule) < 4000, 'beside the height rule');
+  assert.ok(OVR.length - at > 100000, 'not appended at the end');
+  // both of its files are square (the white one 512 by 509, the colour one 2500 by 2500)
+  for (const f of ['skyteam-white.png', 'skyteam-colour.svg']) {
+    const ratio = A.ratioOf(path.join(FC, 'logos/airlines/alliances', f));
+    assert.ok(Math.abs(ratio - 1) < 0.01, f + ': ' + ratio);
+  }
+  assert.match(CORE, /'skyteam':\s+'\/logos\/airlines\/alliances\/skyteam-white\.png'/);
+  assert.match(CORE, /return html\.replace\('skyteam-white\.png', 'skyteam-colour\.svg'\);/);
 });

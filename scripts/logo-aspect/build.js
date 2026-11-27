@@ -2,9 +2,10 @@
 'use strict';
 // Rewrites LOGO_ASPECT in fids-current/js/fids-core.js from the logo files
 // (see aspect.js beside this file). Run it after adding, removing or re-cutting
-// a lettering or banner file, or after changing a table that names one
-// (IATA_TO_WORDMARK, LOCAL_LOGOS, the banner tables of the gate, the heritage
-// carriers, the Star Alliance lockups):
+// a lettering, banner, tile or emblem file, or after changing a table that names
+// or builds one (IATA_TO_WORDMARK, LOCAL_LOGOS, IATA_TO_TILE_ICAO, IATA_TO_EMBLEM,
+// _BW_EMBLEM, the banner tables of the gate, the heritage carriers, the Star
+// Alliance lockups):
 //   node scripts/logo-aspect/build.js          writes the table
 //   node scripts/logo-aspect/build.js --check  exits 1 when the table is stale
 

@@ -12,8 +12,10 @@
 // Both now go through window._fidsReloadWhenHidden(reason). Outside the rotator it
 // reloads at once, exactly as before. In the rotator a board on air (or told it is
 // next) holds the request until it has been told it is off screen and its fade-out
-// is over; a board already off screen reloads at once unless it is the next one up;
-// 15 minutes after the request it reloads whatever the state.
+// is over, its frame read hidden as well; a board already off screen reloads at once
+// unless it is the next one up; on a tour a frame that is not shown again before its
+// airport goes never reloads; 15 minutes after the request it reloads whatever the
+// state.
 //
 // The block is the shipped one: the reload block of fids-core.js (v24144 and this),
 // run against a small fake page with a fake rotator around it.
@@ -36,22 +38,31 @@ const SEQ = ['fids.html', 'gids.html', 'fids.html', 'gids.html', 'bids.html'];
 // A board in a frame. rotator: a rotate.html around it (__ocRotator); top: the page is
 // the top window; page/ap: what the rotator wrote on the frame; run: what __ocRotator.get
 // answers (where the rotation is); fade: the --oc-fade the rotator set on its root.
+// The frame reads as rotate.html draws it (v24188): visible on air, and through its
+// fade-out after it is told it is off screen, a fade that begins lag ms late on a busy
+// box; hidden from then on. stuck: a frame that never reads hidden; css false: a frame
+// whose style cannot be read.
 function board(o) {
-  o = Object.assign({ rotator: true, top: false, page: 'fids.html', ap: 'YQM', fade: '0.6s' }, o || {});
+  o = Object.assign({ rotator: true, top: false, page: 'fids.html', ap: 'YQM', fade: '0.6s', lag: 0, stuck: false, css: true }, o || {});
   const run = Object.assign({ aps: ['YQM'], apIdx: 0, idx: 0, seq: SEQ }, o.run || {});
   let now = 1e9;
   const timers = [];
   const listeners = {};
   const store = {};
   let visible = true;   // the brake at the top of fids-core.js: on air until told otherwise
+  let offAt = null;     // when the rotator took the frame off the air (its fade-out begins)
+  const frame = { getAttribute: (k) => (k === 'data-oc-page' ? o.page : k === 'data-oc-ap' ? o.ap : null) };
+  const fadeMs = () => Math.round(parseFloat(o.fade) * 1000);
+  const frameVis = () => ((o.stuck || visible || offAt === null || now < offAt + o.lag + fadeMs()) ? 'visible' : 'hidden');
   const parent = {
     __ocRotator: o.rotator ? { get: () => run } : undefined,
     document: { documentElement: { style: { getPropertyValue: (k) => (k === '--oc-fade' ? o.fade : '') } } },
+    getComputedStyle: o.css ? (el) => ({ visibility: el === frame ? frameVis() : 'visible' }) : undefined,
   };
   const win = {
     addEventListener: (n, f) => { (listeners[n] = listeners[n] || []).push(f); },
     requestAnimationFrame: (f) => f(),
-    frameElement: { getAttribute: (k) => (k === 'data-oc-page' ? o.page : k === 'data-oc-ap' ? o.ap : null) },
+    frameElement: frame,
     _ocIdle: () => !visible,
   };
   win.parent = o.top ? win : parent;
@@ -71,7 +82,11 @@ function board(o) {
   };
   vm.runInNewContext(BLOCK, ctx);
   // the rotator tells the frame: the brake flips first (its listener is the first one), then the rest hear it
-  const tell = (on) => { visible = on; for (const f of listeners.message || []) f({ data: { oc: on ? 'active' : 'inactive' } }); };
+  const tell = (on) => {
+    if (!on && visible) offAt = now;   // the class comes off as the message goes: the fade-out begins
+    visible = on;
+    for (const f of listeners.message || []) f({ data: { oc: on ? 'active' : 'inactive' } });
+  };
   const wait = (ms) => {
     const until = now + ms;
     for (;;) {
@@ -84,6 +99,7 @@ function board(o) {
   };
   return {
     ctx, win, store, run, tell, wait, ask: (why) => win._fidsReloadWhenHidden(why),
+    spot: () => win._fidsReloadWhenHidden.state().spot, vis: frameVis, set: (k, v) => { o[k] = v; },
     dropTimers: () => { for (const t of timers) t.f = null; }, jump: (ms) => { now += ms; },
   };
 }
@@ -235,6 +251,141 @@ test('a tour: a frame of another airport than the one on air never reloads in th
   going.run.apIdx = 1; going.run.idx = 0; going.tell(false);  // advance(): the airport moves on, then the inactive
   going.wait(5000);
   assert.equal(going.ctx.reloads, 0);
+});
+
+// v24188 — stream 2 tours with rotate=gids,fids,gids,bids. A tour moves to the next airport
+// at the end of every pass and removes the frames of the one it leaves 1.5 s after the next
+// one is shown, so a page that does not come again in the pass is never seen again: the gate
+// during the baggage screen, departures during the second gate and the baggage. A reload
+// there booted a board that was thrown away, beside the next airport loading.
+const STREAM2 = ['gids.html', 'fids.html', 'gids.html', 'bids.html'];
+const tour = (page, idx) => board({ page, ap: 'JFK', run: { aps: ['YUL', 'JFK', 'LAX'], apIdx: 1, idx, seq: STREAM2, isTour: true } });
+
+test('a tour: the gate asked during its second showing never reloads before its airport goes', () => {
+  const g = tour('gids.html', 2);
+  g.tell(true);                                       // on air, its second showing
+  assert.equal(g.ask('self-update'), 'held');
+  assert.equal(g.spot(), 'later', 'the screen on air is never other');
+  g.wait(90000);
+  g.run.idx = 3; g.tell(false);                       // advance(): the baggage screen comes up
+  assert.equal(g.spot(), 'other', 'not shown again in this pass');
+  g.wait(700);
+  assert.equal(g.ctx.reloads, 0, 'not after its fade-out, though the gate is the first page of the run');
+  g.wait(60000);                                      // the whole baggage screen
+  g.run.apIdx = 2; g.run.idx = 0;                     // Los Angeles up; the JFK frames go 1.5 s later
+  g.wait(2300);
+  assert.equal(g.ctx.reloads, 0, 'never reloaded: removed at the switch');
+});
+
+test('a tour: departures asked during the second gate or the baggage screen never reload', () => {
+  for (const idx of [2, 3]) {
+    const f = tour('fids.html', 1);
+    f.tell(true);                                     // on air at idx 1
+    f.wait(60000);
+    f.run.idx = 2; f.tell(false);                     // the second gate comes up
+    f.wait(5000);
+    if (idx === 3) { f.run.idx = 3; f.wait(60000); }  // and then the baggage
+    assert.equal(f.ask('1'), 'held', 'asked during idx ' + idx);
+    assert.equal(f.spot(), 'other');
+    f.wait(60000);
+    assert.equal(f.ctx.reloads, 0, 'idx ' + idx);
+  }
+});
+
+test('a tour: a page that comes again later in the pass reloads as before', () => {
+  // the gate asked during its first showing comes again at idx 2: it reloads after its fade-out
+  const g = tour('gids.html', 0);
+  g.tell(true);
+  assert.equal(g.ask('1'), 'held');
+  g.run.idx = 1; g.tell(false);
+  assert.equal(g.spot(), 'next');
+  g.wait(700);
+  assert.equal(g.ctx.reloads, 1);
+  // the baggage board, off screen while the first gate is on air, is shown at idx 3: at once
+  const b = tour('bids.html', 0);
+  b.tell(false);
+  b.wait(30000);
+  assert.equal(b.spot(), 'later');
+  assert.equal(b.ask('1'), 'now');
+  assert.equal(b.ctx.reloads, 1);
+  // a run of one airport is no tour: its pages always come round again, and nothing changes there
+  const one = board({ page: 'gids.html', run: { idx: 3, seq: STREAM2, isTour: false } });
+  one.tell(false);
+  one.wait(30000);
+  assert.equal(one.spot(), 'next');
+  // and the rule never fires where the next airport of the run is this one
+  const same = board({ page: 'gids.html', ap: 'JFK', run: { aps: ['JFK', 'JFK'], apIdx: 0, idx: 3, seq: STREAM2, isTour: true } });
+  assert.equal(same.spot(), 'next');
+});
+
+test('the tour rule stands on rotate.html: every wrap of a tour changes airport, and a tour lists no airport twice', () => {
+  // the next airport at every wrap to the first page, and apdwell only ends a pass sooner
+  assert.match(ROT, /var nextAp = \(isTour && nextIdx === 0\) \? aps\[nextApIdx\] : curAp;/);
+  assert.match(ROT, /if \(isTour && apDwellMs && \(Date\.now\(\) - airportStart\) >= apDwellMs\) nextIdx = 0;/);
+  // the airport left is removed 1.5 s after the next one is shown
+  assert.match(ROT, /if \(nextAp !== curAp\) \{ retire = curAp; apIdx = nextApIdx; \}/);
+  assert.match(ROT, /setTimeout\(function \(\) \{ try \{ destroyAirport\(retire\); \} catch \(e\) \{\} \}, 1500\);/);
+  // no airport twice, and the skip of an empty airport never lands on the one on air
+  assert.match(ROT, /aps = aps\.filter\(function \(c, i\) \{ return aps\.indexOf\(c\) === i; \}\);/);
+  assert.match(ROT, /if \(aps\[nextApIdx\] === curAp\) nextApIdx = \(nextApIdx \+ 1\) % aps\.length;/);
+  // the view of the run the board reads names the tour
+  assert.match(ROT, /return \{ aps: aps, apIdx: apIdx, idx: idx, seq: seq, isTour: isTour,/);
+});
+
+// v24188 — the fixed wait counts from the inactive message, and on a busy box the fade of the
+// rotator starts late, so the new document could replace a board still faintly seen. After it,
+// the door waits for the frame to read hidden (rotate.html turns it hidden when the fade is over).
+test('after its fixed wait the reload waits for the frame to read hidden, 3 s at the most', () => {
+  const b = board({ lag: 500 });                      // the fade-out begins half a second late
+  b.tell(true);
+  b.ask('1');
+  b.tell(false);
+  b.wait(700);
+  assert.equal(b.vis(), 'visible');
+  assert.equal(b.ctx.reloads, 0, 'not while the frame can still be seen, though the fixed wait is over');
+  b.wait(399);
+  assert.equal(b.ctx.reloads, 0);
+  b.wait(1);                                          // 1.1 s: the fade is over, read by the look of that moment
+  assert.equal(b.vis(), 'hidden');
+  assert.equal(b.ctx.reloads, 1, 'once it reads hidden');
+  b.wait(20 * 60000);
+  assert.equal(b.ctx.reloads, 1, 'once');
+  // a frame that never reads hidden: 3 s after the fixed wait, whatever it shows
+  const s = board({ stuck: true });
+  s.tell(true);
+  s.ask('1');
+  s.tell(false);
+  s.wait(700 + 2999);
+  assert.equal(s.ctx.reloads, 0);
+  s.wait(1);
+  assert.equal(s.ctx.reloads, 1, 'at the cap');
+  // back on air during that wait: the wait is dropped, and the next fade-out takes it
+  const a = board({ lag: 2000 });
+  a.tell(true);
+  a.ask('1');
+  a.tell(false);
+  a.wait(1500);
+  a.tell(true);
+  a.wait(60000);
+  assert.equal(a.ctx.reloads, 0, 'never on air');
+  a.set('lag', 0);
+  a.tell(false);
+  a.wait(700);
+  assert.equal(a.ctx.reloads, 1);
+  // a board already off screen, its frame hidden: at once, as before
+  const off = board({ run: { idx: 3 } });
+  off.tell(false);
+  off.wait(30000);
+  assert.equal(off.ask('1'), 'now');
+  // a frame whose style cannot be read: at the end of the fixed wait, as before
+  const blind = board({ css: false, lag: 500 });
+  blind.tell(true);
+  blind.ask('1');
+  blind.tell(false);
+  blind.wait(699);
+  assert.equal(blind.ctx.reloads, 0);
+  blind.wait(1);
+  assert.equal(blind.ctx.reloads, 1);
 });
 
 test('15 minutes after the request it reloads whatever the state', () => {
