@@ -761,7 +761,10 @@ then the decision was to restore Porter to its previous
    aspect should read next to each other, and that judgement does not scale
    linearly with the row. They stay absolute. What stops them crossing a row line
    is the blanket cap in display-overrides.css, which clamps ANY wordmark to the
-   row height — a ceiling, not a rescaling. */
+   row height — a ceiling, not a rescaling.
+   v24186 — they are Small calibrations: the one place that draws a mark scales
+   the table once by the tier factor (display-overrides.css, --fids-tier-k), so on
+   Medium and Large every mark keeps these proportions to its neighbours. */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { height: 32px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="3H"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { height: 30px; }
@@ -865,7 +868,7 @@ then the decision was to restore Porter to its previous
   flex-shrink: 0;
 }
 #fidsTable .td-wx .fids-cell-weather span:not(.fids-wx-cell) {
-  font-size: 24px;
+  font-size: calc(24px * var(--fids-tier-k, 1));
   font-weight: 700;
   color: var(--fids-text);
   white-space: nowrap;
@@ -2037,7 +2040,7 @@ body[data-fids-theme="cream"] #fidsTable tbody tr.row-delayed td.td-status * {
   display: inline-block !important;
   vertical-align: middle !important;
   margin-left: 0 !important;
-  font-size: 26px !important;
+  font-size: calc(26px * var(--fids-tier-k, 1)) !important;
   font-weight: 700 !important;
   max-width: 220px !important;
   overflow: hidden !important;
@@ -2291,9 +2294,21 @@ body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-wo
    nothing crossing a row line. At 30px those are mutually exclusive — the
    tallest wordmark IS the row. 36px gives every one of them room and is still
    well clear of Medium at 66. */
-body[data-fids-logo-size="small"]  { --fids-logo-size: 28px !important; --fids-row-h: 36px !important; }
-body[data-fids-logo-size="medium"] { --fids-logo-size: 52px !important; --fids-row-h: 66px !important; }
-body[data-fids-logo-size="large"]  { --fids-logo-size: 72px !important; --fids-row-h: 90px !important; }
+/* v24186 — MEDIUM AND LARGE ARE A SLIGHTLY BIGGER SMALL. Asked: Small is right; Medium
+   was far too big and should be only a little bigger than Small, Large a little bigger
+   again, and on both the logos and the text must grow with the row (they did not:
+   the text was sized by the screen width alone and the wordmarks were fixed pixels,
+   so a taller row was only empty space round the same type). One factor per tier,
+   --fids-tier-k (1, 7/6, 4/3: rows 36 / 42 / 48px), and every row size that was
+   calibrated on Small is written as that Small size times k, so Small is exactly
+   what it was. --fids-brand-w is the width a mark needs at the tier (the tile, the
+   12px gap and the 218px slot, times k), read by _fidsDestColumn to widen the
+   airline column a little at the expense of Destination. The rows stay literal px
+   (tests/fids-rows-fill.test.js reads them). */
+body[data-fids-logo-size="small"]  { --fids-logo-size: 28px !important; --fids-row-h: 36px !important; --fids-tier-k: 1 !important; --fids-brand-w: 262px !important; }
+body[data-fids-logo-size="medium"] { --fids-logo-size: 33px !important; --fids-row-h: 42px !important; --fids-tier-k: 1.16667 !important; --fids-brand-w: 304.33px !important; }
+body[data-fids-logo-size="large"]  { --fids-logo-size: 37px !important; --fids-row-h: 48px !important; --fids-tier-k: 1.33333 !important; --fids-brand-w: 346.67px !important; }
+body[data-fids-logo-size] { --fids-brand-w0: 262px !important; }
 
 /* Beat ALL theme-specific row height overrides (cream, navy-board, etc.) */
 body[data-fids-logo-size] #fidsTable tbody tr,
@@ -3519,7 +3534,7 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
      out-ranks the per-theme 28px !important rules. */
   body #fidsTable tbody tr td[class],
   body[data-fids-theme] #fidsTable tbody tr td[class] {
-    font-size: clamp(20px, 1.7vw, 28px) !important;
+    font-size: calc(clamp(20px, 1.7vw, 28px) * var(--fids-tier-k, 1)) !important;
   }
   /* Weather wrapper had a fixed width narrower than its cell — the icon+temp
      clipped inside it even with room to spare. Let it use the cell. */
@@ -3729,12 +3744,12 @@ body[data-fids-theme="mist"] #fidsTable tbody tr td {
 }
 body[data-fids-theme="mist"] #fidsTable tbody tr,
 body[data-fids-theme="mist"] #fidsTable tbody tr td {
-  font-size: 28px !important;
+  font-size: calc(28px * var(--fids-tier-k, 1)) !important;
   font-weight: 600 !important;
 }
 body[data-fids-theme="mist"] #fidsTable tbody tr td.td-status,
 body[data-fids-theme="mist"] #fidsTable tbody tr td.td-status * {
-  font-size: 28px !important;
+  font-size: calc(28px * var(--fids-tier-k, 1)) !important;
   font-weight: 700 !important;
 }
 /* Status colors tuned for the pale rows — deep enough to read at distance */

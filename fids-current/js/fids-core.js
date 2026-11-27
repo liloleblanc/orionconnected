@@ -32,8 +32,9 @@ console.log('%c[FIDS BUILD ' + FIDS_BUILD + '] loaded ' + new Date().toISOString
 // not anyone can see the result.
 //
 // So: those janitors skip while the board is hidden, and every one of them runs
-// a single catch-up pass the moment it comes back — well inside rotate.html's
-// 0.45s cross-fade, so a board is never seen mid-repair. DATA polling is NOT
+// a single catch-up pass the moment it comes back. v24186: rotate.html tells the
+// next board it is next when the outgoing board starts to fade out, so the pass
+// runs while it is still invisible and a board is never seen mid-repair. DATA polling is NOT
 // paused: flights, gates and weather keep refreshing while hidden, so a board
 // fades in current, not stale.
 //
@@ -4214,6 +4215,22 @@ var FIDS_FIT_RULES = [
 // 7% Terminal column) left after Destination, over the columns' own widths.
 // Keyed on what decides the widths, so it runs once per board and size;
 // portrait boards are laid out by the stylesheet alone.
+// v24186 — THE MARK GROWS WITH THE TIER. On Medium and Large the wordmark is drawn
+// k times its Small size (--fids-tier-k), so the airline column asks Destination
+// for the width the bigger mark needs: the share of its need the mark has on Small
+// at this screen width, never more than a seventh (Medium) or a quarter (Large) of
+// Destination, so the fixed table cannot overflow. Small asks for nothing.
+function _fidsBrandGrowPx(have, dest, bw, bw0, k) {
+  if (!(bw > bw0 && bw0 > 0 && have > 0 && dest > 0 && k > 1)) return 0;
+  var want = bw * Math.min(1, have / bw0) - have;
+  var g = Math.min(want, dest * (1 - 1 / k));
+  return g > 0.5 ? g : 0;
+}
+// v24186 — the key lives on the first col, not on the table: render() rebuilds
+// the colgroup on every Departures and Arrivals change, which drops the widths,
+// and with the key on the table a later pass under the same key returned early
+// and left the rebuilt columns at their unstretched widths (a hidden board in the
+// rotator, Departures then Arrivals then Departures, came back unstretched).
 function _fidsDestColumn() {
   try {
     var tbl = document.getElementById('fidsTable');
@@ -4223,9 +4240,10 @@ function _fidsDestColumn() {
     var W = tbl.clientWidth || 0;
     var de = document.documentElement, bd = document.body;
     var key = W + 'x' + (window.innerHeight || 0) + '|' + Array.prototype.map.call(cols, function (c) { return c.className; }).join(',')
-      + '|' + de.className + '|' + (bd ? bd.className + '|' + (bd.getAttribute('data-fids-theme') || '') + '|' + (bd.getAttribute('data-fids-airline-style') || '') : '');
-    if (tbl.__destColKey === key) return;
-    tbl.__destColKey = key;
+      + '|' + de.className + '|' + (bd ? bd.className + '|' + (bd.getAttribute('data-fids-theme') || '') + '|' + (bd.getAttribute('data-fids-airline-style') || '')
+      + '|' + (bd.getAttribute('data-fids-logo-size') || '') + '|' + (bd.getAttribute('data-fids-airline-name') || '') : '');
+    if (cols[0].__destColKey === key) return;
+    cols[0].__destColKey = key;
     // v23998 — and the flight number keeps its stretched width too: at the
     // narrower width the rest give up, a six-character number at 28px ran
     // past its cell and ended in an ellipsis on the ZRH board at 1920x1080
@@ -4242,9 +4260,35 @@ function _fidsDestColumn() {
     }
     if (!(sum > 0)) return;
     var s = (W * (term ? 0.73 : 0.8)) / sum;
-    if (!(s > 1.005)) return;
+    if (!(s > 1.005)) s = 1;
     var ws = [];
     for (var k = 0; k < held.length; k++) ws.push((parseFloat(getComputedStyle(held[k]).width) || 0) * s);
+    // v24186 — the bigger mark on Medium and Large (_fidsBrandGrowPx), found by
+    // its class, and only where a wordmark is drawn at all
+    var grow = 0;
+    try {
+      var ai = -1;
+      for (var q = 0; q < held.length; q++) if (held[q].classList.contains('col-airline')) ai = q;
+      var cell = tbl.querySelector('td.td-airline');
+      var style = bd ? (bd.getAttribute('data-fids-airline-style') || '') : '';
+      var names = bd ? (bd.getAttribute('data-fids-airline-name') || '') : '';
+      if (bd && ai >= 0 && cell && style !== 'emblem' && names !== 'off') {
+        var bs = getComputedStyle(bd), ccs = getComputedStyle(cell);
+        var pad = (parseFloat(ccs.paddingLeft) || 0) + (parseFloat(ccs.paddingRight) || 0);
+        var others = 0;
+        for (var n = 0; n < cols.length; n++) {
+          if (cols[n].classList.contains('col-dest')) continue;
+          var hi = Array.prototype.indexOf.call(held, cols[n]);
+          others += hi >= 0 ? ws[hi] : (parseFloat(getComputedStyle(cols[n]).width) || 0);
+        }
+        grow = _fidsBrandGrowPx(ws[ai] - pad, W - others,
+          parseFloat(bs.getPropertyValue('--fids-brand-w')) || 0,
+          parseFloat(bs.getPropertyValue('--fids-brand-w0')) || 0,
+          parseFloat(bs.getPropertyValue('--fids-tier-k')) || 1);
+        ws[ai] += grow;
+      }
+    } catch (eG) { grow = 0; }
+    if (s === 1 && !grow) return;
     for (var m = 0; m < held.length; m++) if (ws[m] > 0) held[m].style.setProperty('width', ws[m].toFixed(2) + 'px', 'important');
   } catch (e) {}
 }
@@ -4933,7 +4977,7 @@ let subScreenVal = '';
 // Only Orlando was listed, so
 // every other airport fell through to 'medium' — 66px board rows / 98px BAGS
 // rows, which is the rows-are-much-bigger report. The tiers themselves are
-// already absolute heights, not a fit: flight-display.css pins 44/66/90 on the board
+// already absolute heights, not a fit: flight-display.css pins 36/42/48 on the board (v24186)
 // and baggage-display.css pins 68/98/132 on the bags screen, each with height,
 // min-height and max-height locked, and boardAutofit treats --fids-row-h as
 // the authority rather than measuring a row it may have grown. Nothing
@@ -20628,7 +20672,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24185" src="/textures/gate-sky-shelf.mp4?v=24185" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24186" src="/textures/gate-sky-shelf.mp4?v=24186" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -20672,7 +20716,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24185" src="/textures/gate-sky-shelf.mp4?v=24185" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24186" src="/textures/gate-sky-shelf.mp4?v=24186" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -21876,7 +21920,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24185" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24186" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt=""' + window._gateMarkAttrs(_bwPick) + '>' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -28279,6 +28323,14 @@ function boardAutofit(full) {
       document.querySelectorAll('#fidsTable .fids-airline-wordmark').forEach(function (img) {
         if (!img.naturalWidth || !img.naturalHeight) return;
         var slot = img.closest('.fids-airline-wordmark-slot'); if (!slot) return;
+        // v24186 — undo this backstop own earlier cap first: it only ever shrank,
+        // so a mark capped against a narrower column (before the stretch, or on a
+        // smaller tier) stayed small until the rows were rebuilt
+        if (img.dataset.wmCap) {
+          img.style.removeProperty('height');
+          img.style.removeProperty('max-height');
+          delete img.dataset.wmCap;
+        }
         var scs = getComputedStyle(slot);
         var availW = slot.clientWidth - (parseFloat(scs.paddingLeft) || 0) - (parseFloat(scs.paddingRight) || 0);
         if (availW < 20) return;
@@ -28286,6 +28338,7 @@ function boardAutofit(full) {
         if (img.clientHeight > maxH) {
           img.style.setProperty('height', maxH + 'px', 'important');
           img.style.setProperty('max-height', maxH + 'px', 'important');
+          img.dataset.wmCap = '1';
         }
       });
     } catch (e) {}
@@ -39570,7 +39623,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24185';
+var FIDS_BUILD_TAG = 'v24186';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -40482,6 +40535,10 @@ function render() {
     if (_colGroup.dataset.lastCols !== _colHtml) {
       _colGroup.innerHTML = _colHtml;
       _colGroup.dataset.lastCols = _colHtml;
+      // v24186 — and the new columns get their stretch back at once, hidden or
+      // shown, rather than at the next fit pass (which a board hidden in the
+      // rotator skips until it is shown, so it came in unstretched)
+      try { if (typeof _fidsDestColumn === 'function') _fidsDestColumn(); } catch (eDC) {}
     }
   }
 
@@ -40634,7 +40691,7 @@ function render() {
   //
   // Fixed by making the fallback track the THEME rather than a constant, and by
   // lowering the sanity floor below the smallest real tier instead of above it.
-  // 20px is under every tier (36/66/90) and still rejects a zero or collapsed
+  // 20px is under every tier (36/42/48) and still rejects a zero or collapsed
   // measurement. The 62 literal remains only for the case where there is no
   // theme value at all, which is the genuine cold start.
   const rowH = _measuredRowH > 20 ? _measuredRowH
@@ -41056,7 +41113,7 @@ function render() {
     // late vw-sized theme rules and the word still clipped ('DERNIER AP…',
     // reported twice). Inline+important cannot be out-cascaded.
     var _stLongAttrs = _stPlainLen >= 15
-      ? ' st-longtext" style="font-size:18px !important;letter-spacing:0.2px !important;'
+      ? ' st-longtext" style="font-size:calc(18px * var(--fids-tier-k, 1)) !important;letter-spacing:0.2px !important;'
       : '';
     // v22873 — the revised time rides along on the status cell as data-rev so
     // PORTRAIT can render Pearson's one-cell form ("DELAYED – 22:15", from a
@@ -41116,6 +41173,7 @@ function render() {
     // fonts and re-paint fitted a frame later — a visible pop on every
     // 12 s language cycle. One
     // task → one paint → the new language arrives already fitted.
+    try { _fidsDestColumn(); } catch (eDC) {} // v24186 — the columns before the wordmark fit
     try { boardAutofit(true); } catch (e) {}
     // v23967 — and already inked, by the same rule: the code accent and the
     // legibility floor used to arrive on their own timers 1.2 s and 5 s
@@ -49462,7 +49520,7 @@ function getPageCount(modeKey) {
   //
   // Fixed by making the fallback track the THEME rather than a constant, and by
   // lowering the sanity floor below the smallest real tier instead of above it.
-  // 20px is under every tier (36/66/90) and still rejects a zero or collapsed
+  // 20px is under every tier (36/42/48) and still rejects a zero or collapsed
   // measurement. The 62 literal remains only for the case where there is no
   // theme value at all, which is the genuine cold start.
   const rowH = _measuredRowH > 20 ? _measuredRowH
@@ -70664,7 +70722,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24185" src="/textures/gate-sky-shelf.mp4?v=24185"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24186" src="/textures/gate-sky-shelf.mp4?v=24186"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

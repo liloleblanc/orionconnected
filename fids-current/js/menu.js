@@ -1588,14 +1588,14 @@ function smActivatePreset(id, _bootRestore) {
       // #fidsTable tbody tr:nth-child(even) which set the row colors when no
       // theme attribute matches. Without this, custom row colors are silently
       // overridden by whatever theme attribute is on body.
-      'body[data-fids-theme="custom"] #fidsTable tbody tr:nth-child(odd),' +
-      'tbody tr:nth-child(odd) { background: ' + rowOdd + ' !important; }' +
-      'body[data-fids-theme="custom"] #fidsTable tbody tr:nth-child(even),' +
-      'tbody tr:nth-child(even) { background: ' + rowEven + ' !important; }' +
-      'body[data-fids-theme="custom"] #fidsTable .td-date,' +
-      'body[data-fids-theme="custom"] #fidsTable .td-time,' +
-      'body[data-fids-theme="custom"] #fidsTable .td-dest,' +
-      'body[data-fids-theme="custom"] #fidsTable .td-flight,' +
+      'body[data-fids-theme="custom"] #fidsTable tbody tr' + _cuNsF + ':nth-child(odd),' +
+      'tbody tr' + _cuNsF + ':nth-child(odd) { background: ' + rowOdd + ' !important; }' +
+      'body[data-fids-theme="custom"] #fidsTable tbody tr' + _cuNsF + ':nth-child(even),' +
+      'tbody tr' + _cuNsF + ':nth-child(even) { background: ' + rowEven + ' !important; }' +
+      'body[data-fids-theme="custom"] #fidsTable tr' + _cuNsF + ' .td-date,' +
+      'body[data-fids-theme="custom"] #fidsTable tr' + _cuNsF + ' .td-time,' +
+      'body[data-fids-theme="custom"] #fidsTable tr' + _cuNsF + ' .td-dest,' +
+      'body[data-fids-theme="custom"] #fidsTable tr' + _cuNsF + ' .td-flight,' +
       '.td-date, .td-time, .td-dest, .td-flight { color: ' + rowText + ' !important; }' +
       '.logo-fallback { color: ' + rowText + ' !important; }' +
       '.wx-temp { color: ' + rowMuted + ' !important; }' +
@@ -3596,7 +3596,7 @@ function cuSetSize(size) {
 
 function _applyLogoSize(size) {
   // ONE SOURCE OF TRUTH for the tier heights: the CSS, keyed on
-  // body[data-fids-logo-size]. flight-display.css pins the board at 44/66/90 and
+  // body[data-fids-logo-size]. flight-display.css pins the board at 36/42/48 (v24186) and
   // baggage-display.css pins the bags screen at 68/98/132, each with height,
   // min-height and max-height locked !important — a set height no matter what.
   //
@@ -3610,7 +3610,20 @@ function _applyLogoSize(size) {
     document.documentElement.style.removeProperty('--fids-logo-size');
     document.documentElement.style.removeProperty('--fids-row-h');
   } catch (e) {}
+  var _prevSize = document.body.dataset.fidsLogoSize || '';
   document.body.dataset.fidsLogoSize = size || 'small';
+  // v24186 — a CHANGE of tier rebuilds the rows. The text, the wordmarks and the
+  // airline column now grow with the tier, and the fitters that already ran only
+  // ever shrink from what they found (and keep it), so the board starts again
+  // from the new tier: the columns first (the stretch reads the tier), then the
+  // rows. The same tier again does nothing.
+  if (_prevSize !== document.body.dataset.fidsLogoSize) {
+    try {
+      if (typeof _fidsDestColumn === 'function') _fidsDestColumn();
+      if (typeof _lastTbodyHtml !== 'undefined') _lastTbodyHtml = '';
+      if (typeof render === 'function') render();
+    } catch (e2) {}
+  }
 }
 
 // Hook into the existing _cuReadForm/Paint flow
@@ -3879,6 +3892,15 @@ function _cuInk(fg, bg) {
   try { return (window._fidsInk ? window._fidsInk(fg, bg) : fg); } catch (e) { return fg; }
 }
 
+// v24186 — STATE ROWS ARE EXEMPT in the menu too, as in the saved palette path
+// (fids-core.js, _nsF and _nsB): a Delayed, Final call, Cancelled, Diverted,
+// Departed, Arrived or Gate closed row keeps the colours of its state and never
+// takes the custom row text. Without it the live preview and a replayed preset
+// painted the yellow Delayed row white (YUL). Inside :where(), so the preview
+// keeps its specificity, and with it Early stays green. The class lists are the
+// same as fids-core.js uses (tests/delayed-ink-menu-palette.test.js).
+var _cuNsF = ':where(:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed))';
+var _cuNsB = ':where(:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted))';
 function _cuApplyCustomColors(c) {
   if (!c) return;
   document.body.dataset.fidsTheme = 'custom';
@@ -3912,24 +3934,24 @@ function _cuApplyCustomColors(c) {
   var _kOdd = _cuInk(_tx, _od), _kEven = _cuInk(_tx, _ev), _kBg = _cuInk(_tx, _bg);
   css.textContent =
     'body[data-fids-theme="custom"] #fidsBoard, body[data-fids-theme="custom"] #fidsTable { background:' + _bg + ' !important; }' +
-    'body[data-fids-theme="custom"] #fidsTable tbody tr:nth-child(odd), body[data-fids-theme="custom"] .ac-bag-row:nth-child(odd), body[data-fids-theme="custom"] .flight-card { background:' + _od + ' !important; }' +
-    'body[data-fids-theme="custom"] #fidsTable tbody tr:nth-child(even), body[data-fids-theme="custom"] .ac-bag-row:nth-child(even) { background:' + _ev + ' !important; }' +
-    'body[data-fids-theme="custom"] #fidsTable tbody tr:nth-child(odd) td, body[data-fids-theme="custom"] .ac-bag-row:nth-child(odd), body[data-fids-theme="custom"] .flight-card .card-time, body[data-fids-theme="custom"] .flight-card .card-city { color:' + _kOdd + ' !important; }' +
-    'body[data-fids-theme="custom"] #fidsTable tbody tr:nth-child(even) td, body[data-fids-theme="custom"] .ac-bag-row:nth-child(even) { color:' + _kEven + ' !important; }' +
+    'body[data-fids-theme="custom"] #fidsTable tbody tr' + _cuNsF + ':nth-child(odd), body[data-fids-theme="custom"] .ac-bag-row:nth-child(odd), body[data-fids-theme="custom"] .flight-card { background:' + _od + ' !important; }' +
+    'body[data-fids-theme="custom"] #fidsTable tbody tr' + _cuNsF + ':nth-child(even), body[data-fids-theme="custom"] .ac-bag-row:nth-child(even) { background:' + _ev + ' !important; }' +
+    'body[data-fids-theme="custom"] #fidsTable tbody tr' + _cuNsF + ':nth-child(odd) td, body[data-fids-theme="custom"] .ac-bag-row:nth-child(odd), body[data-fids-theme="custom"] .flight-card .card-time, body[data-fids-theme="custom"] .flight-card .card-city { color:' + _kOdd + ' !important; }' +
+    'body[data-fids-theme="custom"] #fidsTable tbody tr' + _cuNsF + ':nth-child(even) td, body[data-fids-theme="custom"] .ac-bag-row:nth-child(even) { color:' + _kEven + ' !important; }' +
     'body[data-fids-theme="custom"] .bidsv2-screen { background:' + _bg + ' !important; color:' + _kBg + ' !important; }' +
     'body[data-fids-theme="custom"] .bidsv2-banner { background:' + _hd + ' !important; }' +
     'body[data-fids-theme="custom"] .bidsv2-airport-name, body[data-fids-theme="custom"] .bidsv2-footer-date { color:' + _cuInk(c.hdrText || '#ffffff', _hd) + ' !important; }' +
     'body[data-fids-theme="custom"] .bidsv2-logo { color:' + _cuInk(c.accent || '#eab308', _hd) + ' !important; }' +
-    'body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) { background:' + _od + ' !important; }' +
-    'body[data-fids-theme="custom"] .bidsv2-flight-row { background:' + _ev + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-flight-row' + _cuNsB + ':nth-child(odd) { background:' + _od + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-flight-row' + _cuNsB + ' { background:' + _ev + ' !important; }' +
     'body[data-fids-theme="custom"] .bidsv2-flight-num, body[data-fids-theme="custom"] .bidsv2-col-from, body[data-fids-theme="custom"] .bidsv2-col-time, body[data-fids-theme="custom"] .bidsv2-col-status, body[data-fids-theme="custom"] .bidsv2-airline-name { color:' + _kEven + ' !important; }' +
-    'body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-flight-num, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-col-from, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-col-time, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-col-status, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-airline-name { color:' + _kOdd + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-flight-row' + _cuNsB + ':nth-child(odd) .bidsv2-flight-num, body[data-fids-theme="custom"] .bidsv2-flight-row' + _cuNsB + ':nth-child(odd) .bidsv2-col-from, body[data-fids-theme="custom"] .bidsv2-flight-row' + _cuNsB + ':nth-child(odd) .bidsv2-col-time, body[data-fids-theme="custom"] .bidsv2-flight-row' + _cuNsB + ':nth-child(odd) .bidsv2-col-status, body[data-fids-theme="custom"] .bidsv2-flight-row' + _cuNsB + ':nth-child(odd) .bidsv2-airline-name { color:' + _kOdd + ' !important; }' +
     // v23220 — Arrived/Early stay SEMANTIC GREEN in the live preview too
     // (same rule the board applies in fids-core): a red accent must never
     // make Arrived read as a cancellation. Bright or deep green per ground,
     // emitted last so source order beats the generic column-ink tie.
-    'body[data-fids-theme="custom"] .bidsv2-flight-row .bidsv2-status-arrived, body[data-fids-theme="custom"] .bidsv2-flight-row .bidsv2-status-early { color:' + _cuGreen(_ev) + ' !important; }' +
-    'body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-status-arrived, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-status-early { color:' + _cuGreen(_od) + ' !important; }';
+    'body[data-fids-theme="custom"] .bidsv2-flight-row' + _cuNsB + ' .bidsv2-status-arrived, body[data-fids-theme="custom"] .bidsv2-flight-row' + _cuNsB + ' .bidsv2-status-early { color:' + _cuGreen(_ev) + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-flight-row' + _cuNsB + ':nth-child(odd) .bidsv2-status-arrived, body[data-fids-theme="custom"] .bidsv2-flight-row' + _cuNsB + ':nth-child(odd) .bidsv2-status-early { color:' + _cuGreen(_od) + ' !important; }';
   document.head.appendChild(css);
   try { _cuContrastAudit(c); } catch (e) {}
 }
