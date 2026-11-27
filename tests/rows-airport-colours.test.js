@@ -4,24 +4,29 @@
 // ROWS IN THE AIRPORT LOGO COLOURS (Customize → Display Options → Row colours)
 //
 // An airport choice only, off by default, like the bottom of the board: the
-// board reads it from the airport config, never from a copy on a screen, and
-// signed out Customize shows it disabled with the reason. With it on, the
-// plain rows of the departures and arrivals table take the colour the banner
-// reads out of the airport logo: one band colour, moved along its own hue to
+// board reads it from the airport config, never from a copy on a screen.
+// Customize shows both airport-only controls (Row colours, Bottom of the
+// board) disabled with the reason unless an admin is signed in, leaves both
+// out of a save made from a panel painted before the airport config was in,
+// and paints both again when it comes. With it on, the plain rows of the
+// departures and arrivals table take the colour the banner reads out of the
+// airport logo: one band colour, moved along its own hue to
 // two fixed depths (L* 23.7 for the even rows, 9 L* below for the odd ones),
 // with the column titles in that colour at full strength. Every word on those
 // rows reads at 7 to 1. A band colour that would read as a status never paints
 // a row: a red reads as Cancelled, an orange or amber darkens into brown, a
 // yellow green into olive, a wine or plum sits too close to the Cancelled and
-// Diverted reds, and a grey (under C* 12 in the logo or on either stripe)
-// reads as a past flight. When nothing may paint, the rows keep the theme and
-// only the column titles take the logo colour; a logo with no palette at all
-// changes nothing.
+// Diverted reds, and a grey (under C* 12 in the logo or on the lighter
+// stripe, or a darker stripe within dE76 6 of #262D36, the slate of the
+// Departed, Arrived and Gate closed rows) reads as a past flight. A turquoise
+// or a teal whose darker stripe falls under C* 12 but stays off that slate
+// paints. When nothing may paint, the rows keep the theme and only the column
+// titles take the logo colour; a logo with no palette at all changes nothing.
 //
-// The functions run here are lifted out of fids-core.js, menu.js and
-// workers/fids-proxy.js as they are written; only the page around them (body,
-// elements, storage, the network, the logo reader) is a stand-in. The rules
-// are read out of display-overrides.css.
+// The functions run here are lifted out of fids-core.js, menu.js,
+// editor-roles.js and workers/fids-proxy.js as they are written; only the page
+// around them (body, elements, storage, the network, the logo reader) is a
+// stand-in. The rules are read out of display-overrides.css.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -34,6 +39,7 @@ const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const CORE = rd('fids-current/js/fids-core.js');
 const MENU = rd('fids-current/js/menu.js');
 const MENU_HTML = rd('fids-current/menu.html');
+const ROLES = rd('fids-current/js/editor-roles.js');
 const CSS = rd('fids-current/css/display-overrides.css');
 const PROXY = rd('workers/fids-proxy.js');
 const BAND = JSON.parse(rd('tests/fixtures/header-band.json')).palettes;
@@ -66,10 +72,10 @@ const hue = (h) => {
 const PLANNER = () => [fn('_relLum'), fn('_hex'), fn('_rgbToHsl'), v('_FIDS_BAND_END_CR'), v('_FIDS_SILK_LIFT'),
   fn('_fidsSilkPainted'), fn('_fidsBandEnd'), fn('_rc2Rgb'), fn('_rc2Lin'), fn('_rc2DeltaE'), fn('_fidsRelLum'),
   fn('_fidsContrast'), fn('_fidsInk'), fn('_fidsStatusInk'), v('FIDS_ROWPAL_L'), v('FIDS_ROWPAL_STEP'),
-  v('FIDS_ROWPAL_MIN_C'), v('FIDS_ROWPAL_MIN_RED_DE'), v('FIDS_ROWPAL_INK'), v('FIDS_ROWPAL_REDS'),
+  v('FIDS_ROWPAL_MIN_C'), v('FIDS_ROWPAL_MIN_RED_DE'), v('FIDS_ROWPAL_SLATE'), v('FIDS_ROWPAL_MIN_SLATE_DE'), v('FIDS_ROWPAL_INK'), v('FIDS_ROWPAL_REDS'),
   fn('_fidsRowPalLab'), fn('_fidsRowPalShade'), fn('_fidsRowPalRefusal'), fn('_fidsRowPalHead'), fn('_fidsRowPalPlan')].join('\n');
 const lib = () => new Function(PLANNER() + '\nreturn { plan: _fidsRowPalPlan, refusal: _fidsRowPalRefusal, shade: _fidsRowPalShade, reds: FIDS_ROWPAL_REDS, dE: _rc2DeltaE, lab: _fidsRowPalLab,'
-  + ' evenL: FIDS_ROWPAL_L, step: FIDS_ROWPAL_STEP, minC: FIDS_ROWPAL_MIN_C };')();
+  + ' evenL: FIDS_ROWPAL_L, step: FIDS_ROWPAL_STEP, minC: FIDS_ROWPAL_MIN_C, slate: FIDS_ROWPAL_SLATE, minSlateDE: FIDS_ROWPAL_MIN_SLATE_DE };')();
 
 // ── one board: the body, storage and the logo reader are stand-ins ──────────
 function board({ ap = 'YQM', search = '', store = {}, cfg = null, registry = {} } = {}) {
@@ -108,16 +114,22 @@ const LOGO = 'https://assets.example/logo-yqm.svg';
 const warm = (ap, pal) => ({ ['fids_logo_palette3_' + ap]: JSON.stringify({ url: LOGO, pal }) });
 
 // ── one screen with Customize, end to end ───────────────────────────────────
-// The code of all three files as it is written: in fids-core.js the airport
+// The code of all four files as it is written: in fids-core.js the airport
 // config cache and its refresh, the head of applyAirportConfigToBoard (the
 // layers it reads) with its row colours line, and the row painter; in menu.js
-// the Customize save, the cloud push and the paint of the form; in
-// workers/fids-proxy.js the airport-config PUT and GET. Only the page around
-// them is a stand-in: the elements, storage, timers, the network and the store
-// of the worker.
+// the Customize save, the cloud push, the paint of the form and the
+// airport-only controls; editor-roles.js, which says what role the panel goes
+// by; in workers/fids-proxy.js the airport-config PUT and GET. Only the page
+// around them is a stand-in: the elements, storage, timers, the network and
+// the store of the worker.
 const afn = (name, src) => 'async ' + fn(name, src);
 const line = (re, src) => { const m = re.exec(src); assert.ok(m, String(re) + ' must exist'); return m[0]; };
 const mv = (name) => line(new RegExp('var ' + name + ' = [^;]+;'), MENU);
+// a function or a line lifted when the file has it: the helpers of the
+// airport-only controls and the listener that paints them again, which the
+// commit before them lacks, so the same harness runs either as written
+const opt = (name, src) => (src.indexOf('function ' + name + '(') >= 0 ? fn(name, src) : '');
+const optLine = (re, src) => { const m = re.exec(src); return m ? m[0] : ''; };
 // applyAirportConfigToBoard up to the languages (its layers: the device copy,
 // the airport config, the copies it retires and _pref), then its row colours
 // line, and the render it ends on (which runs the row painter). The readers
@@ -132,9 +144,10 @@ function applyBoard() {
   const readers = rp[0].includes('_fidsAirportRowPal(') ? [fn('_fidsAirportRowPalOf'), fn('_fidsAirportRowPal')] : [];
   return readers.concat([A.slice(0, langs) + rp[0] + "\n  try { if (typeof render === 'function') render(); } catch (e) {}\n}"]).join('\n');
 }
+const CONFIG_IN = /try \{ window\.addEventListener\('fids-airport-config-ready', [^\n]+/;
 const SCREEN_SRC = () => [
   line(/const _airportConfigCache = \{\};/, CORE), fn('_normAirportCode'), fn('getAirportConfig'),
-  fn('_fidsAirportFloorOf'), fn('_fidsAirportFloor'), afn('refreshAirportConfig'),
+  fn('_fidsAirportFloorOf'), fn('_fidsAirportFloor'), opt('_fidsAirportConfigLoaded', CORE), afn('refreshAirportConfig'),
   PLANNER(), v('_bandPaletteBusy'), v('_bandPaletteWaiting'), v('_fidsRowPalRead'), v('_fidsRowPalLast'), v('FIDS_ROWPAL_VARS'),
   "var _lastTbodyHtml = '';",
   fn('_fidsAirportLogoUrl'), fn('_fidsLogoPaletteCached'), fn('_fidsLogoPaletteRead'), fn('_fidsRowPalSource'),
@@ -142,6 +155,8 @@ const SCREEN_SRC = () => [
   fn('_acCurrentCode', MENU), mv('_AC_WORKER_URL'), fn('_acGetToken', MENU), afn('_acFetch', MENU),
   fn('_cuStorageKey', MENU), fn('_cuLoad', MENU), fn('_cuSave', MENU), fn('_cuSyncNote', MENU),
   line(/var _cuCloudTimer = null;/, MENU), fn('_cuCloudPush', MENU), fn('_cuReadForm', MENU), fn('_cuPaintForm', MENU),
+  opt('_cuEditorRole', MENU), opt('_cuAirportOnlyWhy', MENU), opt('_cuAirportOnlySends', MENU), opt('_cuPaintAirportOnly', MENU),
+  opt('cuAirportOnlyChanged', MENU), opt('_cuAirportConfigIn', MENU), optLine(CONFIG_IN, MENU),
   fn('_cuRowPaletteNote', MENU), line(/try \{ window\.addEventListener\('fids-row-palette'[^\n]+/, MENU),
   mv('_cuCurrentPos'), fn('cuSetPositionUI', MENU), mv('_cuCurrentMode'), fn('cuSetDisplayModeUI', MENU),
   mv('_cuThemeExplicitDefault'), mv('_cuFontExplicitDefault'), mv('_cuCurrentSize'), fn('cuApplyAndSave', MENU),
@@ -149,14 +164,22 @@ const SCREEN_SRC = () => [
 ].join('\n');
 const WORKER_SRC = () => [line(/function isAdmin\(payload\) \{[^\n]+/, PROXY), line(/function normIata\(code\) \{[^\n]+/, PROXY),
   afn('handlePutAirport', PROXY), afn('handleGetAirport', PROXY)].join('\n');
-// role: null (signed out), 'operator' or 'admin'; cloud: the airport config the
-// worker holds for YQM; device: this screen's Customize copy; floorControl:
-// false for a panel without the Bottom of the board control
-function screen({ role = null, cloud = null, device = null, search = '', floorControl = true } = {}) {
-  const ls = new Map();
+// role: null (signed out), or the role of the token the worker reads
+// ('viewer', 'operator', 'admin'); user: the fids_user of this tab
+// (sessionStorage), by default the signed-in user with that role, null for
+// none; lock: the screen lock of editor-roles.js (fids_editor_lock);
+// editorRoles: false for a page where editor-roles.js is not loaded; cloud:
+// the airport config the worker holds for YQM; device: this screen's
+// Customize copy; floorControl: false for a panel without the Bottom of the
+// board control; offline: the save gets no answer at all
+function screen({ role = null, user, lock = null, editorRoles = true, cloud = null, device = null, search = '', floorControl = true, offline = false } = {}) {
+  const ls = new Map(), ss = new Map();
   if (device) ls.set('fids_customize_YQM', JSON.stringify(device));
   ls.set('fids_banner_palette_YQM', JSON.stringify(BAND.YQM));   // the banner palette this screen holds
   if (role) ls.set('fids_token', 'token-' + role);
+  const signedIn = user !== undefined ? user : (role ? { username: 'someone', role } : null);
+  if (signedIn) ss.set('fids_user', JSON.stringify(signedIn));
+  if (lock) ls.set('fids_editor_lock', lock);
   const storage = (m) => ({ getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, x) => { m.set(k, String(x)); }, removeItem: (k) => { m.delete(k); } });
   const attrs = {}, vars = {};
   const body = {
@@ -183,7 +206,7 @@ function screen({ role = null, cloud = null, device = null, search = '', floorCo
   };
   if (floorControl) Object.assign(els, { cuFloor: select(['', 'classic']), cuFloorNote: note() });
   const listeners = {};
-  const timers = [], net = [];
+  const timers = [], net = [], puts = [];
   const kv = new Map(cloud ? [['airport:YQM', JSON.stringify(cloud)]] : []);
   const env = { FIDS_USERS: { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, x) => { kv.set(k, x); } } };
   const jsonResponse = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => JSON.parse(JSON.stringify(data)) });
@@ -194,29 +217,49 @@ function screen({ role = null, cloud = null, device = null, search = '', floorCo
       addEventListener: (t, f) => { (listeners[t] = listeners[t] || []).push(f); },
       dispatchEvent: (e) => { (listeners[e.type] || []).forEach((f) => f(e)); return true; },
     },
-    localStorage: storage(ls), sessionStorage: storage(new Map()), location: { search }, URLSearchParams,
+    localStorage: storage(ls), sessionStorage: storage(ss), location: { search }, URLSearchParams,
     CustomEvent: function (type, init) { this.type = type; this.detail = init && init.detail; },
     console: { log() {}, warn() {} }, setTimeout: (f) => { timers.push(f); return timers.length; }, clearTimeout() {},
     fetch: async (url, opts = {}) => {
       const method = opts.method || 'GET';
       net.push(method);
       const code = url.split('/').pop();
-      if (method === 'PUT') return W.put({ json: async () => JSON.parse(opts.body) }, env, { sub: 'someone', role }, '', code);
+      if (method === 'PUT') {
+        puts.push(JSON.parse(opts.body));
+        if (offline) throw new TypeError('Failed to fetch');
+        return W.put({ json: async () => JSON.parse(opts.body) }, env, { sub: 'someone', role }, '', code);
+      }
       return W.get(env, '', code);
     },
     AP: {}, BANNER_PALETTE: {}, FIDS_API_BASE: 'https://worker.example',
     _extractLogoPalette: () => { throw new Error('no logo read: the banner palette of this screen is at hand'); },
   };
+  // editor-roles.js as the page loads it, after menu.js (its poll for the panel never runs here)
+  if (editorRoles) new Function('window', 'document', 'sessionStorage', 'localStorage', 'setInterval', 'clearInterval', ROLES)(g.window, g.document, g.sessionStorage, g.localStorage, () => 0, () => {});
   const names = Object.keys(g);
   const api = new Function(...names, SCREEN_SRC() + `
     function render() { _fidsRowPalPaint(); }   // the board render runs the row painter first
     return { apply: applyAirportConfigToBoard, refresh: refreshAirportConfig, save: cuApplyAndSave,
-             paintForm: function () { _cuPaintForm(_cuLoad()); } };
+             paintForm: function () { _cuPaintForm(_cuLoad()); },
+             handlers: { cuApplyAndSave: cuApplyAndSave, cuAirportOnlyChanged: (typeof cuAirportOnlyChanged === 'function') ? cuAirportOnlyChanged : undefined } };
   `)(...names.map((n) => g[n]));
   const flush = async () => { for (let n = 0; n < 50; n++) { while (timers.length) timers.shift()(); await new Promise((r) => setImmediate(r)); } };
   const deviceCopy = () => JSON.parse(ls.get('fids_customize_YQM') || '{}');
   const cloudCopy = () => JSON.parse(kv.get('airport:YQM') || '{}');
-  return Object.assign(api, { els, attrs, vars, net, flush, deviceCopy, cloudCopy });
+  // another screen saves the airport config
+  const cloudSet = (patch) => { const c = cloudCopy(); kv.set('airport:YQM', JSON.stringify(Object.assign(c, patch, { updatedAt: (c.updatedAt || 0) + 1000 }))); };
+  // a pick by the user: the value, then the onchange menu.html gives that select
+  const pick = (id, value) => {
+    const tag = new RegExp('<select [^>]*id="' + id + '"[^>]*>').exec(MENU_HTML);
+    assert.ok(tag, id + ' is in menu.html');
+    const m = /onchange="(\w+)\((this)?\)"/.exec(tag[0]);
+    assert.ok(m && typeof api.handlers[m[1]] === 'function', 'the onchange of ' + id + ' runs a Customize handler: ' + tag[0]);
+    els[id].value = value;
+    api.handlers[m[1]](els[id]);
+  };
+  // the role editor-roles.js itself goes by, when it is loaded
+  const editorRole = () => (g.window.EditorRoles ? g.window.EditorRoles.current() : null);
+  return Object.assign(api, { els, attrs, vars, net, puts, flush, deviceCopy, cloudCopy, cloudSet, pick, editorRole });
 }
 const shown = (el) => (el.style.display === 'none' ? '' : el.textContent);
 
@@ -256,7 +299,7 @@ test('off by default: nothing chosen is the theme rows, and nothing is painted',
   assert.ok(sel.length > 0, 'Customize carries the Row colours select');
   assert.deepEqual([...sel.matchAll(/<option value="([^"]*)"/g)].map((m) => m[1]), ['', 'airport'], 'the first entry, nothing chosen, is the default');
   assert.match(sel, /<option value="">Theme \(default\)/);
-  assert.match(sel, /onchange="cuApplyAndSave\(\)"/);
+  assert.match(sel, /onchange="cuAirportOnlyChanged\(this\)"/, 'a pick is marked as made here, then saved');
   assert.ok(MENU_HTML.indexOf('id="cuRowPaletteNote"') > MENU_HTML.indexOf('id="cuRowPalette"'), 'the note sits under the control');
   // operator words: the menu is English only, like every other Customize string
   assert.doesNotMatch(sel, /data-i18n|bs\(/);
@@ -317,16 +360,16 @@ test('the body attribute is set and cleared as the choice changes, and the rows 
 });
 
 test('Customize sends the choice to the airport cloud, reads a kept one back at once, and says when the cloud did not keep it', async () => {
-  // read from the form once painted, carried forward otherwise (the floor pattern: with no copy kept on a screen, nothing is carried)
-  assert.match(MENU, /if \(rp && rp\.dataset\.painted === '1'\) p\.rowPalette = rp\.value;\n\s*else \{ var _pv5 = _cuLoad\(\); if \(_pv5 && _pv5\.rowPalette !== undefined\) p\.rowPalette = _pv5\.rowPalette; \}/);
+  // read from the form only while the control shows the airport config itself
+  // or a pick made in this panel; no copy is kept on a screen, so none is carried forward
+  const read = fn('_cuReadForm', MENU);
+  assert.match(read, /if \(_cuAirportOnlySends\(rp\)\) p\.rowPalette = rp\.value;/);
+  assert.doesNotMatch(read, /_pv5|\.rowPalette !== undefined/, 'never carried forward from a copy on this screen');
   // painted as the board reads it: the airport choice alone
-  const paint = fn('_cuPaintForm', MENU);
-  assert.match(paint, /_rpv = \(typeof _fidsAirportRowPal === 'function'\) \? _fidsAirportRowPal\(_acCurrentCode\(\)\)/);
-  assert.doesNotMatch(paint, /prefs\.rowPalette/, 'never a copy on this screen');
-  assert.match(paint, /rp\.dataset\.painted = '1';/);
-  // only a signed-in save reaches the airport: signed out the control is shown disabled, with the reason, as the floor is
-  assert.match(paint, /var _rpSigned = !!_acGetToken\(\);\s*rp\.disabled = !_rpSigned;/);
-  assert.match(paint, /_rpSignNote\.textContent = _rpSigned \? '' : 'Set for the whole airport\. Sign in \(Login\) to change it\.';/);
+  const paint = fn('_cuPaintAirportOnly', MENU);
+  assert.match(paint, /\['cuRowPalette', 'cuRowPaletteSignNote', \(typeof _fidsAirportRowPal === 'function'\) \? _fidsAirportRowPal : null\]/);
+  assert.doesNotMatch(paint, /prefs|_cuLoad|localStorage|getAirportConfig/, 'never a copy on this screen');
+  assert.match(fn('_cuPaintForm', MENU), /try \{ _cuPaintAirportOnly\(true\); \} catch \(e\) \{\}/, 'the whole panel paints it');
   assert.ok(MENU_HTML.indexOf('id="cuRowPaletteSignNote"') > MENU_HTML.indexOf('id="cuRowPalette"'), 'the note sits under the control');
   // the worker keeps it, and only a value the boards know
   assert.match(PROXY, /\n\s*"rowPalette",/);
@@ -457,14 +500,17 @@ test('turning the rows off, signed out: the control is shown disabled with the r
   assert.equal(s.attrs['data-fids-row-palette'], 'airport', 'the rows stay as the airport chose');
 });
 
-test('turning the rows off, signed in without the right to change the airport: the refused save (403) changes nothing and leaves no copy', async () => {
+test('turning the rows off, signed in without admin rights: the control is disabled with the reason, and a refused save (403) says the airport choice did not change', async () => {
   const s = await airportOn('operator');
-  assert.equal(s.els.cuRowPalette.disabled, false, 'signed in, the control is live');
-  assert.equal(shown(s.els.cuRowPaletteSignNote), '');
-  s.els.cuRowPalette.value = '';
-  s.save(); await s.flush();
+  // editor-roles.js shows Display Options to an operator, but the worker takes the airport save from an admin only
+  assert.match(PROXY, /async function handlePutAirport\(request, env, payload, origin, code\) \{\n  if \(!isAdmin\(payload\)\) return jsonResponse\(\{ error: "Admin access required" \}, 403, origin\);/);
+  assert.equal(s.els.cuRowPalette.disabled, true, 'an operator could not change the airport choice');
+  assert.equal(shown(s.els.cuRowPaletteSignNote), 'Set for the whole airport. Only an admin can change it.');
+  s.save(); await s.flush();   // a save of anything else on the panel
   assert.deepEqual(s.net, ['PUT']);
-  assert.match(shown(s.els.cuCloudSyncNote), /^⚠ Cloud save failed/, 'the note the floor gets');
+  assert.equal(s.puts[0].rowPalette, 'airport', 'the airport choice as it is, painted from the config');
+  assert.match(shown(s.els.cuCloudSyncNote), /^⚠ Cloud save failed — the airport choice did not change/);
+  assert.doesNotMatch(shown(s.els.cuCloudSyncNote), /the look is on this device only/, 'no copy of it is kept on this device');
   assert.equal(s.cloudCopy().rowPalette, 'airport');
   assert.equal(s.attrs['data-fids-row-palette'], 'airport', 'the board stays as the airport chose');
   assert.equal(s.deviceCopy().rowPalette, undefined, 'no copy on this screen');
@@ -474,8 +520,10 @@ test('turning the rows off, signed in without the right to change the airport: t
 
 test('turning the rows off as an admin: the cloud keeps nothing chosen and this screen shows it at once', async () => {
   const s = await airportOn('admin');
-  s.els.cuRowPalette.value = '';
-  s.save(); await s.flush();
+  assert.equal(s.els.cuRowPalette.disabled, false, 'an admin may change it');
+  assert.equal(shown(s.els.cuRowPaletteSignNote), '');
+  s.pick('cuRowPalette', '');
+  await s.flush();
   assert.deepEqual(s.net, ['PUT', 'GET'], 'saved, then read back');
   assert.equal(s.cloudCopy().rowPalette, '', 'the airport holds nothing chosen');
   assert.match(shown(s.els.cuCloudSyncNote), /^✓ Saved to the airport cloud/);
@@ -489,10 +537,148 @@ test('turning the rows off as an admin: the cloud keeps nothing chosen and this 
 
 test('turning the rows off as an admin: the read back does not wait on the floor travelling with the choice', async () => {
   const s = await airportOn('admin', { floorControl: false });
-  s.els.cuRowPalette.value = '';
-  s.save(); await s.flush();
+  s.pick('cuRowPalette', '');
+  await s.flush();
   assert.deepEqual(s.net, ['PUT', 'GET'], 'saved, then read back');
   assert.equal(s.attrs['data-fids-row-palette'], undefined, 'off at once');
+});
+
+// ═══ the airport-only controls: Bottom of the board and Row colours ═════════
+// Both are the airport choice alone (_fidsAirportFloor, _fidsAirportRowPal),
+// kept on no screen, and the worker takes an airport save from an admin only.
+const SIGN_IN = 'Set for the whole airport. Sign in (Login) to change it.';
+const ADMIN_ONLY = 'Set for the whole airport. Only an admin can change it.';
+const AIRPORT_ONLY = [['cuFloor', 'cuFloorNote'], ['cuRowPalette', 'cuRowPaletteSignNote']];
+const T1 = 1764000000000;
+const CLOUD = () => ({ theme: 'tus-teal', floor: 'classic', rowPalette: 'airport', updatedAt: T1, updatedBy: 'someone' });
+
+test('both airport-only controls are disabled with the reason unless the signed-in role is admin, the role read as editor-roles.js reads it', async () => {
+  const lockOf = (s) => AIRPORT_ONLY.map(([id, note]) => [s.els[id].disabled, shown(s.els[note])]);
+  const cases = [
+    // [what, screen options, disabled and note]
+    ['signed out', { role: null }, [true, SIGN_IN]],
+    ['an operator', { role: 'operator' }, [true, ADMIN_ONLY]],
+    ['a viewer', { role: 'viewer' }, [true, ADMIN_ONLY]],
+    ['an operator, on a screen locked to admin', { role: 'operator', lock: 'admin' }, [true, ADMIN_ONLY]],
+    ['an admin', { role: 'admin' }, [false, '']],
+    ['an admin, on a screen locked to operator', { role: 'admin', lock: 'operator' }, [false, '']],
+    // editor-roles.js takes a role it does not know, or none, for no signed-in
+    // role and goes by the lock of the screen, admin when none is set: so does the panel
+    ['a role editor-roles.js does not know', { role: 'admin', user: { username: 'someone', role: 'superuser' } }, [false, '']],
+    ['no role in fids_user', { role: 'admin', user: { username: 'someone' } }, [false, '']],
+    ['no fids_user in this tab', { role: 'admin', user: null }, [false, '']],
+  ];
+  for (const [what, opts, want] of cases) {
+    for (const editorRoles of [true, false]) {
+      const s = screen(Object.assign({ cloud: CLOUD(), device: { theme: 'tus-teal', savedAt: T1 }, editorRoles }, opts));
+      await s.refresh('YQM');
+      s.paintForm();
+      const label = what + (editorRoles ? '' : ', editor-roles.js not loaded');
+      assert.deepEqual(lockOf(s), [want, want], label);
+      assert.equal(s.els.cuFloor.value, 'classic', label + ': the floor shows the airport choice');
+      assert.equal(s.els.cuRowPalette.value, 'airport', label + ': and so do the rows');
+      // the role editor-roles.js itself goes by decides it, when it is loaded
+      if (editorRoles && opts.role) assert.equal(want[0], s.editorRole() !== 'admin', label + ': editor-roles.js goes by ' + s.editorRole());
+    }
+  }
+  // with no role it knows, editor-roles.js goes by the lock of the screen, and so does the panel
+  const locked = screen({ role: 'admin', user: { username: 'someone' }, lock: 'operator', cloud: CLOUD() });
+  await locked.refresh('YQM');
+  locked.paintForm();
+  assert.equal(locked.editorRole(), 'operator');
+  assert.deepEqual(lockOf(locked), [[true, ADMIN_ONLY], [true, ADMIN_ONLY]]);
+});
+
+test('a save that carried the airport choice and failed says the airport choice did not change; one that did not keeps the device note', async () => {
+  // refused (403): this tab says admin, the token the worker reads is an operator one
+  let s = screen({ role: 'operator', user: { username: 'someone', role: 'admin' }, cloud: CLOUD(), device: { theme: 'tus-teal', savedAt: T1 } });
+  await s.refresh('YQM');
+  s.paintForm();
+  assert.equal(s.els.cuRowPalette.disabled, false, 'this tab believes it is an admin');
+  s.net.length = 0;
+  s.pick('cuRowPalette', '');
+  await s.flush();
+  assert.deepEqual(s.net, ['PUT']);
+  assert.equal(s.puts[0].rowPalette, '');
+  assert.match(shown(s.els.cuCloudSyncNote), /^⚠ Cloud save failed — the airport choice did not change: the bottom of the board and the row colours stay as the airport has them/);
+  assert.doesNotMatch(shown(s.els.cuCloudSyncNote), /the look is on this device only/);
+  assert.equal(s.cloudCopy().rowPalette, 'airport', 'the airport choice did not change');
+  assert.equal(s.attrs['data-fids-row-palette'], 'airport', 'nor this board');
+  assert.equal(s.deviceCopy().rowPalette, undefined, 'and no copy is kept here');
+  // no answer at all (offline): the same note
+  s = screen({ role: 'admin', cloud: CLOUD(), device: { theme: 'tus-teal', savedAt: T1 }, offline: true });
+  await s.refresh('YQM');
+  s.paintForm();
+  s.net.length = 0;
+  s.pick('cuFloor', '');
+  await s.flush();
+  assert.deepEqual(s.net, ['PUT']);
+  assert.equal(s.puts[0].floor, '');
+  assert.match(shown(s.els.cuCloudSyncNote), /^⚠ Cloud save failed — the airport choice did not change/);
+  assert.equal(s.cloudCopy().floor, 'classic');
+  // a failed save that carried neither (the panel painted before the airport
+  // config was in): the look it carried is on this device only, and it says so
+  s = screen({ role: 'admin', cloud: CLOUD(), device: { theme: 'tus-teal', savedAt: T1 }, offline: true });
+  s.paintForm();
+  s.save(); await s.flush();
+  assert.equal('floor' in s.puts[0] || 'rowPalette' in s.puts[0], false);
+  assert.match(shown(s.els.cuCloudSyncNote), /^⚠ Cloud save failed — the look is on this device only for now/);
+  assert.match(MENU, /airportFailed: \['#f87171', /);
+});
+
+test('a panel painted before the airport config is in sends neither airport choice, and paints both once the config comes', async () => {
+  const s = screen({ role: 'admin', cloud: CLOUD(), device: { theme: 'tus-teal', savedAt: T1 } });
+  s.paintForm();   // the late repaint at 2.5 s, or a Customize tab opened early: the airport config is not in yet
+  assert.equal(s.els.cuFloor.value, '', 'the default is all it can show');
+  assert.equal(s.els.cuRowPalette.value, '');
+  s.save(); await s.flush();   // a save of anything else on the panel
+  assert.equal(s.puts.length, 1);
+  assert.equal('floor' in s.puts[0], false, 'the floor is left out of the save');
+  assert.equal('rowPalette' in s.puts[0], false, 'and so are the row colours');
+  assert.equal(s.cloudCopy().floor, 'classic', 'so the airport keeps the old backdrop');
+  assert.equal(s.cloudCopy().rowPalette, 'airport', 'and the logo colours');
+  // the airport config comes in (fids-airport-config-ready), and both show it
+  assert.match(MENU, /try \{ window\.addEventListener\('fids-airport-config-ready', function \(ev\) \{ try \{ _cuAirportConfigIn\(ev\); \} catch \(e\) \{\} \}\); \} catch \(e\) \{\}/);
+  for (const f of ['loadAirportConfig', 'refreshAirportConfig']) assert.match(fn(f), /window\.dispatchEvent\(new CustomEvent\('fids-airport-config-ready', \{ detail: \{ code: norm, config: cfg \} \}\)\)/, f + ' says the config came in');
+  await s.refresh('YQM');
+  assert.equal(s.els.cuFloor.value, 'classic', 'the floor shows the airport choice');
+  assert.equal(s.els.cuRowPalette.value, 'airport', 'and so do the rows');
+  assert.equal(s.attrs['data-fids-row-palette'], 'airport');
+  // now a save of anything else carries the airport choice as it is
+  s.save(); await s.flush();
+  assert.equal(s.puts[1].floor, 'classic');
+  assert.equal(s.puts[1].rowPalette, 'airport');
+  assert.equal(s.cloudCopy().floor, 'classic');
+  assert.equal(s.cloudCopy().rowPalette, 'airport');
+});
+
+test('a pick made before the airport config is in is sent, and kept when the config comes; the untouched control shows the config', async () => {
+  const s = screen({ role: 'admin', cloud: Object.assign(CLOUD(), { rowPalette: '' }), device: { theme: 'tus-teal', savedAt: T1 } });
+  s.paintForm();   // too early: both on the default, neither read from the airport config
+  s.pick('cuRowPalette', 'airport');   // the user picks the logo colours
+  await s.refresh('YQM');              // the config comes in before the save leaves
+  assert.equal(s.els.cuRowPalette.value, 'airport', 'the pick is kept');
+  assert.equal(s.els.cuFloor.value, 'classic', 'the untouched control shows the airport choice');
+  await s.flush();
+  assert.equal(s.puts[0].rowPalette, 'airport', 'the pick is sent');
+  assert.equal('floor' in s.puts[0], false, 'the floor, unread when the save was made, is left out');
+  assert.equal(s.cloudCopy().rowPalette, 'airport');
+  assert.equal(s.cloudCopy().floor, 'classic', 'and the airport keeps it');
+  assert.equal(s.attrs['data-fids-row-palette'], 'airport');
+});
+
+test('a kept pick shows the airport config again, so a change saved on another screen is painted in and not undone', async () => {
+  const s = await airportOn('admin');
+  s.pick('cuRowPalette', '');
+  await s.flush();
+  assert.equal(s.cloudCopy().rowPalette, '');
+  s.cloudSet({ rowPalette: 'airport' });   // another admin turns them back on
+  await s.refresh('YQM');                  // the 10 s poll
+  assert.equal(s.els.cuRowPalette.value, 'airport', 'the change made elsewhere shows here');
+  assert.equal(s.attrs['data-fids-row-palette'], 'airport');
+  s.save(); await s.flush();   // a save of anything else here
+  assert.equal(s.puts[s.puts.length - 1].rowPalette, 'airport');
+  assert.equal(s.cloudCopy().rowPalette, 'airport', 'and the next save here does not undo it');
 });
 
 test('the menu says what the board did with the choice', () => {
@@ -703,35 +889,51 @@ test('what may not paint a row: reds, browns, olives, wines and plums, and greys
   for (const c of ['#ffb114', '#ef9600', '#fbca00', '#812a00', '#76bd21', '#97e000', '#96c262']) assert.equal(L.refusal(c), 'warm', c);
   // greys, black, silver and the grey band of Moncton read as past flights
   for (const c of ['#000000', '#333333', '#c0c0c0', '#5b5b65', '#d5d5eb', '#0b1220']) assert.equal(L.refusal(c), 'grey', c);
-  // so does a muted steel blue: its lighter stripe holds C* 12, its darker one
-  // falls under it and sits next to the slate of the past flight rows (#262D36)
-  for (const c of ['#3e5f7a', '#4a6a8a', '#36485d']) assert.equal(L.refusal(c), 'grey', c);
+  // so does a muted steel blue: its lighter stripe holds C* 12, and its darker
+  // one lands within dE76 6 of the slate of the past flight rows (#262D36)
+  assert.equal(L.slate, '#262D36', 'the slate of the Departed, Arrived and Gate closed rows');
+  assert.equal(L.minSlateDE, 6);
+  for (const c of ['#3e5f7a', '#4a6a8a', '#36485d']) {
+    assert.equal(L.refusal(c), 'grey', c);
+    assert.ok(L.dE(L.shade(c, L.evenL - L.step), L.slate) < 6, c + ': its darker stripe sits on the slate');
+  }
   // a deep true green, teal green, blue, indigo and purple may paint
   for (const c of ['#2d7e00', '#329a3d', '#004131', '#00426f', '#001338', '#3920a7', '#48117d']) assert.equal(L.refusal(c), '', c);
-  // every ground that paints holds those lines, on both rows: the grey line is
-  // the documented C* 12, on the darker stripe as on the lighter one
+  // and a mid teal and a turquoise: darkened to the odd rows they fall under
+  // C* 12, and stay a teal, far off the slate
+  for (const c of ['#2999a3', '#40e0d0']) {
+    assert.equal(L.refusal(c), '', c);
+    const odd = L.shade(c, L.evenL - L.step);
+    assert.ok(L.lab(odd)[3] < 12 && L.dE(odd, L.slate) >= 10, c + ': ' + odd + ' is C* ' + L.lab(odd)[3].toFixed(1) + ', dE76 ' + L.dE(odd, L.slate).toFixed(1) + ' from the slate');
+  }
+  // every ground that paints holds those lines, on both rows: off the reds,
+  // off the warm hues, and off the slate of a past flight; the lighter one
+  // keeps C* 12 too
   assert.equal(L.minC, 12, 'the grey line, C* 12');
   for (const [ap, pal] of Object.entries(BAND)) {
     const p = pal && L.plan(pal);
     if (!p || !p.rows) continue;
     for (const g of [p.odd, p.even]) {
       for (const red of L.reds) assert.ok(L.dE(g, red) >= 60, ap + ': ' + g + ' is dE76 ' + L.dE(g, red).toFixed(1) + ' from ' + red);
-      assert.ok(L.lab(g)[3] >= 12, ap + ': ' + g + ' has colour (C* ' + L.lab(g)[3].toFixed(1) + ')');
+      assert.ok(L.dE(g, L.slate) >= 6, ap + ': ' + g + ' is dE76 ' + L.dE(g, L.slate).toFixed(1) + ' from the slate');
       const h = hue(g);
       assert.ok(h >= 95 && h < 340, ap + ': ' + g + ' is not a warm hue (' + h.toFixed(1) + ')');
     }
+    assert.ok(L.lab(p.even)[3] >= 12, ap + ': ' + p.even + ' has colour (C* ' + L.lab(p.even)[3].toFixed(1) + ')');
   }
-  // and on a sweep of the colour cube: wherever a colour may paint, both of its
-  // stripes hold C* 12
+  // and on a sweep of the colour cube: wherever a colour may paint, the logo
+  // colour and the lighter stripe hold C* 12, and the darker stripe stays
+  // dE76 6 off the slate
   const steps = Array.from({ length: 16 }, (_, i) => i * 17);
   let swept = 0;
   for (const r of steps) for (const g of steps) for (const b of steps) {
     const c = '#' + [r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('');
     if (L.refusal(c)) continue;
     swept++;
-    for (const s of [L.shade(c, L.evenL), L.shade(c, L.evenL - L.step)]) {
-      assert.ok(L.lab(s)[3] >= 12, c + ' may paint, but its stripe ' + s + ' is C* ' + L.lab(s)[3].toFixed(1));
-    }
+    const even = L.shade(c, L.evenL), odd = L.shade(c, L.evenL - L.step);
+    assert.ok(L.lab(c)[3] >= 12, c + ' may paint, but it is C* ' + L.lab(c)[3].toFixed(1));
+    assert.ok(L.lab(even)[3] >= 12, c + ' may paint, but its lighter stripe ' + even + ' is C* ' + L.lab(even)[3].toFixed(1));
+    assert.ok(L.dE(odd, L.slate) >= 6, c + ' may paint, but its darker stripe ' + odd + ' is dE76 ' + L.dE(odd, L.slate).toFixed(1) + ' from the slate');
   }
   assert.ok(swept >= 300, swept + ' colours of the sweep may paint');
   // a logo of greys only changes nothing at all

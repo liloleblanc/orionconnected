@@ -223,6 +223,15 @@ function _fidsAirportFloor(code) {
   var norm = _normAirportCode(code);
   return norm ? _fidsAirportFloorOf(_airportConfigCache[norm]) : '';
 }
+// Whether the airport config of a code has been read: a config, or none at
+// all (a 404, kept as null). Until then _fidsAirportFloor and
+// _fidsAirportRowPal give the default and not the airport choice, so the
+// Customize panel sends neither choice from a control painted that early
+// (menu.js _cuAirportOnlySends).
+function _fidsAirportConfigLoaded(code) {
+  var norm = _normAirportCode(code);
+  return !!norm && (norm in _airportConfigCache);
+}
 
 // Async loader — fetches from Worker, caches in memory.
 // Returns a promise that resolves to the config object (or null on 404/error).
@@ -28996,9 +29005,14 @@ function _fidsLogoPaletteRead(ap, logo, cb) {
 // was drawn for, and the board stays a dark board.
 //
 // WHAT MAY NOT PAINT A ROW, judged on the two shades that would paint:
-//   grey  less than C* 12 in the logo or in either shade, the lighter and
-//         the darker stripe: a grey row reads as a Departed or Gate closed
-//         row and hides the dark airline tiles
+//   grey  less than C* 12 in the logo or in the lighter shade, or a darker
+//         shade within dE76 6 of the slate the Departed, Arrived and Gate
+//         closed rows are painted in (FIDS_ROWPAL_SLATE, #262D36): a grey
+//         row reads as a past flight and hides the dark airline tiles. The
+//         darker shade is held off that slate, not to C* 12: darkened that
+//         far, a turquoise, a mid teal or a sky blue falls under C* 12 and
+//         still reads as its own colour, while a muted steel blue lands on
+//         the slate
 //   warm  an HSL hue from 340 round to 95: a red reads as Cancelled, an
 //         orange or an amber darkens into brown, a yellow green into olive
 //   red   any other colour within dE76 60 of a red a Cancelled or Diverted
@@ -29020,6 +29034,10 @@ var FIDS_ROWPAL_L = 23.7;
 var FIDS_ROWPAL_STEP = 9;
 var FIDS_ROWPAL_MIN_C = 12;
 var FIDS_ROWPAL_MIN_RED_DE = 60;
+// the slate of the Departed, Arrived and Gate closed rows, and how far from
+// it the darker shade must stay
+var FIDS_ROWPAL_SLATE = '#262D36';
+var FIDS_ROWPAL_MIN_SLATE_DE = 6;
 var FIDS_ROWPAL_INK = 7;
 // the reds a Cancelled or Diverted row is painted in, odd and even
 var FIDS_ROWPAL_REDS = ['#A50D24', '#D42341', '#A61B2B', '#DA3544', '#C8102E'];
@@ -29060,10 +29078,12 @@ function _fidsRowPalRefusal(hex) {
   var lo = _fidsRowPalShade(hex, FIDS_ROWPAL_L - FIDS_ROWPAL_STEP);
   var src = _fidsRowPalLab(hex), a = _fidsRowPalLab(hi), b = _fidsRowPalLab(lo);
   if (!src || !a || !b) return 'grey';
-  // the logo colour and both stripes, the darker one too: a muted steel blue
-  // keeps C* 12 on the lighter stripe and loses it on the darker, which then
-  // reads like the slate of a past flight
-  if (src[3] < FIDS_ROWPAL_MIN_C || a[3] < FIDS_ROWPAL_MIN_C || b[3] < FIDS_ROWPAL_MIN_C) return 'grey';
+  // C* 12 in the logo colour and on the lighter stripe
+  if (src[3] < FIDS_ROWPAL_MIN_C || a[3] < FIDS_ROWPAL_MIN_C) return 'grey';
+  // the darker stripe off the slate of a past flight: a muted steel blue
+  // lands on it, a turquoise or a teal keeps its colour there though its
+  // chroma falls under C* 12
+  if (_rc2DeltaE(lo, FIDS_ROWPAL_SLATE) < FIDS_ROWPAL_MIN_SLATE_DE) return 'grey';
   var rgb = _rc2Rgb(hi);
   var h = _rgbToHsl(rgb[0], rgb[1], rgb[2])[0];
   if (h >= 340 || h < 95) return 'warm';

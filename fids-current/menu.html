@@ -509,9 +509,12 @@
         <div style="font-size:11px;opacity:.7;margin-top:4px;">The departures and arrivals rows show the solid glyph, no circle, in every choice but Classic.</div>
         <!-- The bottom of the departures and arrivals boards (js/fids-earth.js).
              Earth, now is the default, so it is the "nothing chosen" entry (value "");
-             Classic keeps the earlier backdrop (the Moncton skyline, the world map). -->
+             Classic keeps the earlier backdrop (the Moncton skyline, the world map).
+             An airport choice only: cuAirportOnlyChanged marks a pick made here, and
+             cuFloorNote says why it is disabled, signed out or signed in without admin
+             (menu.js, THE AIRPORT-ONLY CONTROLS). -->
         <label for="cuFloor" style="display:block;font-size:13px;margin-top:12px;margin-bottom:4px;">Bottom of the board</label>
-        <select class="sm-select" id="cuFloor" onchange="cuApplyAndSave()">
+        <select class="sm-select" id="cuFloor" onchange="cuAirportOnlyChanged(this)">
           <option value="">Earth, now (default): the planet as it is now, with today&#39;s flights</option>
           <option value="classic">Classic: the earlier backdrop</option>
         </select>
@@ -519,10 +522,10 @@
         <!-- The rows of the departures and arrivals boards (fids-core.js _fidsRowPalPaint,
              display-overrides.css "ROWS IN THE AIRPORT LOGO COLOURS"). The theme's rows are
              the default, so they are the "nothing chosen" entry (value ""). An airport choice
-             only, like the bottom of the board: cuRowPaletteSignNote says why it is disabled
-             signed out (menu.js _cuPaintForm). -->
+             only, like the bottom of the board: cuRowPaletteSignNote says why it is disabled,
+             signed out or signed in without admin (menu.js, THE AIRPORT-ONLY CONTROLS). -->
         <label for="cuRowPalette" style="display:block;font-size:13px;margin-top:12px;margin-bottom:4px;">Row colours</label>
-        <select class="sm-select" id="cuRowPalette" onchange="cuApplyAndSave()">
+        <select class="sm-select" id="cuRowPalette" onchange="cuAirportOnlyChanged(this)">
           <option value="">Theme (default): the rows keep the colours of the theme</option>
           <option value="airport">Airport logo: the rows take the colours of the airport logo, like the banner</option>
         </select>
