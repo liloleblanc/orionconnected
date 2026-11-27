@@ -13328,7 +13328,10 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var fbList = paths.slice(1);
   // v24184 — 209: the Rouge A320 (AC/320r.png) was cleaned, the ragged halo its
   // cut-out left cleared and its body made solid, so every screen fetches it again
-  var _imgCacheBuster = '?v=209';
+  // v24185 — 210: the WestJet 737-700 (WS/73G.png, WS/73W.png) and the Air Canada
+  // A220-300 (AC/223.png, C-GROV fin 101) are new supplied drawings, each sized to
+  // the old one on the shelf and cleared of the cast of its render
+  var _imgCacheBuster = '?v=210';
   var srcWithBust = src + _imgCacheBuster;
   var cls = opts.className || 'g8-aircraft-img';
   var style = opts.style || '';
@@ -20625,7 +20628,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24184" src="/textures/gate-sky-shelf.mp4?v=24184" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24185" src="/textures/gate-sky-shelf.mp4?v=24185" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -20669,7 +20672,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24184" src="/textures/gate-sky-shelf.mp4?v=24184" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24185" src="/textures/gate-sky-shelf.mp4?v=24185" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -21873,7 +21876,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24184" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24185" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt=""' + window._gateMarkAttrs(_bwPick) + '>' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -39567,7 +39570,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24184';
+var FIDS_BUILD_TAG = 'v24185';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -51994,7 +51997,11 @@ var _MAP_PLANE_ART = {
   acdh4: { src: '/logos/map-plane-ac-dh4.png', len: 34.88, span: 30.27 },
   rv320: { src: '/logos/map-plane-rv-320.png', len: 42.75, span: 39.02 },
   rv321: { src: '/logos/map-plane-rv-321.png', len: 42.75, span: 34.32 },
-  rv319: { src: '/logos/map-plane-rv-319.png', len: 42.75, span: 43.08 }
+  rv319: { src: '/logos/map-plane-rv-319.png', len: 42.75, span: 43.08 },
+  ws7m8: { src: '/logos/map-plane-ws-7m8.png', len: 42.75, span: 38.94 },
+  ws738: { src: '/logos/map-plane-ws-738.png', len: 42.75, span: 38.90 },
+  ws73g: { src: '/logos/map-plane-ws-73g.png', len: 42.75, span: 45.34 },
+  ws736: { src: '/logos/map-plane-ws-736.png', len: 41.00, span: 46.81 }
 };
 // v24182 — WHO WEARS THEM. Only an aeroplane every row of which says Air Canada
 // colours: an Air Canada number; an operator, by the ladder the boards already
@@ -52111,6 +52118,69 @@ function _mapPlaneAcArt(code, rows) {
     return (key && _MAP_PLANE_ART[key]) ? key : '';
   } catch (e) { return ''; }
 }
+// v24185 — AND WESTJET (supplied art): the 737 MAX 8, 737-800 and 737-700 in the
+// colours WestJet flies today (the white body, the teal and navy sweep aft and
+// on the tail, navy titles and winglets, white engines), the colours of the side
+// views the boards already draw for all three. The 737-700 is true to the type as
+// drawn (span to length 1.061, a real one 1.064). The 737-600 is that drawing
+// given its own length: 2.4 m of fuselage taken out behind the wing, where the
+// body is straight, and the tail eased back onto its taper over the next rows so
+// the outline has no step (the nose taper and the titles are left whole), as
+// Boeing builds the 737-600 shorter than the 737-700 (span to length 1.142, a
+// real one with the winglets WestJet fitted 1.146), so the two look alike. It is wider than it is long, so
+// it is drawn 41 px long, not 42.75, so that its winglets fit the 48 px box.
+// Greyed by the same rule as the others, with teal, blue and navy kept, each
+// colour only beside solid paint of its own (a pink edge beside navy goes grey),
+// and the navy the renders gave a violet cast brought back to the navy of the
+// WestJet side views (hue 217). Every row must be a WestJet mainline flight:
+// airline WS, a WS number 1-2999 or one of its own charters, 4000-4999 (WS4022
+// and WS4023, Calgary to Firebag on a 737-700, the inbound the gate pairs with
+// WS115), never Encore, which flies 3000-3999 and only Dash 8s, nor the partner
+// codeshares above 5000; no other operator by the ladder, and a callsign of WJA or none (WEN is
+// Encore, SWG Sunwing, WSW Swoop). Sunwing flies as WG on the boards, never as
+// WS. An aeroplane in special colours (AIRCRAFT_LIVERY_BY_REG) keeps the plain
+// picture. WestJet flies real 737-800s, so here 738 and 73H are the 737-800,
+// never the MAX; 73G and 73W are the 737-700, and 736 the 737-600. The MAX 7 has
+// no picture. Returns the key, or an empty string.
+function _mapPlaneWsArt(code, rows) {
+  try {
+    var c = String(code || '').toUpperCase();
+    var key = (c === '7M8') ? 'ws7m8' : (c === '738' || c === '73H') ? 'ws738'
+            : (c === '73G' || c === '73W') ? 'ws73g' : (c === '736') ? 'ws736' : '';
+    if (!key) return '';
+    var list = [];
+    for (var k = 0; k < (rows || []).length; k++) { if (rows[k] && rows[k].flight) list.push(rows[k]); }
+    if (!list.length) return '';
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i];
+      if (String(r.airline || '').trim().toUpperCase() !== 'WS') return '';
+      var m = String(r.flight).replace(/\s+/g, '').toUpperCase().match(/^WS(\d{1,4})[A-Z]?$/);
+      if (!m) return '';
+      var fn = parseInt(m[1], 10);
+      if (!((fn >= 1 && fn <= 2999) || (fn >= 4000 && fn <= 4999))) return '';
+      var op = Object.prototype.hasOwnProperty.call(r, '_opCode') ? r._opCode
+             : ((typeof _gateOpOf === 'function') ? _gateOpOf(r) : '');
+      op = String(op || '').trim().toUpperCase();
+      if (op && op !== 'WS') return '';
+      var res = null;
+      try { res = (typeof _acResolvedGet === 'function') ? _acResolvedGet(r) : null; } catch (eR) { res = null; }
+      var seen = (res && res.seen) || {};
+      var cso = [r._feedCs, r._callSign, seen.cs];
+      for (var q = 0; q < cso.length; q++) {
+        var p = (String(cso[q] || '').replace(/\s+/g, '').toUpperCase().match(/^([A-Z]{3})\d/) || [])[1] || '';
+        if (p && p !== 'WJA') return '';
+      }
+      if (typeof AIRCRAFT_LIVERY_BY_REG !== 'undefined' && typeof _aircraftRegKey === 'function') {
+        var regs = [r._reg, res && res.reg, seen.reg];
+        for (var g = 0; g < regs.length; g++) {
+          var rk = _aircraftRegKey(regs[g]);
+          if (rk && Object.prototype.hasOwnProperty.call(AIRCRAFT_LIVERY_BY_REG, rk)) return '';
+        }
+      }
+    }
+    return _MAP_PLANE_ART[key] ? key : '';
+  } catch (e) { return ''; }
+}
 // Everything the map needs to know about one type string: its code, whether
 // it is a turboprop, its size in metres and the picture that draws it. The
 // Dash 8s (DH1-DH4) are the supplied Dash 8-400 drawing, scaled to their own
@@ -52137,8 +52207,10 @@ function _mapPlaneSpecFor(raw, rows) {
           : prop ? 'prop' : 'jet';
   var acArt = '';
   try { acArt = (rows && dimCode && typeof _mapPlaneAcArt === 'function') ? _mapPlaneAcArt(dimCode, rows) : ''; } catch (eA) { acArt = ''; }
+  // v24185 — then WestJet, in its own colours (_mapPlaneWsArt)
+  if (!acArt) { try { acArt = (rows && dimCode && typeof _mapPlaneWsArt === 'function') ? _mapPlaneWsArt(dimCode, rows) : ''; } catch (eW) { acArt = ''; } }
   if (acArt) art = acArt;
-  return { code: dimCode, prop: prop, known: !!dimCode, len: use[0], span: (art === 'ac320' || art === 'rv320' || art === 'rv319') ? 34.1 : use[1], ng: use[2],
+  return { code: dimCode, prop: prop, known: !!dimCode, len: use[0], span: (art === 'ac320' || art === 'rv320' || art === 'rv319') ? 34.1 : (art === 'ws736') ? 35.8 : use[1], ng: use[2],
            art: _MAP_PLANE_ART[art], key: dimCode || (prop ? 'prop' : 'jet') };
 }
 // The type of the aeroplane the gate maps draw, from everywhere it lives.
@@ -70592,7 +70664,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24184" src="/textures/gate-sky-shelf.mp4?v=24184"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24185" src="/textures/gate-sky-shelf.mp4?v=24185"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

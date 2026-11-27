@@ -13,7 +13,8 @@
 // Dash 8-400s for Air Canada Express (under the brand and under bare numbers),
 // Toronto writes ACA for Rouge too, one A220 flies in Trans-Canada Air Lines
 // colours, and a WestJet or United aeroplane of the same type must never be
-// painted Air Canada. So the picture follows the operator ladder the boards
+// painted Air Canada (v24185: WestJet has its own 737 MAX 8, 737-800, 737-700 and 737-600, for its
+// mainline only, never Encore, Sunwing or Swoop). So the picture follows the operator ladder the boards
 // already read (fidsResolveOperator, as _opCode on each row), every callsign on
 // record, the special-livery table, and the number block of the type, on every
 // row of the aeroplane. The pictures themselves are framed like the ones they
@@ -63,17 +64,19 @@ const regKey = lift('_aircraftRegKey', [], []);
 const SEEN = {};
 const resolved = (row) => (row && SEEN[row.flight] ? { cd: '', nm: '', reg: SEEN[row.flight].reg || '', seen: SEEN[row.flight] } : null);
 // the ladder for a row kept across a reload, which carries no _opCode (here: the bands by number)
-const LADDER = { AC8612: 'QK', AC8611: 'QK', AC7754: 'ACEX', AC7753: 'ACEX', AC7680: 'PB', AC1729: 'RV' };
+const LADDER = { AC8612: 'QK', AC8611: 'QK', AC7754: 'ACEX', AC7753: 'ACEX', AC7680: 'PB', AC1729: 'RV', WS2777: 'WR' };
 const opOf = (r) => LADDER[r.flight] || '';
 const acArt = lift('_mapPlaneAcArt', ['_MAP_PLANE_ART', '_acResolvedGet', 'AIRCRAFT_LIVERY_BY_REG', '_aircraftRegKey', '_gateOpOf'], [ART, resolved, LIVERY, regKey, opOf]);
-const specFor = lift('_mapPlaneSpecFor', ['aircraftCodeToIata', '_MAP_PLANE_DIMS', '_MAP_PLANE_ART', '_MAP_PLANE_UNKNOWN', '_mapPlaneAcArt'],
-  [toIata, DIMS, ART, UNKNOWN, acArt]);
+const wsArt = lift('_mapPlaneWsArt', ['_MAP_PLANE_ART', '_acResolvedGet', 'AIRCRAFT_LIVERY_BY_REG', '_aircraftRegKey', '_gateOpOf'], [ART, resolved, LIVERY, regKey, opOf]);
+const specFor = lift('_mapPlaneSpecFor', ['aircraftCodeToIata', '_MAP_PLANE_DIMS', '_MAP_PLANE_ART', '_MAP_PLANE_UNKNOWN', '_mapPlaneAcArt', '_mapPlaneWsArt'],
+  [toIata, DIMS, ART, UNKNOWN, acArt, wsArt]);
 const scale = lift('_mapPlaneScale', [], []);
 
 const row = (flight, extra) => Object.assign({ airline: flight.replace(/\s+/g, '').slice(0, 2), flight }, extra || {});
 const src = (type, rows) => specFor(type, rows).art.src;
 const AC = (c) => '/logos/map-plane-ac-' + c + '.png';
 const RV = (c) => '/logos/map-plane-rv-' + c + '.png';
+const WS = (c) => '/logos/map-plane-ws-' + c + '.png';
 const JET = '/logos/map-plane-jet.png', DH4 = '/logos/map-plane-dh4.svg', CRJ = '/logos/map-plane-crj.svg';
 
 test('mainline Air Canada types wear the colours on mainline numbers only', () => {
@@ -184,8 +187,8 @@ test('the 737 MAX 8: Rouge paints it as Air Canada does, so both wear the one pi
   assert.equal(src('B38M', [row('AC1727', { _opCode: 'RV' }), row('AC8612', { _opCode: 'QK' })]), JET, 'every row must agree');
   assert.equal(src('B38M', [row('AC2300')]), JET, 'above the Rouge blocks');
   assert.equal(src('B38M', [row('AC7050')]), JET, 'the extras in AC 7000-7599 are A320s');
-  assert.equal(src('B738', [row('WS501')]), JET, 'the real 737-800s of WestJet are untouched');
-  assert.equal(src('B738', [row('WS501', { _feedCs: 'WJA501' })]), JET);
+  assert.equal(src('B738', [row('WS501')]), WS('738'), 'the real 737-800s of WestJet: their own picture, never this MAX');
+  assert.equal(src('B738', [row('WS501', { _feedCs: 'WJA501' })]), WS('738'));
   assert.equal(src('B39M', [row('AC800')]), JET, 'no picture of the MAX 9, which Air Canada does not fly');
   assert.equal(src('B739', [row('AC800')]), JET);
   assert.equal(src('B737', [row('AC800')]), JET, 'a 737-700 code is another size: plain');
@@ -232,8 +235,45 @@ test('the Dash 8-400 wears them only on Jazz evidence on every row: PAL flies it
   assert.equal(src('DH8D', [row('PB7203')]), DH4);
 });
 
+test('WestJet: the 737 MAX 8, 737-800, 737-700 and 737-600 in its own colours, mainline only (v24185)', () => {
+  assert.equal(src('B38M', [row('WS501')]), WS('7m8'));
+  assert.equal(src('B38M', [row('WS 501', { _feedCs: 'WJA501' })]), WS('7m8'));
+  assert.equal(src('Boeing 737 MAX 8', [row('WS2203'), row('WS2204')]), WS('7m8'), 'both rows WestJet');
+  assert.equal(src('B738', [row('WS101')]), WS('738'));
+  assert.equal(src('73H', [row('WS101')]), WS('738'));
+  assert.equal(src('Boeing 737-800', [row('WS101', { _callSign: 'WJA101' })]), WS('738'));
+  assert.equal(src('B38M', [{ flight: 'WS501', airline: 'WS' }]), WS('7m8'), 'a remembered row: the ladder answers, nothing');
+  // never Encore, Sunwing, Swoop or another callsign, outside the mainline block, special colours or another type
+  assert.equal(src('B38M', [row('WS3123')]), JET, 'the Encore block');
+  assert.equal(src('B38M', [{ flight: 'WS2777', airline: 'WS' }]), JET, 'a remembered row the ladder gives to Encore');
+  assert.equal(src('B38M', [row('WS501', { _opCode: 'WR' })]), JET);
+  assert.equal(src('B38M', [row('WS501', { _feedCs: 'WEN501' })]), JET);
+  assert.equal(src('B38M', [row('WS501', { _feedCs: 'SWG501' })]), JET);
+  SEEN.WS502 = { cs: 'WSW502' };
+  assert.equal(src('B38M', [row('WS502')]), JET, 'the callsign FR24 saw');
+  delete SEEN.WS502;
+  assert.equal(src('B38M', [row('WS501', { _reg: 'C-GNBN' })]), JET, 'a registration in special colours');
+  assert.equal(src('B38M', [row('WS6501')]), JET, 'a partner codeshare number');
+  // its own charters, 4000-4999: WS4022 and WS4023 Calgary to Firebag on a 737-700, the inbound the gate pairs with WS115
+  assert.equal(src('73W', [row('WS4022')]), WS('73g'));
+  assert.equal(src('73W', [row('WS4023'), row('WS115')]), WS('73g'), 'the charter inbound beside a mainline departure');
+  assert.equal(src('B38M', [row('WS4022', { _feedCs: 'WJA4022' })]), WS('7m8'));
+  assert.equal(src('B38M', [row('WS5001')]), JET, 'above the charter block');
+  assert.equal(src('B38M', [row('WG501')]), JET, 'Sunwing is its own airline on the boards');
+  assert.equal(src('B38M', [row('WS501'), row('AC800')]), JET, 'rows of two airlines');
+  assert.equal(src('B737', [row('WS101')]), WS('73g'), 'the 737-700 (B737 is its ICAO code)');
+  assert.equal(src('B736', [row('WS101')]), WS('736'), 'the 737-600');
+  assert.equal(src('B736', [row('AC101')]), JET, 'not on another airline');
+  assert.equal(src('73W', [row('WS101')]), WS('73g'));
+  assert.equal(src('B737', [row('WS3123')]), JET, 'not in the Encore block');
+  assert.equal(src('B37M', [row('WS101')]), JET, 'nor of the MAX 7');
+  assert.equal(src('DH8D', [row('WS3123')]), DH4, 'the Encore Dash 8-400 keeps its picture');
+  // and the Air Canada rules are untouched: an Air Canada 738 is still its MAX 8
+  assert.equal(src('B738', [row('AC1096')]), AC('7m8'));
+});
+
 test('other airlines and odd rows keep the plain pictures', () => {
-  assert.equal(src('B38M', [row('WS501')]), JET);
+  assert.equal(src('B38M', [row('F8501')]), JET);
   assert.equal(src('E75L', [row('UA5521')]), JET);
   assert.equal(src('A320', [{ airline: 'AC', flight: 'UA123' }]), JET, 'the number must be an Air Canada number');
   assert.equal(src('A320', [{ airline: 'AC' }]), JET, 'a row with no flight is not evidence');
@@ -259,6 +299,10 @@ test('the same size in flight, the true size and shape close in', () => {
     ['A320', [row('AC1650', { _opCode: 'RV' })], 'rv320', 37.6, 34.1],
     ['A321', [row('AC1986', { _opCode: 'RV' })], 'rv321', 44.5, 35.8],
     ['A319', [row('AC1650', { _opCode: 'RV' })], 'rv319', 33.8, 34.1],
+    ['B38M', [row('WS501')], 'ws7m8', 39.5, 35.9],
+    ['B738', [row('WS101')], 'ws738', 39.5, 35.8],
+    ['B737', [row('WS101')], 'ws73g', 33.6, 35.8],
+    ['B736', [row('WS101')], 'ws736', 31.2, 35.8],
     ['BCS3', [row('AC345')], 'ac223', 38.7, 35.1],
     ['E75L', [row('AC8902', { _opCode: 'QK' })], 'ace75', 31.7, 26.0],
     ['CRJ9', [row('AC8803', { _opCode: 'QK' })], 'accr9', 36.2, 24.9],
@@ -270,7 +314,9 @@ test('the same size in flight, the true size and shape close in', () => {
     assert.equal(s.len, len, type + ' length');
     assert.equal(s.span, span, type + ' span (the A320s of Air Canada have wingtip fences: 34.1 m)');
     // in flight: exactly as long as the plain picture of that type
-    assert.equal(s.art.len, specFor(type).art.len, type + ' is as long as the picture it stands in for');
+    // (the WestJet 737-600 is wider than it is long: it is drawn shorter, so its winglets fit the 48 px box)
+    if (key === 'ws736') assert.ok(s.art.len < specFor(type).art.len && s.art.span <= 47.5, type + ' fits the box');
+    else assert.equal(s.art.len, specFor(type).art.len, type + ' is as long as the picture it stands in for');
     // the picture is true to the aeroplane: barely stretched either way
     const k = scale(s, s.art, 46.1156, 18);
     assert.ok(Math.abs(k.kx / k.ky - 1) < 0.015, type + ' kx/ky ' + (k.kx / k.ky).toFixed(4));
@@ -315,18 +361,20 @@ function hue(r, g, b) {
 }
 // the red of each livery (maple leaves, exit outlines) as the grey pass leaves it, less a tenth
 const RED_MIN = { ac320: 585, ac321: 142, ac7m8: 183, ac223: 225, ace75: 27, accr9: 63, acdh4: 13, rv320: 5023, rv321: 3015, rv319: 4149 };
+// v24185: WestJet paints in teal, blue and navy (and the red of its small flags); its paint is counted
+const BLUE_MIN = { ws7m8: 2321, ws738: 2638, ws73g: 3617, ws736: 3874 };
 
-test('the ten pictures: light 512 px RGBA squares, framed, upright, neutral, the reds kept', () => {
-  for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4', 'rv320', 'rv321', 'rv319']) {
-    const a = ART[key];
-    assert.ok(a && /^\/logos\/map-plane-(ac|rv)-[0-9a-z]+\.png$/.test(a.src), key);
+test('the fourteen pictures: light 512 px RGBA squares, framed, upright, neutral, the livery colours kept', () => {
+  for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4', 'rv320', 'rv321', 'rv319', 'ws7m8', 'ws738', 'ws73g', 'ws736']) {
+    const a = ART[key], ws = key.startsWith('ws');
+    assert.ok(a && /^\/logos\/map-plane-(ac|rv|ws)-[0-9a-z]+\.png$/.test(a.src), key);
     const file = path.join(root, 'fids-current', a.src);
     assert.ok(fs.statSync(file).size < 160000, key + ' stays light for the boards');
     const { w, h, rows } = readPng(file);
     assert.deepEqual([w, h], [512, 512], key);
     const solid = (x, y) => rows[y][x * 4 + 3] >= 128;
-    let top = -1, bot = -1, minX = w, maxX = -1, nearGrey = 0, red = 0;
-    const strong = new Set(), tinted = [];
+    let top = -1, bot = -1, minX = w, maxX = -1, nearGrey = 0, red = 0, blue = 0, violet = 0;
+    const strong = [null, new Set(), new Set()], tinted = [];
     for (let y = 0; y < h; y++) {
       let any = false;
       for (let x = 0; x < w; x++) {
@@ -337,15 +385,19 @@ test('the ten pictures: light 512 px RGBA squares, framed, upright, neutral, the
         if (c > 0 && c <= 12) nearGrey++;
         // v24184: any tint at all, however strong; red paint counts as such only where it is SOLID,
         // so a near-invisible fringe pixel (alpha 3) can no longer excuse the tint beside it
+        // v24185: the livery colours are red, and for WestJet teal, blue and navy too (hue 165-270)
+        // v24185: each family on its own, so a pink edge cannot shelter beside navy (family 1 red, 2 teal/navy)
+        const hu = hue(r, g, b), isBlue = ws && hu >= 165 && hu < 270, fam = (hu >= 330 || hu < 25) ? 1 : isBlue ? 2 : 0;
         if (c > 12) {
-          const hu = hue(r, g, b), isRed = hu >= 330 || hu < 25;
-          tinted.push([x, y, isRed]);
-          if (c > 30 && isRed && rows[y][i + 3] >= 128) strong.add(y * w + x);
+          tinted.push([x, y, fam]);
+          if (c > 30 && fam && rows[y][i + 3] >= 128) strong[fam].add(y * w + x);
         }
         if (!solid(x, y)) continue;
         // the shape, from the solid pixels
         any = true; if (x < minX) minX = x; if (x > maxX) maxX = x;
         if (r - Math.max(g, b) >= 20) red++;
+        if (c > 30 && isBlue) blue++;
+        if (c > 30 && isBlue && hu >= 225 && r > g) violet++;
       }
       if (any) { if (top < 0) top = y; bot = y; }
     }
@@ -362,13 +414,15 @@ test('the ten pictures: light 512 px RGBA squares, framed, upright, neutral, the
     const fore = axis(top + Math.round(0.2 * (bot - top))), aft = axis(top + Math.round(0.75 * (bot - top)));
     assert.ok(fore !== null && aft !== null && Math.abs(fore - 256) <= 2 && Math.abs(aft - 256) <= 2, key + ' fuselage axis ' + fore + ' / ' + aft);
     assert.ok(Math.abs(aft - fore) <= 2, key + ' stands upright: ' + fore + ' to ' + aft);
-    // every white and grey is neutral: a colour is left only on red, as solid red paint or its
-    // edge within 3 px of solid red paint; a lilac or pink cast anywhere else fails, whatever its strength
+    // every white and grey is neutral: a colour is left only in the livery colours, as solid paint or
+    // its edge within 3 px of solid paint; a lilac or pink cast anywhere else fails, whatever its strength
     assert.equal(nearGrey, 0, key + ' near-grey pixels with a tint');
-    const nearRed = ([x, y]) => { for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (strong.has((y + dy) * w + (x + dx))) return true; return false; };
-    const stray = tinted.filter(([x, y, isRed]) => !(isRed && nearRed([x, y])));
-    assert.equal(stray.length, 0, key + ' tinted pixels that are not red paint or its edge, e.g. ' + JSON.stringify(stray.slice(0, 3)));
-    assert.ok(red >= RED_MIN[key], key + ' red pixels ' + red + ', at least ' + RED_MIN[key]);
+    const nearPaint = ([x, y, f]) => { for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (strong[f].has((y + dy) * w + (x + dx))) return true; return false; };
+    const stray = tinted.filter(([x, y, f]) => !(f && nearPaint([x, y, f])));
+    assert.equal(stray.length, 0, key + ' tinted pixels that are not livery paint or its edge, e.g. ' + JSON.stringify(stray.slice(0, 3)));
+    if (ws) assert.ok(blue >= BLUE_MIN[key], key + ' teal and navy pixels ' + blue + ', at least ' + BLUE_MIN[key]);
+    if (ws) assert.equal(violet, 0, key + ' navy with a violet cast (red above green)');
+    else assert.ok(red >= RED_MIN[key], key + ' red pixels ' + red + ', at least ' + RED_MIN[key]);
   }
 });
 
@@ -389,6 +443,55 @@ test('the Rouge A320 side view is solid, with no halo left by its cut-out (v2418
   // the side views carry one cache tag: it moved on, so every screen fetches the clean file
   const tag = fnSource('aircraftImgTag').match(/var _imgCacheBuster = '\?v=(\d+)';/);
   assert.ok(tag && Number(tag[1]) >= 209, 'side-view cache tag ' + (tag && tag[1]));
+});
+
+test('the WestJet 737-700 side view: the new drawing, solid, no haze, one file for 73G and 73W (v24185)', () => {
+  const g = path.join(root, 'fids-current', 'aircraft', 'WS', '73G.png');
+  assert.ok(fs.readFileSync(g).equals(fs.readFileSync(path.join(root, 'fids-current', 'aircraft', 'WS', '73W.png'))), '73G and 73W are the one drawing');
+  const { w, h, rows } = readPng(g);
+  assert.deepEqual([w, h], [2048, 550], 'the 2048 recipe, its tail a little taller than the old drawing');
+  const solidAt = (x, y) => x >= 0 && y >= 0 && x < w && y < h && rows[y][x * 4 + 3] > 128;
+  let body = 0, solid = 0, haze = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const al = rows[y][x * 4 + 3];
+      if (al >= 64) { body++; if (al === 255) solid++; continue; }
+      if (al === 0 || al > 24) continue;
+      let near = false;
+      for (let dy = -2; dy <= 2 && !near; dy++) for (let dx = -2; dx <= 2 && !near; dx++) if (solidAt(x + dx, y + dy)) near = true;
+      if (!near) haze++;
+    }
+  }
+  assert.equal(haze, 0, 'faint haze away from the drawing');
+  assert.ok(solid / body > 0.98, 'the body is solid: ' + solid + ' of ' + body);
+  const tag = fnSource('aircraftImgTag').match(/var _imgCacheBuster = '\?v=(\d+)';/);
+  assert.ok(tag && Number(tag[1]) >= 210, 'side-view cache tag ' + (tag && tag[1]));
+});
+
+test('the Air Canada A220-300 side view: the new drawing, solid, no haze, its black neutral (v24185)', () => {
+  const { w, h, rows } = readPng(path.join(root, 'fids-current', 'aircraft', 'AC', '223.png'));
+  assert.deepEqual([w, h], [2048, 819], 'the same canvas as the drawing it replaces');
+  const solidAt = (x, y) => x >= 0 && y >= 0 && x < w && y < h && rows[y][x * 4 + 3] > 128;
+  let body = 0, solid = 0, haze = 0, dark = 0, violet = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = x * 4, al = rows[y][i + 3];
+      if (al >= 64) {
+        body++; if (al === 255) solid++;
+        const r = rows[y][i], g = rows[y][i + 1], b = rows[y][i + 2];
+        // the black of the tail, engines and belly: neutral, not the violet-black of the render
+        if (al === 255 && Math.max(r, g, b) < 64) { dark++; const hu = hue(r, g, b); if (Math.max(r, g, b) - Math.min(r, g, b) > 6 && hu >= 225 && hu < 320) violet++; }
+        continue;
+      }
+      if (al === 0 || al > 24) continue;
+      let near = false;
+      for (let dy = -2; dy <= 2 && !near; dy++) for (let dx = -2; dx <= 2 && !near; dx++) if (solidAt(x + dx, y + dy)) near = true;
+      if (!near) haze++;
+    }
+  }
+  assert.equal(haze, 0, 'faint haze away from the drawing');
+  assert.ok(solid / body > 0.98, 'the body is solid: ' + solid + ' of ' + body);
+  assert.ok(dark > 50000 && violet === 0, 'black paint ' + dark + ' px, with a violet cast ' + violet);
 });
 
 test('both maps and the apron hand the rows of the aeroplane to the picker, and the apron redraws on a change of colours', () => {
