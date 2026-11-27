@@ -253,7 +253,12 @@ test('WestJet: the 737 MAX 8, 737-800, 737-700 and 737-600 in its own colours, m
   assert.equal(src('B38M', [row('WS502')]), JET, 'the callsign FR24 saw');
   delete SEEN.WS502;
   assert.equal(src('B38M', [row('WS501', { _reg: 'C-GNBN' })]), JET, 'a registration in special colours');
-  assert.equal(src('B38M', [row('WS6501')]), JET, 'outside the mainline block');
+  assert.equal(src('B38M', [row('WS6501')]), JET, 'a partner codeshare number');
+  // its own charters, 4000-4999: WS4022 and WS4023 Calgary to Firebag on a 737-700, the inbound the gate pairs with WS115
+  assert.equal(src('73W', [row('WS4022')]), WS('73g'));
+  assert.equal(src('73W', [row('WS4023'), row('WS115')]), WS('73g'), 'the charter inbound beside a mainline departure');
+  assert.equal(src('B38M', [row('WS4022', { _feedCs: 'WJA4022' })]), WS('7m8'));
+  assert.equal(src('B38M', [row('WS5001')]), JET, 'above the charter block');
   assert.equal(src('B38M', [row('WG501')]), JET, 'Sunwing is its own airline on the boards');
   assert.equal(src('B38M', [row('WS501'), row('AC800')]), JET, 'rows of two airlines');
   assert.equal(src('B737', [row('WS101')]), WS('73g'), 'the 737-700 (B737 is its ICAO code)');
@@ -357,7 +362,7 @@ function hue(r, g, b) {
 // the red of each livery (maple leaves, exit outlines) as the grey pass leaves it, less a tenth
 const RED_MIN = { ac320: 585, ac321: 142, ac7m8: 183, ac223: 225, ace75: 27, accr9: 63, acdh4: 13, rv320: 5023, rv321: 3015, rv319: 4149 };
 // v24185: WestJet paints in teal, blue and navy (and the red of its small flags); its paint is counted
-const BLUE_MIN = { ws7m8: 2319, ws738: 2638, ws73g: 3617, ws736: 3843 };
+const BLUE_MIN = { ws7m8: 2321, ws738: 2638, ws73g: 3617, ws736: 3874 };
 
 test('the fourteen pictures: light 512 px RGBA squares, framed, upright, neutral, the livery colours kept', () => {
   for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4', 'rv320', 'rv321', 'rv319', 'ws7m8', 'ws738', 'ws73g', 'ws736']) {
@@ -368,8 +373,8 @@ test('the fourteen pictures: light 512 px RGBA squares, framed, upright, neutral
     const { w, h, rows } = readPng(file);
     assert.deepEqual([w, h], [512, 512], key);
     const solid = (x, y) => rows[y][x * 4 + 3] >= 128;
-    let top = -1, bot = -1, minX = w, maxX = -1, nearGrey = 0, red = 0, blue = 0;
-    const strong = new Set(), tinted = [];
+    let top = -1, bot = -1, minX = w, maxX = -1, nearGrey = 0, red = 0, blue = 0, violet = 0;
+    const strong = [null, new Set(), new Set()], tinted = [];
     for (let y = 0; y < h; y++) {
       let any = false;
       for (let x = 0; x < w; x++) {
@@ -381,16 +386,18 @@ test('the fourteen pictures: light 512 px RGBA squares, framed, upright, neutral
         // v24184: any tint at all, however strong; red paint counts as such only where it is SOLID,
         // so a near-invisible fringe pixel (alpha 3) can no longer excuse the tint beside it
         // v24185: the livery colours are red, and for WestJet teal, blue and navy too (hue 165-270)
-        const hu = hue(r, g, b), isBlue = ws && hu >= 165 && hu < 270, isLivery = hu >= 330 || hu < 25 || isBlue;
+        // v24185: each family on its own, so a pink edge cannot shelter beside navy (family 1 red, 2 teal/navy)
+        const hu = hue(r, g, b), isBlue = ws && hu >= 165 && hu < 270, fam = (hu >= 330 || hu < 25) ? 1 : isBlue ? 2 : 0;
         if (c > 12) {
-          tinted.push([x, y, isLivery]);
-          if (c > 30 && isLivery && rows[y][i + 3] >= 128) strong.add(y * w + x);
+          tinted.push([x, y, fam]);
+          if (c > 30 && fam && rows[y][i + 3] >= 128) strong[fam].add(y * w + x);
         }
         if (!solid(x, y)) continue;
         // the shape, from the solid pixels
         any = true; if (x < minX) minX = x; if (x > maxX) maxX = x;
         if (r - Math.max(g, b) >= 20) red++;
         if (c > 30 && isBlue) blue++;
+        if (c > 30 && isBlue && hu >= 225 && r > g) violet++;
       }
       if (any) { if (top < 0) top = y; bot = y; }
     }
@@ -410,10 +417,11 @@ test('the fourteen pictures: light 512 px RGBA squares, framed, upright, neutral
     // every white and grey is neutral: a colour is left only in the livery colours, as solid paint or
     // its edge within 3 px of solid paint; a lilac or pink cast anywhere else fails, whatever its strength
     assert.equal(nearGrey, 0, key + ' near-grey pixels with a tint');
-    const nearPaint = ([x, y]) => { for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (strong.has((y + dy) * w + (x + dx))) return true; return false; };
-    const stray = tinted.filter(([x, y, isLivery]) => !(isLivery && nearPaint([x, y])));
+    const nearPaint = ([x, y, f]) => { for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (strong[f].has((y + dy) * w + (x + dx))) return true; return false; };
+    const stray = tinted.filter(([x, y, f]) => !(f && nearPaint([x, y, f])));
     assert.equal(stray.length, 0, key + ' tinted pixels that are not livery paint or its edge, e.g. ' + JSON.stringify(stray.slice(0, 3)));
     if (ws) assert.ok(blue >= BLUE_MIN[key], key + ' teal and navy pixels ' + blue + ', at least ' + BLUE_MIN[key]);
+    if (ws) assert.equal(violet, 0, key + ' navy with a violet cast (red above green)');
     else assert.ok(red >= RED_MIN[key], key + ' red pixels ' + red + ', at least ' + RED_MIN[key]);
   }
 });

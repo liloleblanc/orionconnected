@@ -52122,15 +52122,20 @@ function _mapPlaneAcArt(code, rows) {
 // on the tail, navy titles and winglets, white engines), the colours of the side
 // views the boards already draw for all three. The 737-700 is true to the type as
 // drawn (span to length 1.061, a real one 1.064). The 737-600 is that drawing
-// given its own length: 2.4 m of fuselage taken out ahead of the titles and
-// behind the wingtips, where it is plain white, as Boeing builds the 737-600
-// shorter than the 737-700 (span to length 1.142, a real one with the winglets
-// WestJet fitted 1.146), so the two look alike. It is wider than it is long, so
+// given its own length: 2.4 m of fuselage taken out behind the wing, where the
+// body is straight, and the tail eased back onto its taper over the next rows so
+// the outline has no step (the nose taper and the titles are left whole), as
+// Boeing builds the 737-600 shorter than the 737-700 (span to length 1.142, a
+// real one with the winglets WestJet fitted 1.146), so the two look alike. It is wider than it is long, so
 // it is drawn 41 px long, not 42.75, so that its winglets fit the 48 px box.
-// Greyed by the same rule as the others,
-// with teal, blue and navy kept beside red. Every row must be a WestJet mainline
-// flight: airline WS, a WS number 1-2999 (Encore flies 3000-3999, and only Dash
-// 8s), no other operator by the ladder, and a callsign of WJA or none (WEN is
+// Greyed by the same rule as the others, with teal, blue and navy kept, each
+// colour only beside solid paint of its own (a pink edge beside navy goes grey),
+// and the navy the renders gave a violet cast brought back to the navy of the
+// WestJet side views (hue 217). Every row must be a WestJet mainline flight:
+// airline WS, a WS number 1-2999 or one of its own charters, 4000-4999 (WS4022
+// and WS4023, Calgary to Firebag on a 737-700, the inbound the gate pairs with
+// WS115), never Encore, which flies 3000-3999 and only Dash 8s, nor the partner
+// codeshares above 5000; no other operator by the ladder, and a callsign of WJA or none (WEN is
 // Encore, SWG Sunwing, WSW Swoop). Sunwing flies as WG on the boards, never as
 // WS. An aeroplane in special colours (AIRCRAFT_LIVERY_BY_REG) keeps the plain
 // picture. WestJet flies real 737-800s, so here 738 and 73H are the 737-800,
@@ -52151,7 +52156,7 @@ function _mapPlaneWsArt(code, rows) {
       var m = String(r.flight).replace(/\s+/g, '').toUpperCase().match(/^WS(\d{1,4})[A-Z]?$/);
       if (!m) return '';
       var fn = parseInt(m[1], 10);
-      if (!(fn >= 1 && fn <= 2999)) return '';
+      if (!((fn >= 1 && fn <= 2999) || (fn >= 4000 && fn <= 4999))) return '';
       var op = Object.prototype.hasOwnProperty.call(r, '_opCode') ? r._opCode
              : ((typeof _gateOpOf === 'function') ? _gateOpOf(r) : '');
       op = String(op || '').trim().toUpperCase();
