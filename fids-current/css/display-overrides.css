@@ -2695,7 +2695,7 @@ html body .g8-wrap .g8-r1-logoslot {
   display: flex !important;
   align-items: center !important;
   min-width: 0 !important;
-  max-width: calc(100vw - var(--gate-rcw, 25%) - 2 * var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;
+  max-width: calc(100vw - var(--gate-rcw, 23%) - 2 * var(--g8-tab-w, var(--gate-rcw, 23%)) + 30px) !important;
   overflow: hidden !important;
 }
 html body .g8-wrap .g8-r1-logoslot > img:first-child { flex: 0 1 auto; min-width: 0; }
@@ -10389,7 +10389,7 @@ html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airli
    inside a slate grey frame. The tricolore streaks were too busy behind text on a screen;
    plate-af-tricolore.jpg stays on disk as the one-line rollback. */
 html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-af-navy-lines.jpg?v=24187');
+  --plate-tex: url('/textures/plate-af-navy-lines.jpg?v=24188');
   --plate-base: #051039;
   --plate-blend: normal;
   --plate-ink: #ffffff;
@@ -12291,6 +12291,23 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot img.g8-r1-sta
      height clamp exactly. Reserve the same clamp on both axes. */
   min-width: clamp(48px, 7vh, 82px) !important;
   min-height: clamp(48px, 7vh, 82px) !important;
+}
+/* v24188 — and the SkyTeam badge. It takes its height from the img.g8-r1-star
+   rule above, but kept width auto and min-width 0 (the v22601 SkyTeam rule and
+   the general rule of the alliance mark) and no shape of its own, so it was
+   0 px wide until it decoded; then the wordmark before it gave way and the badge
+   settled 38 px to the left (measured at JFK T4-32, Virgin Atlantic,
+   1680x1050). Both of its files are square (skyteam-white.png 512 x 509,
+   skyteam-colour.svg 2500 x 2500): its box is the square of that height from
+   the first frame. The oneworld ball and the Star tile are reserved by their
+   own rules. The 73 px rule of the takeover band (v23164) never reaches this
+   badge: the v22601 rule outranks it on width, the img.g8-r1-star rule above
+   on height. So the takeover band (countdown, boarding, final call, gate
+   closed) takes the same reserve, and nothing there changes once the file has
+   loaded: the decoded badge was that square already. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap img.g8-r1-star.g8-r1-alliance-skyteam {
+  aspect-ratio: 1 / 1 !important;
+  min-width: clamp(48px, 7vh, 82px) !important;
 }
 
 /* Flair's welcome-card mark is the brand GREEN dot, not a white disc — same
@@ -19314,7 +19331,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   flex: 0 0 auto !important;
   width: clamp(44px, 6.4vh, 80px) !important;
   height: clamp(44px, 6.4vh, 80px) !important;
-  background-image: url('/logos/airlines/us-major/united-100-globe.webp?v=24187');
+  background-image: url('/logos/airlines/us-major/united-100-globe.webp?v=24188');
   background-size: 5500% 100%;
   background-repeat: no-repeat;
   background-position: 0% 0%;
@@ -23120,7 +23137,7 @@ html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
    ═════════════════════════════════════════════════════════════════════════════════════════ */
 html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   right: 0 !important; width: 100% !important;
-  background: url('/textures/gate-sky-model.jpg?v=24187') 0 0 / 100% 100% no-repeat !important;
+  background: url('/textures/gate-sky-model.jpg?v=24188') 0 0 / 100% 100% no-repeat !important;
   animation: none !important;
   transform-origin: 50% 0 !important; transform: scale(-1.2, 1.2) !important;
 }

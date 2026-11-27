@@ -103,7 +103,9 @@ test('the load path: how it began and whether it finished hidden', () => {
 
 test('the resume watchdog and the build watchdog go through the same doors', () => {
   assert.match(CORE, /if \(typeof _fidsReloadInView === 'function'\) _fidsReloadInView\('5'\); else location\.reload\(\);/);
-  assert.match(CORE, /_fidsReloadNow\(document\.hidden \? '2' : '1'\);/);
+  // v24188: the build watchdog reloads through the door that holds a board on air in the
+  // rotator (tests/reload-not-on-air.test.js); anywhere else it is _fidsReloadNow, as above
+  assert.match(CORE, /_fidsReloadWhenHidden\(document\.hidden \? '2' : '1'\);/);
 });
 
 test('the watchdog holds a hidden reload, for twenty minutes at most', () => {

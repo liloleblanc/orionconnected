@@ -44,8 +44,14 @@ console.log('%c[FIDS BUILD ' + FIDS_BUILD + '] loaded ' + new Date().toISOString
 (function () {
   var visible = true;
   var onShow = [];
+  var afterShow = [];
   window._ocIdle = function () { return !visible; };
   window._ocOnShow = function (fn) { try { if (typeof fn === 'function') onShow.push(fn); } catch (e) {} };
+  // v24188 — work that must see the whole catch-up first (_ocAfterShow) runs once
+  // every onShow job has, in the same wake. A gate rebuild the catch-up asked for
+  // is drawn there, while the board is still faded out (_gateRebuildOnWake),
+  // instead of 800 ms later, which is the moment the fade-in begins.
+  window._ocAfterShow = function (fn) { try { if (typeof fn === 'function') afterShow.push(fn); } catch (e) {} };
   // Drop-in for setInterval on work that only matters when pixels are on
   // screen: skips while hidden, and registers the SAME function for the
   // catch-up pass so nothing is left un-repaired when the board returns.
@@ -64,6 +70,7 @@ console.log('%c[FIDS BUILD ' + FIDS_BUILD + '] loaded ' + new Date().toISOString
     visible = next;
     if (!visible) return;
     for (var i = 0; i < onShow.length; i++) { try { onShow[i](); } catch (e) {} }
+    for (var j = 0; j < afterShow.length; j++) { try { afterShow[j](); } catch (e) {} }
   });
 })();
 
@@ -7025,6 +7032,25 @@ function _gateRebuildAbsorb() {
   _gateRebuildFirstReq = 0;
   return true;
 }
+// v24188 — A REBUILD THE WAKE ASKED FOR IS DRAWN IN THE WAKE. The rotator tells the
+// next board it is next as the outgoing one begins to fade out (v24186), and its
+// catch-up runs then, unseen. Part of that catch-up is the clock check of the gate
+// (tick, updateDedicatedTimeOnly), which asks for a rebuild when a stage, a
+// countdown, a door or the Later list came due while the board was hidden. The ask
+// is batched and drawn 800 ms after the last one, and 800 ms is the fade-out and
+// the rest on black exactly: the whole gate was rebuilt as it began to fade in, and
+// the follow-ups of that rebuild (the column measure, the map, the fits) landed on
+// screen. Run after every catch-up job (_ocAfterShow), this draws a rebuild still
+// pending at once, while the board is unseen. Gate screens only: elsewhere the
+// batch only clears the render keys, and its timer is left to do that.
+function _gateRebuildOnWake() {
+  if (!_gateKeyResetTimer) return false;
+  if (typeof screenType === 'undefined' || screenType !== 'gate') return false;
+  clearTimeout(_gateKeyResetTimer);
+  _gateRebuildFire();
+  return true;
+}
+try { if (typeof window !== 'undefined' && typeof window._ocAfterShow === 'function') window._ocAfterShow(_gateRebuildOnWake); } catch (e) {}
 // ── Codeshare guard for GATE screens (a Qantas codeshare number must
 // never brand an American flight). The same physical departure can appear
 // under several marketing numbers; keep the row whose marketing carrier
@@ -7716,15 +7742,43 @@ function _b5Airline(f) {
   var name = String(f._airlineName || (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[code]) || code).toUpperCase();
   var safe = fidsEscHtml(name);
   var base = (typeof IATA_TO_WORDMARK !== 'undefined') ? IATA_TO_WORDMARK[code] : '';
-  // the square mark of the belt, never a lockup (_beltLogo), and the name beside it always
-  var logo = _beltLogo(f.airline, f._airlineName);
+  // the square mark of the belt, never a lockup (_beltLogo), and the name beside it always;
+  // v24188 — with the shape of its file before the file has loaded (_b5EmbBox)
+  var logo = _b5EmbBox(_beltLogo(f.airline, f._airlineName));
+  // v24188 — each cut of the lettering has its width before its file has loaded
+  // (_b5BoxAttr), so the flight number after it stays put when the picture lands
+  var srcN = base ? wordmarkSrc(base, 'light') : '', srcD = base ? wordmarkSrc(base, 'dark') : '';
   var mark = base
     ? '<span class="b5-wm" data-name="' + safe + '">'
-      + '<img class="b5-wm-n" alt="' + safe + '" src="' + fidsEscHtml(wordmarkSrc(base, 'light')) + '" onload="_b5WmFit(this)" onerror="_b5WmFail(this)">'
-      + '<img class="b5-wm-d" alt="" src="' + fidsEscHtml(wordmarkSrc(base, 'dark')) + '" onload="_b5WmFit(this)" onerror="_b5WmFail(this)">'
+      + '<img class="b5-wm-n" alt="' + safe + '" src="' + fidsEscHtml(srcN) + '"' + _b5BoxAttr(srcN) + ' onload="_b5WmFit(this)" onerror="_b5WmFail(this)">'
+      + '<img class="b5-wm-d" alt="" src="' + fidsEscHtml(srcD) + '"' + _b5BoxAttr(srcD) + ' onload="_b5WmFit(this)" onerror="_b5WmFail(this)">'
       + '</span>'
     : '<span class="b5-aname">' + safe + '</span>';
   return '<span class="b5-emb">' + logo + '</span>' + mark;
+}
+// The shape of a lettering file as the style of its img (_logoBoxStyle), or nothing
+// for a file the table does not hold, which is then sized when it loads, as before.
+function _b5BoxAttr(src) {
+  var s = (typeof _logoBoxStyle === 'function') ? _logoBoxStyle(src) : '';
+  return s ? ' style="' + s + '"' : '';
+}
+// v24188 — THE EMBLEM HAS THE SHAPE OF ITS FILE BEFORE THE FILE HAS LOADED. The line
+// sizes it as it always did (one line high, as wide as the picture up to 1.6 of that,
+// baggage-display.css); an img with no size of its own was no wider than nothing
+// until its file had loaded, then pushed the lettering and the flight number after it
+// to the right. The img takes aspect-ratio auto R from LOGO_ASPECT, R until the picture
+// is in and the picture itself after, so its box is that size from the first frame:
+// El Al, a mark twice as wide as it is tall, 1.6 em; the WestJet leaf of Encore 1.19 em;
+// Avelo 0.55 em; a square tile 1 em. A picture the table does not hold is a square until
+// it loads, never a box of no width. A monogram is type, sized at once, and kept as is.
+function _b5EmbBox(html) {
+  var s = String(html || '');
+  var m = /^<img\b[^>]*?\ssrc="([^"]*)"/.exec(s);
+  if (!m) return s;
+  var r = (typeof _logoAspect === 'function') ? _logoAspect(m[1].replace(/&amp;/g, '&')) : 0;
+  var box = 'aspect-ratio:auto ' + (r > 0 ? r : 1) + ';';
+  if (/^<img\b[^>]*?\sstyle="/.test(s)) return s.replace(/^(<img\b[^>]*?\sstyle=")/, '$1' + box);
+  return s.replace(/^<img\b/, '<img style="' + box + '"');
 }
 function _b5Tag(f) {
   return '<span class="b5-tag"><span class="b5-temb">' + _beltLogo(f.airline, f._airlineName) + '</span><span class="b5-tfn" dir="ltr">' + fidsEscHtml(f.flight || '') + '</span></span>';
@@ -7963,11 +8017,13 @@ function _b5WmFail(img) {
 // A wide wordmark that would run past its cell takes the city and the flight
 // number down with it, by the same step, so the mark stays at the city's size
 // (rule 1) and nothing runs over the time beside it.
-function _b5WmFit(img) {
+// v24188 — one line at a time (_b5RowFit): _b5Render fits every line as it is
+// drawn, and the load of each lettering fits its line again (_b5WmFit), which
+// changes nothing where the box had its shape already.
+function _b5RowFit(row) {
   try {
-    var row = img && img.closest('.b5-row');
     var main = row && row.querySelector('.b5-main'), l1 = row && row.querySelector('.b5-l1');
-    if (!main || !l1) return;
+    if (!main || !l1) return false;
     var k = parseFloat(row.style.getPropertyValue('--b5-k')) || 1;
     var need = l1.scrollWidth, room = main.clientWidth;
     if (need > room + 1 && room > 0) {
@@ -7975,8 +8031,13 @@ function _b5WmFit(img) {
       var fx = row.querySelectorAll('.fx-fit');
       for (var i = 0; i < fx.length; i++) fx[i].__fxKey = null;
       if (typeof _fidsSchedulePairPass === 'function') _fidsSchedulePairPass();
+      return true;
     }
   } catch (e) {}
+  return false;
+}
+function _b5WmFit(img) {
+  try { _b5RowFit(img && img.closest('.b5-row')); } catch (e) {}
 }
 try { if (typeof window !== 'undefined') { window._b5WmFail = _b5WmFail; window._b5WmFit = _b5WmFit; } } catch (e) {}
 // The strip keeps the later flights that fit whole, and drops the rest whole.
@@ -8047,9 +8108,18 @@ function _b5Render(view, iata, now) {
   view.innerHTML = _b5Html(c);
   if (!view._b5Tick) view._b5Tick = setInterval(function () { try { _b5Turn(view); } catch (e) {} }, BIDS5_PAGE_MS);
   _b5StripFit(view);
-  // a wordmark already in the cache has its size now: fitted at once, the
-  // rest as each one loads (_b5WmFit, onload)
-  try { var wms = view.querySelectorAll('.b5-wm img'); for (var wi = 0; wi < wms.length; wi++) if (wms[wi].complete && wms[wi].naturalWidth) _b5WmFit(wms[wi]); } catch (eW) {}
+  // v24188 — every line is fitted now, before any of its pictures has loaded:
+  // the emblem (_b5EmbBox) and each cut of the lettering (_b5BoxAttr) have the
+  // shape of their files, so the line already measures at its final width and
+  // --b5-k is right in the first frame. A line with the name typed, where the
+  // carrier has no lettering, is fitted the same way: a long name takes the
+  // line down with it, so the flight number never runs over the time beside
+  // it (the fit of the name alone tested its own right edge only, and left the
+  // flight number over the time). It used to wait for each lettering to
+  // load (only one already in the cache was fitted here), so the line was first
+  // drawn too wide and then taken down. The load still fits its line again
+  // (_b5WmFit, onload): the backstop for a file the table does not hold.
+  try { var b5rows = view.querySelectorAll('.b5-row'); for (var ri = 0; ri < b5rows.length; ri++) _b5RowFit(b5rows[ri]); } catch (eW) {}
   _b5AskWx(view, iata);
   if (!view._b5Resize) {
     view._b5Resize = true;
@@ -20672,7 +20742,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24187" src="/textures/gate-sky-shelf.mp4?v=24187" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24188" src="/textures/gate-sky-shelf.mp4?v=24188" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -20716,7 +20786,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24187" src="/textures/gate-sky-shelf.mp4?v=24187" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24188" src="/textures/gate-sky-shelf.mp4?v=24188" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -21920,7 +21990,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24187" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24188" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt=""' + window._gateMarkAttrs(_bwPick) + '>' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -24259,7 +24329,10 @@ function uxgGateHtml(ctx) {
     // carrier's symbol again, so a single failed wordmark fetch put TWO
     // emblems in the banner. data-pairmode makes
     // g8LogoFail go straight to the text name instead.
-    r1LogoHtml = '<img class="g8-r1-logo" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-name="' + airlineName + '" data-code="' + airlineCode + '"' + (_bannerEmblemHtml ? ' data-pairmode="1"' : '') + '>';
+    // v24188 — the img has the shape of its file before the file has loaded
+    // (_logoBoxStyle), so the alliance badge after it is never pushed along when
+    // the wordmark lands.
+    r1LogoHtml = '<img class="g8-r1-logo" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + (typeof _logoBoxStyle === 'function' ? _logoBoxStyle(r1LogoSrc) : '') + '" onerror="g8LogoFail(this)" data-name="' + airlineName + '" data-code="' + airlineCode + '"' + (_bannerEmblemHtml ? ' data-pairmode="1"' : '') + '>';
     if (_bannerEmblemHtml) {
       r1LogoHtml = '<span class="g8-r1-brandpair" style="display:inline-flex;align-items:center;gap:16px;">' + _bannerEmblemHtml + r1LogoHtml + '</span>';
     }
@@ -24522,7 +24595,9 @@ function uxgGateHtml(ctx) {
     return '<img class="g8-r1-logo g8-r1-lockup" src="' + src + '" alt="' + airlineName + '"'
       + ' style="height:' + h + ' !important;max-height:100% !important;width:auto !important;max-width:100% !important;'
       + 'min-width:0 !important;object-fit:contain !important;object-position:left center !important;filter:none !important;'
-      + 'flex:0 1 auto !important;display:block !important;"'
+      + 'flex:0 1 auto !important;display:block !important;'
+      // v24188 — its shape before the file loads, as the wordmark (_logoBoxStyle)
+      + (typeof _logoBoxStyle === 'function' ? _logoBoxStyle(src) : '') + '"'
       + ' onerror="g8LogoFail(this)" data-pairmode="1" data-name="' + airlineName + '" data-code="' + airlineCode + '">';
   }
   // Flow: dark (airline + time) → white centre (airport logo) → accent (into the
@@ -24858,7 +24933,7 @@ function uxgGateHtml(ctx) {
             // tab with CSS on .g8-wrap.g8-takeover instead.
             var _tbL = ['', ''];
             _gateLbl('timeIn', false, function(w,i){ _tbL[i?1:0] = '<span class="octb-'+(i?'fr':'en')+'">'+w+' '+_e(_tbCity)+'</span>'; return ''; }, '');
-            return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
+            return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 23%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
               // v23181 — A SIMPLE CLOCK. The tab stacked four lines: 'Time in
               // <City>', the clock, 'Heure à <City>', then the date. The standing
               // request is just the time and the date, and the mockup
@@ -24894,9 +24969,9 @@ function uxgGateHtml(ctx) {
               + '</div>';
           }
           var _tbRight = _apLogoTop
-            ? 'calc(var(--gate-rcw, 25%) + var(--g8-tab-w, var(--gate-rcw, 25%)) - 54px)'
-            : 'calc(var(--gate-rcw, 25%) - 30px)';
-          return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
+            ? 'calc(var(--gate-rcw, 23%) + var(--g8-tab-w, var(--gate-rcw, 23%)) - 54px)'
+            : 'calc(var(--gate-rcw, 23%) - 30px)';
+          return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 23%)) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
             // v23287 — 'YHZ | 11:00PM'. The stacked 'Time | Heure'
             // caption is gone: the row now reads as the airport's local clock
             // because the airport code is standing right beside the time.
@@ -24912,7 +24987,7 @@ function uxgGateHtml(ctx) {
     // separation like a border. Flush to the right edge; the top-LEFT corner
     // is rounded and a white left border + shadow separate it from the banner
     // field. No skew, so inner spans no longer counter-skew.
-    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:0 !important;bottom:0 !important;width:var(--gate-rcw, 25%) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:18px;padding:0 30px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;border-radius:26px 0 0 0 !important;border-left:5px solid rgba(255,255,255,0.92) !important;box-shadow:-12px 0 26px rgba(0,0,0,0.32) !important;overflow:hidden;z-index:5;' + (function(){ var i = String(iata || '').toUpperCase(); var ic = /^Y/.test(i) ? ('C' + i) : (i.length === 3 ? ('K' + i) : i); return '--ap-mark:url(/logos/airports/' + ic + '-white.svg);'; })() + '">'
+    +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:0 !important;bottom:0 !important;width:var(--gate-rcw, 23%) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:18px;padding:0 30px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;border-radius:26px 0 0 0 !important;border-left:5px solid rgba(255,255,255,0.92) !important;box-shadow:-12px 0 26px rgba(0,0,0,0.32) !important;overflow:hidden;z-index:5;' + (function(){ var i = String(iata || '').toUpperCase(); var ic = /^Y/.test(i) ? ('C' + i) : (i.length === 3 ? ('K' + i) : i); return '--ap-mark:url(/logos/airports/' + ic + '-white.svg);'; })() + '">'
     +     (function () {
             // Airport identity ahead of the gate number
             //
@@ -30282,6 +30357,13 @@ const gView = document.getElementById('gateView');
             if (typeof window._ocEvery === 'function') window._ocEvery(window._alignGateWm, 2000);
             else setInterval(window._alignGateWm, 2000);
           }
+          // v24188 — AND AT ONCE, IN THE TASK THAT DREW THE GATE. Until its first write
+          // the time tab and the gate tab stood on the fallback of --gate-rcw, and moved
+          // to the measured column 60 ms later, on screen whenever that first paint was
+          // in view: both tabs, with the airport mark in the time tab, jumped right by
+          // about 2% of the band. The read here lays the new gate out and the write lands
+          // before it is painted. The two timers stay, for a layout that settles later.
+          window._alignGateWm();
           setTimeout(window._alignGateWm, 60);
           setTimeout(window._alignGateWm, 600);
         } catch (e) {}
@@ -36359,16 +36441,18 @@ function _rowStateTypesName(stKey, base) {
 function _logoIsLockup(html) {
   return /data-logo-set="wordmark"/.test(String(html || ''));
 }
-// THE BELT HAS NO WIDE SLOT, SO IT DRAWS NO LOCKUP. Its mark slots are squares: the emblem
-// of the hall belt is one line of text high and 1.6 of it wide at most, its tags are squares,
-// and the tile of a belt row is a square. A lockup four times as wide as it is tall came out
-// a quarter of the height of the flight number beside it, and with the typed name taken away
-// that miniature was the only name on the line. On every belt surface the mark of such a
-// carrier is the square mark the boarding strip already draws for it, where a table names one
-// (window._gateMarkPick on the table of the strip: the WestJet leaf for WestJet Encore, whose
-// lockup is all the row has), and else the monogram, as for any carrier with no square mark.
-// A symbol the strip would only guess at by code is not taken: where it is missing the strip
-// hides it, and the belt would show an empty square. The name is typed beside it either way.
+// THE BELT HAS NO WIDE SLOT, SO IT DRAWS NO LOCKUP. Its mark slots are narrow: the emblem of
+// the hall belt is one line of text high and as wide as its picture up to 1.6 of that, its box
+// reserved from the shape of the file before the picture loads (_b5EmbBox, LOGO_ASPECT), its
+// tags are squares, and the tile of a belt row is a square. A lockup four times as wide as it
+// is tall came out a quarter of the height of the flight number beside it, and with the typed
+// name taken away that miniature was the only name on the line. On every belt surface the mark
+// of such a carrier is the square mark the boarding strip already draws for it, where a table
+// names one (window._gateMarkPick on the table of the strip: the WestJet leaf for WestJet
+// Encore, whose lockup is all the row has), and else the monogram, as for any carrier with no
+// square mark. A symbol the strip would only guess at by code is not taken: where it is missing
+// the strip hides it, and the belt would show an empty square. The name is typed beside it
+// either way.
 function _beltLogo(code, faName) {
   var logo = mkLogo(code, faName);
   if (!_logoIsLockup(logo)) return logo;
@@ -36427,6 +36511,446 @@ function wordmarkSrc(base, forceVariant) {
   // deploy mint fresh URLs, so poisoned caches self-heal.
   return logoPath(fname) + '?v=' + (typeof FIDS_BUILD_TAG !== 'undefined' ? encodeURIComponent(FIDS_BUILD_TAG) : (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1'));
 }
+
+// v24188 — A LOGO TAKES ITS PLACE BEFORE ITS PICTURE ARRIVES.
+//
+// Reported: on the rotation the logos move left to right as a board first
+// comes up. An img with no size of its own is no wider than nothing until its
+// file has loaded, and then as wide as the picture, so whatever stands after
+// it on the line moves along when the art lands: the lettering and the flight
+// number after the emblem of a hall line on the bags board, the flight number
+// after its lettering, the alliance badge after the wordmark of the gate band.
+// LOGO_ASPECT holds the width-to-height ratio of every file of ours those can
+// draw (the hall emblem, both cuts of the hall lettering, the wordmark slot of
+// the band), read from the file itself (scripts/logo-aspect/aspect.js says
+// which files and how), and _logoBoxStyle(src) turns it into an aspect-ratio
+// for the img, so its box has its final shape from the first frame. The value
+// is auto R: until the picture is in, the box takes R; once it is, the picture
+// keeps its own shape, which R equals (tests/logo-boxes-reserved.test.js holds
+// the two to each other). A lettering or wordmark file that is not in the
+// table, or a picture of another shape that a fallback swaps in, is sized as
+// before; a hall emblem that is not in it is a square until it loads
+// (_b5EmbBox). node scripts/logo-aspect/build.js rewrites the table after a
+// logo file, or a table that names or builds one, changes.
+// logo-aspect-table:start (written by scripts/logo-aspect/build.js from the files, never by hand)
+const LOGO_ASPECT = {
+  '/logos/airline-tiles/AAL.svg': 1,
+  '/logos/airline-tiles/AAR.svg': 1,
+  '/logos/airline-tiles/AAY.svg': 1,
+  '/logos/airline-tiles/ACA-black.svg': 1,
+  '/logos/airline-tiles/ACI.svg': 1,
+  '/logos/airline-tiles/AEA.svg': 1,
+  '/logos/airline-tiles/AEE.svg': 1,
+  '/logos/airline-tiles/AFR.svg': 1,
+  '/logos/airline-tiles/AIC.svg': 1,
+  '/logos/airline-tiles/AIE.svg': 1,
+  '/logos/airline-tiles/ALK.svg': 1,
+  '/logos/airline-tiles/AMX.svg': 1,
+  '/logos/airline-tiles/ANA.svg': 1,
+  '/logos/airline-tiles/ANG.svg': 1,
+  '/logos/airline-tiles/ANZ.svg': 1,
+  '/logos/airline-tiles/ARG.svg': 1,
+  '/logos/airline-tiles/ASA.svg': 1,
+  '/logos/airline-tiles/ASH.svg': 1,
+  '/logos/airline-tiles/ASL.svg': 1,
+  '/logos/airline-tiles/AUA.svg': 1,
+  '/logos/airline-tiles/AVA.svg': 1,
+  '/logos/airline-tiles/AXM.svg': 1,
+  '/logos/airline-tiles/AZU.svg': 1,
+  '/logos/airline-tiles/AirNorth-Emblem.svg': 1,
+  '/logos/airline-tiles/BAW.svg': 1,
+  '/logos/airline-tiles/BBC.svg': 1,
+  '/logos/airline-tiles/BEL.svg': 1,
+  '/logos/airline-tiles/BHS.svg': 1,
+  '/logos/airline-tiles/BLS.svg': 1,
+  '/logos/airline-tiles/BOV.svg': 1,
+  '/logos/airline-tiles/BTI.svg': 1,
+  '/logos/airline-tiles/CAI.svg': 1,
+  '/logos/airline-tiles/CAL.svg': 1,
+  '/logos/airline-tiles/CAV.svg': 1,
+  '/logos/airline-tiles/CAY.svg': 1,
+  '/logos/airline-tiles/CBJ.svg': 1,
+  '/logos/airline-tiles/CCA.svg': 1,
+  '/logos/airline-tiles/CEB.svg': 1,
+  '/logos/airline-tiles/CES.svg': 1,
+  '/logos/airline-tiles/CFG.svg': 1,
+  '/logos/airline-tiles/CHH.svg': 1,
+  '/logos/airline-tiles/CMP.svg': 1,
+  '/logos/airline-tiles/CPA.svg': 1,
+  '/logos/airline-tiles/CRK.svg': 1,
+  '/logos/airline-tiles/CRQ.svg': 1,
+  '/logos/airline-tiles/CSN.svg': 1,
+  '/logos/airline-tiles/CSZ.svg': 1,
+  '/logos/airline-tiles/CTN.svg': 1,
+  '/logos/airline-tiles/CXA.svg': 1,
+  '/logos/airline-tiles/CanadianNorth-Emblem.svg': 1,
+  '/logos/airline-tiles/DAH.svg': 1,
+  '/logos/airline-tiles/DAL-red.svg': 1,
+  '/logos/airline-tiles/DLH.svg': 1,
+  '/logos/airline-tiles/DWI.svg': 1,
+  '/logos/airline-tiles/EDW.svg': 1,
+  '/logos/airline-tiles/EIN.svg': 1,
+  '/logos/airline-tiles/ETD.svg': 1,
+  '/logos/airline-tiles/ETH.svg': 1,
+  '/logos/airline-tiles/EVA.svg': 1,
+  '/logos/airline-tiles/EWG.svg': 1,
+  '/logos/airline-tiles/EXS.svg': 1,
+  '/logos/airline-tiles/EZY.svg': 1,
+  '/logos/airline-tiles/FBU.svg': 1,
+  '/logos/airline-tiles/FFT.svg': 1,
+  '/logos/airline-tiles/FIN.svg': 1,
+  '/logos/airline-tiles/FJI.svg': 1,
+  '/logos/airline-tiles/FLE.svg': 1,
+  '/logos/airline-tiles/GCR.svg': 1,
+  '/logos/airline-tiles/GFA.svg': 1,
+  '/logos/airline-tiles/GIA.svg': 1,
+  '/logos/airline-tiles/GLO.svg': 1,
+  '/logos/airline-tiles/HAL.svg': 1,
+  '/logos/airline-tiles/HVN.svg': 1,
+  '/logos/airline-tiles/IBE.svg': 1,
+  '/logos/airline-tiles/ICE.svg': 1,
+  '/logos/airline-tiles/IGO.svg': 1,
+  '/logos/airline-tiles/ITY.svg': 1,
+  '/logos/airline-tiles/JAL.svg': 1,
+  '/logos/airline-tiles/JBU.svg': 1,
+  '/logos/airline-tiles/JST.svg': 1,
+  '/logos/airline-tiles/JZA.svg': 1,
+  '/logos/airline-tiles/KAC.svg': 1,
+  '/logos/airline-tiles/KAL.svg': 1,
+  '/logos/airline-tiles/KLM.svg': 1,
+  '/logos/airline-tiles/KMM.svg': 1,
+  '/logos/airline-tiles/KNE.svg': 1,
+  '/logos/airline-tiles/KQA.svg': 1,
+  '/logos/airline-tiles/KZR.svg': 1,
+  '/logos/airline-tiles/LAN.svg': 1,
+  '/logos/airline-tiles/LOG.svg': 1,
+  '/logos/airline-tiles/LOT.svg': 1,
+  '/logos/airline-tiles/LZB.svg': 1,
+  '/logos/airline-tiles/MAS.svg': 1,
+  '/logos/airline-tiles/MEA.svg': 1,
+  '/logos/airline-tiles/MGL.svg': 1,
+  '/logos/airline-tiles/MSR.svg': 1,
+  '/logos/airline-tiles/MXY.svg': 1,
+  '/logos/airline-tiles/NAX.svg': 1,
+  '/logos/airline-tiles/NBT.svg': 1,
+  '/logos/airline-tiles/NOS.svg': 1,
+  '/logos/airline-tiles/NSA.svg': 1,
+  '/logos/airline-tiles/OMA.svg': 1,
+  '/logos/airline-tiles/PAL.svg': 1,
+  '/logos/airline-tiles/PB.svg': 1,
+  '/logos/airline-tiles/PCM.svg': 1,
+  '/logos/airline-tiles/PCO.svg': 1,
+  '/logos/airline-tiles/PGT.svg': 1,
+  '/logos/airline-tiles/PIA.svg': 1,
+  '/logos/airline-tiles/PSC.svg': 1,
+  '/logos/airline-tiles/PTR.svg': 1,
+  '/logos/airline-tiles/QFA.svg': 1,
+  '/logos/airline-tiles/QTR.svg': 1,
+  '/logos/airline-tiles/RAM.svg': 1,
+  '/logos/airline-tiles/RJA.svg': 1,
+  '/logos/airline-tiles/ROT.svg': 1,
+  '/logos/airline-tiles/RWD.svg': 1,
+  '/logos/airline-tiles/RXA.svg': 1,
+  '/logos/airline-tiles/RYR.svg': 1,
+  '/logos/airline-tiles/RZO.svg': 1,
+  '/logos/airline-tiles/SAA.svg': 1,
+  '/logos/airline-tiles/SAS.svg': 1,
+  '/logos/airline-tiles/SCX.svg': 1,
+  '/logos/airline-tiles/SEJ.svg': 1,
+  '/logos/airline-tiles/SIA.svg': 1,
+  '/logos/airline-tiles/SJX.svg': 1,
+  '/logos/airline-tiles/SKU.svg': 1,
+  '/logos/airline-tiles/SKW.svg': 1,
+  '/logos/airline-tiles/SVA.svg': 1,
+  '/logos/airline-tiles/SWA.svg': 1,
+  '/logos/airline-tiles/SWR.svg': 1,
+  '/logos/airline-tiles/SXS.svg': 1,
+  '/logos/airline-tiles/TAP.svg': 1,
+  '/logos/airline-tiles/TGW.svg': 1,
+  '/logos/airline-tiles/THA.svg': 1,
+  '/logos/airline-tiles/THT.svg': 1,
+  '/logos/airline-tiles/THY.svg': 1,
+  '/logos/airline-tiles/TOM.svg': 1,
+  '/logos/airline-tiles/TRA.svg': 1,
+  '/logos/airline-tiles/TSC.svg': 1,
+  '/logos/airline-tiles/TVS.svg': 1,
+  '/logos/airline-tiles/UAE.svg': 1,
+  '/logos/airline-tiles/UAL-sq.svg': 1,
+  '/logos/airline-tiles/UZB.svg': 1,
+  '/logos/airline-tiles/VIR.svg': 1,
+  '/logos/airline-tiles/VLG.svg': 1,
+  '/logos/airline-tiles/VOI.svg': 1,
+  '/logos/airline-tiles/VOZ.svg': 1,
+  '/logos/airline-tiles/WJA.svg': 1,
+  '/logos/airline-tiles/WSG.svg': 1,
+  '/logos/airline-tiles/WZZ.svg': 1,
+  '/logos/airlines/asian-other/NZ-wordmark-dark.svg': 12.986,
+  '/logos/airlines/asian-other/NZ-wordmark-light.svg': 12.986,
+  '/logos/airlines/asian-other/aeromexico-wordmark-color.svg': 9.0488,
+  '/logos/airlines/asian-other/aeromexico-wordmark-light.svg': 9.0488,
+  '/logos/airlines/asian-other/arajet-wordmark-dark.svg': 1.8991,
+  '/logos/airlines/asian-other/arajet-wordmark-light.svg': 1.8991,
+  '/logos/airlines/asian-other/arajet.svg': 2.6759,
+  '/logos/airlines/asian-other/avianca-wordmark-color.svg': 4.398,
+  '/logos/airlines/asian-other/avianca-wordmark-light.svg': 4.398,
+  '/logos/airlines/asian-other/avianca.svg': 3.9362,
+  '/logos/airlines/asian-other/bahamasair-wordmark-dark.svg': 6.9217,
+  '/logos/airlines/asian-other/bahamasair-wordmark-light.svg': 6.9217,
+  '/logos/airlines/asian-other/boliviana-light.svg': 1.6972,
+  '/logos/airlines/asian-other/boliviana-wordmark-color.svg': 15.5769,
+  '/logos/airlines/asian-other/boliviana-wordmark-light.svg': 15.5769,
+  '/logos/airlines/asian-other/boliviana.svg': 2.0471,
+  '/logos/airlines/asian-other/caribbean-emblem.png': 0.6972,
+  '/logos/airlines/asian-other/caribbean-wordmark-color.png': 8.3654,
+  '/logos/airlines/asian-other/caribbean-wordmark-light.png': 8.3654,
+  '/logos/airlines/asian-other/copa-wordmark-color.svg': 8.0101,
+  '/logos/airlines/asian-other/copa-wordmark-light.svg': 8.0101,
+  '/logos/airlines/asian-other/emirates-wordmark-dark.svg': 4.9233,
+  '/logos/airlines/asian-other/emirates-wordmark-light.svg': 4.9233,
+  '/logos/airlines/asian-other/etihad-wordmark-dark.svg': 7.8651,
+  '/logos/airlines/asian-other/etihad-wordmark-light.svg': 7.8651,
+  '/logos/airlines/asian-other/gol-wordmark-color.svg': 1.8801,
+  '/logos/airlines/asian-other/gol-wordmark-light.svg': 1.8801,
+  '/logos/airlines/asian-other/latam-wordmark-color.svg': 6.579,
+  '/logos/airlines/asian-other/latam-wordmark-light.svg': 6.579,
+  '/logos/airlines/asian-other/qantas.png': 2.1865,
+  '/logos/airlines/asian-other/qatar-airways-wordmark-dark.svg': 3.1062,
+  '/logos/airlines/asian-other/qatar-airways-wordmark-light.svg': 3.1062,
+  '/logos/airlines/asian-other/vivaaerobus-emblem.webp': 1,
+  '/logos/airlines/asian-other/vivaaerobus-wordmark-color.svg': 2.6328,
+  '/logos/airlines/asian-other/vivaaerobus-wordmark-light.svg': 2.6328,
+  '/logos/airlines/asian-other/volaris-wordmark-color.svg': 4.157,
+  '/logos/airlines/asian-other/volaris-wordmark-light.svg': 4.157,
+  '/logos/airlines/canadian-regional/PAL-Airlines.svg': 3.4788,
+  '/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg': 1.5,
+  '/logos/airlines/canadian-regional/air-creebec-wordmark-dark.svg': 6.754,
+  '/logos/airlines/canadian-regional/air-creebec-wordmark-light.svg': 6.754,
+  '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg': 2.1314,
+  '/logos/airlines/canadian-regional/airinuit.svg': 2.1314,
+  '/logos/airlines/canadian-regional/airnorth-monochrome-white.svg': 1.7391,
+  '/logos/airlines/canadian-regional/airnorth-wordmark-dark.svg': 3.7932,
+  '/logos/airlines/canadian-regional/airnorth-wordmark-light.svg': 3.7932,
+  '/logos/airlines/canadian-regional/airnorth.svg': 1.7391,
+  '/logos/airlines/canadian-regional/bearskin-wordmark-light.svg': 5.9836,
+  '/logos/airlines/canadian-regional/bearskin.svg': 5.9836,
+  '/logos/airlines/canadian-regional/calmair-monochrome-white.svg': 3,
+  '/logos/airlines/canadian-regional/calmair.svg': 3,
+  '/logos/airlines/canadian-regional/canadian-north-monochrome-white.svg': 5.268,
+  '/logos/airlines/canadian-regional/canadian-north-wordmark-dark.svg': 9.207,
+  '/logos/airlines/canadian-regional/canadian-north-wordmark-light.svg': 9.207,
+  '/logos/airlines/canadian-regional/canadian-north.svg': 5.268,
+  '/logos/airlines/canadian-regional/jazz-wordmark-color.svg': 2.8463,
+  '/logos/airlines/canadian-regional/jazz-wordmark-light.svg': 2.8451,
+  '/logos/airlines/canadian-regional/jazz.svg': 2.8846,
+  '/logos/airlines/canadian-regional/north-star-air.svg': 2.3775,
+  '/logos/airlines/canadian-regional/north-star-wordmark-light.svg': 2.3775,
+  '/logos/airlines/canadian-regional/pacific-coastal-wordmark-dark.svg': 3.7313,
+  '/logos/airlines/canadian-regional/pacific-coastal-wordmark-light.svg': 3.7313,
+  '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg': 6.1796,
+  '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg': 6.1796,
+  '/logos/airlines/canadian-regional/pascan-wordmark-color.svg': 2.4627,
+  '/logos/airlines/canadian-regional/pascan-wordmark-light.svg': 2.4627,
+  '/logos/airlines/canadian-regional/perimeter-aviation-logo-monochrome-white.svg': 1.5,
+  '/logos/airlines/canadian-regional/wasaya-wordmark-light.svg': 2.5109,
+  '/logos/airlines/canadian-regional/wasaya.svg': 2.5109,
+  '/logos/airlines/canadian/air-canada-wordmark-dark.svg': 10.9834,
+  '/logos/airlines/canadian/air-canada-wordmark-light.svg': 10.9834,
+  '/logos/airlines/canadian/air-canada.svg': 7.6514,
+  '/logos/airlines/canadian/encore.png': 4.1579,
+  '/logos/airlines/canadian/flair-mark-black.png': 3.6709,
+  '/logos/airlines/canadian/flair-mark-white.png': 3.6709,
+  '/logos/airlines/canadian/flair-wordmark-color.svg': 2.4426,
+  '/logos/airlines/canadian/flair-wordmark-light.svg': 2.4426,
+  '/logos/airlines/canadian/flair.svg': 2.3553,
+  '/logos/airlines/canadian/heritage/air-atlantic.svg': 4.8466,
+  '/logos/airlines/canadian/heritage/air-nova.svg': 2.7676,
+  '/logos/airlines/canadian/heritage/canadian-airlines.svg': 4.6664,
+  '/logos/airlines/canadian/porter-wordmark-color.svg': 3.035,
+  '/logos/airlines/canadian/porter-wordmark-light.svg': 3.035,
+  '/logos/airlines/canadian/porter.svg': 3.0829,
+  '/logos/airlines/canadian/rouge.svg': 1.76,
+  '/logos/airlines/canadian/sunwing/Sunwing-Logo-Colour.png': 3.9024,
+  '/logos/airlines/canadian/transat-wordmark-color.svg': 6.0331,
+  '/logos/airlines/canadian/transat-wordmark-light.svg': 6.0286,
+  '/logos/airlines/canadian/transat.svg': 3.2148,
+  '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg': 4.2518,
+  '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg': 4.2518,
+  '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg': 1.1875,
+  '/logos/airlines/canadian/westjet-2025/WestJet-logo-colour.png': 5.2174,
+  '/logos/airlines/canadian/westjet-wordmark-color.svg': 4.4474,
+  '/logos/airlines/canadian/westjet-wordmark-light.svg': 4.4474,
+  '/logos/airlines/european/BA-long.svg': 6.3964,
+  '/logos/airlines/european/KLM_Logo_2024.svg': 1.7196,
+  '/logos/airlines/european/Lufthansa_Logo_2018.svg': 5.6758,
+  '/logos/airlines/european/aegean-wordmark-dark.svg': 7.5562,
+  '/logos/airlines/european/aegean-wordmark-light.svg': 7.5562,
+  '/logos/airlines/european/air-france-wordmark-color.svg': 10.4773,
+  '/logos/airlines/european/air-france-wordmark-light.svg': 10.4578,
+  '/logos/airlines/european/air-france.svg': 9.2593,
+  '/logos/airlines/european/austrian-wordmark-dark.svg': 5.0183,
+  '/logos/airlines/european/austrian-wordmark-light.svg': 5.0183,
+  '/logos/airlines/european/british-airways-stacked-white.svg': 2.472,
+  '/logos/airlines/european/british-airways-stacked.svg': 2.472,
+  '/logos/airlines/european/british-airways-wordmark-color.svg': 11.0457,
+  '/logos/airlines/european/british-airways-wordmark-light.svg': 11.0457,
+  '/logos/airlines/european/chair-wordmark-dark.svg': 3.1184,
+  '/logos/airlines/european/chair-wordmark-light.svg': 3.1184,
+  '/logos/airlines/european/condor-wordmark-dark.svg': 4.5288,
+  '/logos/airlines/european/condor-wordmark-light.svg': 4.5288,
+  '/logos/airlines/european/discover-airlines-emblem.svg': 1,
+  '/logos/airlines/european/discover-airlines-wordmark-color.svg': 2.8958,
+  '/logos/airlines/european/discover-airlines-wordmark-light.svg': 2.8958,
+  '/logos/airlines/european/discover-airlines.svg': 1,
+  '/logos/airlines/european/easyjet-wordmark-dark.svg': 4.4602,
+  '/logos/airlines/european/easyjet-wordmark-light.svg': 4.4602,
+  '/logos/airlines/european/edelweiss-wordmark-dark.svg': 8.4851,
+  '/logos/airlines/european/edelweiss-wordmark-light.svg': 8.4851,
+  '/logos/airlines/european/elal-wordmark-dark.svg': 6.8801,
+  '/logos/airlines/european/elal-wordmark-light.svg': 6.8801,
+  '/logos/airlines/european/eurowings-wordmark-dark.svg': 4.8467,
+  '/logos/airlines/european/eurowings-wordmark-light.svg': 4.8467,
+  '/logos/airlines/european/helvetic-emblem-tile.svg': 1.0039,
+  '/logos/airlines/european/helvetic-wordmark-dark.svg': 3.9442,
+  '/logos/airlines/european/helvetic-wordmark-light.svg': 3.9442,
+  '/logos/airlines/european/iberia-wordmark-dark.svg': 5.3323,
+  '/logos/airlines/european/iberia-wordmark-light.svg': 5.3323,
+  '/logos/airlines/european/icelandair-wordmark-color.svg': 10.3529,
+  '/logos/airlines/european/icelandair-wordmark-light.svg': 10.3529,
+  '/logos/airlines/european/ita-airways-wordmark-dark.svg': 2.3946,
+  '/logos/airlines/european/ita-airways-wordmark-light.svg': 2.3946,
+  '/logos/airlines/european/klm-wordmark-color.svg': 3.9141,
+  '/logos/airlines/european/klm-wordmark-light.svg': 3.91,
+  '/logos/airlines/european/level-emblem.svg': 0.994,
+  '/logos/airlines/european/level-wordmark-dark.svg': 3.4068,
+  '/logos/airlines/european/level-wordmark-light.svg': 3.4068,
+  '/logos/airlines/european/level.svg': 5.528,
+  '/logos/airlines/european/lufthansa-wordmark-dark.svg': 6.0345,
+  '/logos/airlines/european/lufthansa-wordmark-light.svg': 6.0345,
+  '/logos/airlines/european/pegasus-wordmark-dark.svg': 5.6704,
+  '/logos/airlines/european/pegasus-wordmark-light.svg': 5.6704,
+  '/logos/airlines/european/sas-wordmark-dark.svg': 2.849,
+  '/logos/airlines/european/sas-wordmark-light.svg': 2.849,
+  '/logos/airlines/european/swiss-wordmark-dark.svg': 4.3011,
+  '/logos/airlines/european/swiss-wordmark-light.svg': 4.3011,
+  '/logos/airlines/european/transavia-wordmark-dark.svg': 7.2012,
+  '/logos/airlines/european/transavia-wordmark-light.svg': 7.2012,
+  '/logos/airlines/european/virgin-atlantic-wordmark-color.svg': 5.2285,
+  '/logos/airlines/european/virgin-atlantic-wordmark-light.svg': 5.2285,
+  '/logos/airlines/split/aer-lingus-wordmark-dark.svg': 4.9086,
+  '/logos/airlines/split/aer-lingus-wordmark-light.svg': 4.9086,
+  '/logos/airlines/split/air-algerie-wordmark-dark.svg': 4.3011,
+  '/logos/airlines/split/air-algerie-wordmark-light.svg': 4.3011,
+  '/logos/airlines/split/air-europa-wordmark-dark.svg': 4.6924,
+  '/logos/airlines/split/air-europa-wordmark-light.svg': 4.6924,
+  '/logos/airlines/split/brussels-airlines-wordmark-dark.svg': 3.2762,
+  '/logos/airlines/split/brussels-airlines-wordmark-light.svg': 3.2762,
+  '/logos/airlines/split/cathay-wordmark-dark.svg': 5.6707,
+  '/logos/airlines/split/cathay-wordmark-light.svg': 5.6707,
+  '/logos/airlines/split/indigo-wordmark-dark.svg': 3.6301,
+  '/logos/airlines/split/indigo-wordmark-light.svg': 3.6301,
+  '/logos/airlines/split/korean-air-wordmark-dark.svg': 8.8241,
+  '/logos/airlines/split/korean-air-wordmark-light.svg': 8.8241,
+  '/logos/airlines/split/kuwait-airways-wordmark-dark.svg': 1.2255,
+  '/logos/airlines/split/kuwait-airways-wordmark-light.svg': 1.2255,
+  '/logos/airlines/split/oman-air-wordmark-dark.svg': 3.3839,
+  '/logos/airlines/split/oman-air-wordmark-light.svg': 3.3839,
+  '/logos/airlines/split/singapore-airlines-wordmark-dark.svg': 3.1124,
+  '/logos/airlines/split/singapore-airlines-wordmark-light.svg': 3.1124,
+  '/logos/airlines/split/turkish-airlines-wordmark-dark.svg': 12.6457,
+  '/logos/airlines/split/turkish-airlines-wordmark-light.svg': 12.6457,
+  '/logos/airlines/star-lockups/9L-white.svg': 5.0181,
+  '/logos/airlines/star-lockups/9L.svg': 5.0181,
+  '/logos/airlines/star-lockups/A3-white.svg': 4.1769,
+  '/logos/airlines/star-lockups/A3.svg': 3.6617,
+  '/logos/airlines/star-lockups/AC-white.svg': 4.1431,
+  '/logos/airlines/star-lockups/AC.svg': 4.1431,
+  '/logos/airlines/star-lockups/CM-white.svg': 4.3081,
+  '/logos/airlines/star-lockups/CM.svg': 3.6617,
+  '/logos/airlines/star-lockups/LH-white.svg': 3.6617,
+  '/logos/airlines/star-lockups/LH.svg': 3.6617,
+  '/logos/airlines/star-lockups/LX-white.svg': 3.4776,
+  '/logos/airlines/star-lockups/LX.svg': 3.4776,
+  '/logos/airlines/star-lockups/MS-white.svg': 3.3382,
+  '/logos/airlines/star-lockups/MS.svg': 3.3382,
+  '/logos/airlines/star-lockups/NZ-white.svg': 5.3869,
+  '/logos/airlines/star-lockups/NZ.svg': 3.6617,
+  '/logos/airlines/star-lockups/OS-white.svg': 3.6617,
+  '/logos/airlines/star-lockups/OS.svg': 3.6617,
+  '/logos/airlines/star-lockups/RV-white.svg': 5.0181,
+  '/logos/airlines/star-lockups/RV.svg': 5.0181,
+  '/logos/airlines/star-lockups/SK-white.svg': 2.8493,
+  '/logos/airlines/star-lockups/SK.svg': 2.8493,
+  '/logos/airlines/star-lockups/SN-white.svg': 3.0485,
+  '/logos/airlines/star-lockups/SN.svg': 3.0485,
+  '/logos/airlines/star-lockups/SQ-white.svg': 2.9714,
+  '/logos/airlines/star-lockups/SQ.svg': 2.9714,
+  '/logos/airlines/star-lockups/TK-white.svg': 3.6617,
+  '/logos/airlines/star-lockups/TK.svg': 3.6617,
+  '/logos/airlines/star-lockups/UA-white.svg': 3.6617,
+  '/logos/airlines/star-lockups/UA.svg': 3.6617,
+  '/logos/airlines/star-lockups/ZX-white.svg': 5.0181,
+  '/logos/airlines/star-lockups/ZX.svg': 5.0181,
+  '/logos/airlines/us-major/Hawaiian.svg': 3.6392,
+  '/logos/airlines/us-major/alaska-airlines-wordmark-color.svg': 3.3135,
+  '/logos/airlines/us-major/alaska-airlines-wordmark-light.svg': 3.3143,
+  '/logos/airlines/us-major/alaska-airlines.svg': 3.3647,
+  '/logos/airlines/us-major/american-airlines-wordmark-color.svg': 2.603,
+  '/logos/airlines/us-major/american-airlines-wordmark-light.svg': 2.6125,
+  '/logos/airlines/us-major/american-airlines.svg': 2.7322,
+  '/logos/airlines/us-major/american-wordmark-color.svg': 5.584,
+  '/logos/airlines/us-major/american-wordmark-light.svg': 5.6198,
+  '/logos/airlines/us-major/avelo-emblem.svg': 0.5547,
+  '/logos/airlines/us-major/avelo-wordmark-color.svg': 3.2778,
+  '/logos/airlines/us-major/avelo-wordmark-light.svg': 3.2778,
+  '/logos/airlines/us-major/avelo.svg': 2.623,
+  '/logos/airlines/us-major/breeze-airways-wordmark-dark.svg': 7.5937,
+  '/logos/airlines/us-major/breeze-airways-wordmark-light.svg': 7.5937,
+  '/logos/airlines/us-major/breeze-airways.svg': 3.1579,
+  '/logos/airlines/us-major/delta-wordmark-color.svg': 5.8338,
+  '/logos/airlines/us-major/delta-wordmark-light.svg': 5.8381,
+  '/logos/airlines/us-major/delta.svg': 6.4935,
+  '/logos/airlines/us-major/frontier-wordmark-color.svg': 7.4469,
+  '/logos/airlines/us-major/frontier-wordmark-light.svg': 7.4469,
+  '/logos/airlines/us-major/frontier.svg': 7.4469,
+  '/logos/airlines/us-major/hawaiian-wordmark-color.svg': 6.834,
+  '/logos/airlines/us-major/hawaiian-wordmark-light.svg': 6.834,
+  '/logos/airlines/us-major/jetblue-wordmark-color.svg': 3.0446,
+  '/logos/airlines/us-major/jetblue-wordmark-light.svg': 3.0446,
+  '/logos/airlines/us-major/jetblue.svg': 3.0347,
+  '/logos/airlines/us-major/mokulele-emblem.svg': 0.9929,
+  '/logos/airlines/us-major/mokulele-wordmark-dark.svg': 7.6623,
+  '/logos/airlines/us-major/mokulele-wordmark-light.svg': 7.6623,
+  '/logos/airlines/us-major/southwest-wordmark-color.svg': 8.1002,
+  '/logos/airlines/us-major/southwest-wordmark-light.svg': 8.097,
+  '/logos/airlines/us-major/southwest.svg': 2.4414,
+  '/logos/airlines/us-major/spirit-wordmark-dark.svg': 3.0238,
+  '/logos/airlines/us-major/spirit-wordmark-light.svg': 3.0238,
+  '/logos/airlines/us-major/sun-country-wordmark-color.svg': 7.4505,
+  '/logos/airlines/us-major/sun-country-wordmark-light.svg': 7.4505,
+  '/logos/airlines/us-major/united-wordmark-color.svg': 7.7482,
+  '/logos/airlines/us-major/united-wordmark-light.svg': 7.705,
+  '/logos/airlines/us-major/united.svg': 5.416,
+  '/logos/airlines/us-regional/piedmont-wordmark-dark.svg': 10.1351,
+  '/logos/airlines/us-regional/piedmont-wordmark-light.svg': 10.1351,
+  '/logos/airlines/us-regional/skywest-airlines-wordmark-dark.svg': 4.2854,
+  '/logos/airlines/us-regional/skywest-airlines-wordmark-light.svg': 4.2873,
+  '/logos/airlines/us-regional/world-atlantic-wordmark-color.png': 5.751,
+  '/logos/airlines/us-regional/world-atlantic-wordmark-light.png': 5.751,
+  '/logos/symbols/airlines/CS.png': 1,
+  '/logos/symbols/airlines/LY.svg': 1.9882
+};
+// logo-aspect-table:end
+function _logoAspect(src) {
+  try {
+    var p = String(src || '').split('#')[0].split('?')[0];
+    return Object.prototype.hasOwnProperty.call(LOGO_ASPECT, p) ? LOGO_ASPECT[p] : 0;
+  } catch (e) { return 0; }
+}
+function _logoBoxStyle(src) {
+  var r = _logoAspect(src);
+  return r > 0 ? 'aspect-ratio:auto ' + r + ';' : '';
+}
+try { if (typeof window !== 'undefined') { window._logoAspect = _logoAspect; window._logoBoxStyle = _logoBoxStyle; } } catch (e) {}
 
 // v24003 — A LOCKUP SET ON TWO LINES GETS A TALLER SLOT ON THE BELT.
 //
@@ -39623,7 +40147,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24187';
+var FIDS_BUILD_TAG = 'v24188';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -39731,12 +40255,214 @@ function _fidsReloadInView(why) {
   var go = function () {
     _fidsReloadInViewPending = false;
     if (document.hidden) { _fidsReloadWhenShown = true; return; }
-    _fidsReloadNow(why);
+    _fidsReloadWhenHidden(why);
   };
   var later = function () { setTimeout(go, 600); };
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function () { requestAnimationFrame(later); });
   else later();
 }
+
+// v24188 — NO BOARD RELOADS ITSELF ON AIR.
+//
+// Reported: on the rotation the logos move left to right as a board first comes
+// up. One way that happened after every deploy: the build watchdog and the
+// self-update (further down) reload the board as soon as a new build is live,
+// and inside rotate.html the one test they made, document.hidden, is false for
+// every board, the one on air included. So a board could load from cold in
+// view, its art arriving piece by piece.
+//
+// Every reload of ours now goes through _fidsReloadWhenHidden(reason):
+//   outside the rotator (no rotator around the page, or the page is the top
+//   window) it reloads at once, exactly as before;
+//   in the rotator the board on air, or told it is next (v24186 does that at
+//   the fade-out), keeps the request and reloads once the rotator has told it
+//   it is off screen and its fade-out is over: the fade of the rotator (its
+//   --oc-fade) and 100 ms more, 700 ms at the least, if it is still off screen
+//   then, and once its frame reads hidden as well (_ocWhenFrameHidden, 3 s at
+//   the most: on a busy box the fade starts late). It then has a whole screen
+//   of the rotation to load before it can be shown again;
+//   a board already off screen reloads at once, unless the rotator names it as
+//   the next board to show (the screen on air could end any second), and then
+//   it waits for its next fade-out as the board on air does;
+//   a frame of another airport than the one on air (a tour: the next airport
+//   loaded ahead, or the last one on its way out) never reloads in the rotator:
+//   the one ahead waits to be shown and go off again, the one going is removed
+//   in a moment, and every frame made after a deploy loads the new build; on a
+//   tour neither does a page of the airport on air that is not shown again
+//   before the airport changes (_fidsRotSpot);
+//   15 minutes after the request it reloads whatever the state, so a board
+//   that is never told it is off screen still takes the build.
+// A reason of one digit is how the next load began (_fidsLoadPath, above); any
+// other reason reloads plainly, as the self-update always did. The guards of
+// each caller stay with the caller: the five quiet minutes and the twenty
+// hidden ones of the build watchdog, the once a build of the self-update.
+// A load that finishes off screen is told so by the load hook of the rotator
+// (ocTell on load: off screen unless active or next), so the reloaded board
+// starts with its brake on, as every board loaded behind the screen does.
+// From the console: _fidsReloadWhenHidden(reason) answers now, held or
+// waiting, and _fidsReloadWhenHidden.state() says what is pending.
+//
+// v24188 — WAIT UNTIL THE ROTATOR HAS REALLY HIDDEN THIS BOARD.
+// rotate.html and tour.html turn the visibility of a frame to hidden only when its
+// opacity fade is over (visibility 0s linear var(--oc-fade)), and on a busy box the
+// fade starts late, so a wait counted from the inactive message can end while the
+// board is still faintly seen. _ocWhenFrameHidden(fn, capMs, fixedMs) reads the
+// computed visibility of the frame at once and then every 50 ms (setTimeout: a
+// hidden frame may get no animation frames on some browsers), and runs fn once it
+// reads hidden, or capMs after the call whatever it reads. Where nothing can be read
+// (no frame around the board, as in a top window or under a parent of another
+// origin, or a read that throws) there is no fade to see, and fn runs fixedMs after
+// the call: the fixed wait the caller had before. Returns a cancel. The door below
+// asks it after its own fixed wait, the gate cycle for its next gate.
+function _ocWhenFrameHidden(fn, capMs, fixedMs) {
+  var t0 = Date.now(), t = null, done = false;
+  var cap = capMs > 0 ? capMs : 3000, fixed = fixedMs > 0 ? fixedMs : 0;
+  var stop = function () { done = true; if (t) { clearTimeout(t); t = null; } };
+  var go = function () { if (done) return; stop(); try { fn(); } catch (e) {} };
+  var look = function () {
+    t = null;
+    if (done) return;
+    var vis = '';
+    try {
+      var fe = window.frameElement;
+      if (fe) vis = String(window.parent.getComputedStyle(fe).visibility || '');
+    } catch (e) { vis = ''; }
+    var since = Date.now() - t0;
+    if (!vis) { if (since >= fixed) go(); else t = setTimeout(go, fixed - since); }
+    else if (vis === 'hidden' || since >= cap) go();
+    else t = setTimeout(look, 50);
+  };
+  look();
+  return stop;
+}
+var _FIDS_HIDE_CAP_MS = 15 * 60000;
+// the longest wait for the frame to read hidden, once the fixed wait is over
+var _FIDS_HIDDEN_CAP_MS = 3000;
+var _fidsHide = { why: null, at: 0, n: 0, off: false, offAt: 0, timer: null, look: null, hid: false };
+function _fidsInRotator() {
+  try {
+    if (typeof window === 'undefined' || !window.parent || window.parent === window || window === window.top) return false;
+    return !!window.parent.__ocRotator;
+  } catch (e) { return false; }
+}
+function _fidsRotFadeMs() {
+  try {
+    var s = parseFloat(window.parent.document.documentElement.style.getPropertyValue('--oc-fade'));
+    if (s >= 0 && s <= 5) return Math.round(s * 1000);
+  } catch (e) {}
+  return 600;
+}
+// Where this frame stands in the run: other (a frame of another airport than the
+// one on air), next (the next screen the rotator will show) or later. Read off the
+// view of the run the rotator publishes (__ocRotator.get, read only) and the page
+// and airport it wrote on the frame; anything unreadable is later.
+// v24188 — on a tour, a page of the airport on air that does not come again later
+// in this pass of the run is other too. A tour goes to the next airport at the end
+// of every pass (advance in rotate.html; apdwell only ends a pass sooner, and the
+// list of a tour has no airport twice) and removes the frames of the one it leaves,
+// so that page is never shown again, and a reload there would only boot a board
+// that is thrown away, beside the next airport loading. Stream 2, gids fids gids
+// bids: the gate during the baggage screen, departures during the second gate and
+// the baggage. Never the screen on air, and never where the run would come back to
+// this airport next.
+function _fidsRotSpot() {
+  try {
+    var fe = window.frameElement, r = window.parent.__ocRotator.get();
+    var page = fe && fe.getAttribute('data-oc-page'), ap = fe && fe.getAttribute('data-oc-ap');
+    if (!page || !r || !r.seq || !r.seq.length) return 'later';
+    if (ap && r.aps && r.aps[r.apIdx] && ap !== r.aps[r.apIdx]) return 'other';
+    if (r.isTour && ap && page !== r.seq[r.idx] && r.seq.indexOf(page, r.idx + 1) === -1
+        && r.aps && r.aps.length > 1 && r.aps[(r.apIdx + 1) % r.aps.length] !== ap) return 'other';
+    return r.seq[(r.idx + 1) % r.seq.length] === page ? 'next' : 'later';
+  } catch (e) { return 'later'; }
+}
+function _fidsReloadGo(why) {
+  var w = String(why == null ? '' : why);
+  if (/^[0-5]$/.test(w)) _fidsReloadNow(w);
+  else location.reload();
+}
+// the request held in the rotator, served once
+function _fidsHideGo() {
+  var st = _fidsHide, w = st.why;
+  if (w === null) return 'none';
+  st.why = null;
+  if (st.timer) { clearTimeout(st.timer); st.timer = null; }
+  if (st.look) { st.look(); st.look = null; }
+  st.hid = false;
+  _fidsReloadGo(w);
+  return 'now';
+}
+function _fidsHideCheck() {
+  var st = _fidsHide;
+  if (st.why === null) return 'none';
+  var off = false;
+  try { off = typeof window._ocIdle === 'function' && !!window._ocIdle(); } catch (e) { off = false; }
+  if (!off) return 'held';
+  var wait = Math.max(700, _fidsRotFadeMs() + 100), since = Date.now() - (st.offAt || 0);
+  if (st.offAt && since < wait) {
+    if (st.timer) clearTimeout(st.timer);
+    st.timer = setTimeout(function () { st.timer = null; _fidsHideCheck(); }, wait - since);
+    return 'waiting';
+  }
+  var spot = _fidsRotSpot();
+  // a frame of another airport: shown soon, or removed in a moment
+  if (spot === 'other') return 'held';
+  // off screen since well before the request (not in the fade-out it is asked in,
+  // nor in one after it), and the next board up: after its next fade-out
+  var fresh = st.offAt > 0 && st.at - st.offAt < wait;
+  if (!fresh && spot === 'next') return 'held';
+  // v24188 — and its frame really hidden (_ocWhenFrameHidden, above): the wait above
+  // counts from the inactive message, and a fade that started late would show the
+  // new document replacing a board still faintly seen. When the frame reads hidden,
+  // or 3 s on whatever it reads, every rule above is asked again; back on air in the
+  // meantime, the message below cancels the wait.
+  if (!st.hid) {
+    if (st.look) return 'waiting';
+    var sync = true;
+    var stop = _ocWhenFrameHidden(function () {
+      st.look = null; st.hid = true;
+      if (!sync) _fidsHideCheck();
+    }, _FIDS_HIDDEN_CAP_MS);
+    sync = false;
+    if (!st.hid) { st.look = stop; return 'waiting'; }
+  }
+  return _fidsHideGo();
+}
+function _fidsReloadWhenHidden(why) {
+  if (!_fidsInRotator()) { _fidsReloadGo(why); return 'now'; }
+  var st = _fidsHide;
+  if (st.why === null) {
+    st.why = String(why == null ? '' : why);
+    st.at = Date.now();
+    var n = ++st.n;
+    try { console.log('[FIDS] reload (' + st.why + ') held until this board is off screen in the rotator'); } catch (e) {}
+    setTimeout(function () { if (st.n === n) _fidsHideGo(); }, _FIDS_HIDE_CAP_MS);
+  } else if (Date.now() - st.at >= _FIDS_HIDE_CAP_MS) {
+    return _fidsHideGo();
+  }
+  return _fidsHideCheck();
+}
+_fidsReloadWhenHidden.state = function () {
+  var st = _fidsHide;
+  return { pending: st.why, askedAt: st.at, offScreen: st.off, offAt: st.offAt, inRotator: _fidsInRotator(), spot: _fidsRotSpot() };
+};
+try {
+  if (typeof window !== 'undefined') {
+    window._fidsReloadWhenHidden = _fidsReloadWhenHidden;
+    if (typeof window.addEventListener === 'function') window.addEventListener('message', function (ev) {
+      var d = ev && ev.data;
+      if (!d || (d.oc !== 'active' && d.oc !== 'inactive')) return;
+      if (d.oc === 'active') {
+        _fidsHide.off = false; _fidsHide.hid = false;
+        if (_fidsHide.look) { _fidsHide.look(); _fidsHide.look = null; }
+        return;
+      }
+      if (!_fidsHide.off) { _fidsHide.off = true; _fidsHide.offAt = Date.now(); }
+      if (_fidsHide.why !== null) _fidsHideCheck();
+    });
+  }
+} catch (e) {}
+
 function _fidsHiddenLoadShouldReload(loadedHidden, lastMark, nowMs) {
   if (!loadedHidden) return false;
   var last = +lastMark || 0;
@@ -39823,7 +40549,8 @@ function _fidsHiddenLoadShouldReload(loadedHidden, lastMark, nowMs) {
                 if (Date.now() - _hiddenSince < 20 * 60000) return;
               }
               console.log('[FIDS] Build ' + _newBuild + ' deployed (running ' + FIDS_BUILD_TAG + ') — reloading');
-              _fidsReloadNow(document.hidden ? '2' : '1');
+              // v24188: never on air in the rotator (_fidsReloadWhenHidden, above)
+              _fidsReloadWhenHidden(document.hidden ? '2' : '1');
             }
           }).catch(function () {});
       } catch (e) {}
@@ -67648,7 +68375,10 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
           try { _tried = sessionStorage.getItem('fids_su_tried'); } catch (e) {}
           if (t === _tried) return;
           try { sessionStorage.setItem('fids_su_tried', t); } catch (e) {}
-          location.reload();
+          // v24188 — never on air in the rotator: the door of the build watchdog
+          // (_fidsReloadWhenHidden). Anywhere else it reloads at once, as it always did.
+          if (typeof _fidsReloadWhenHidden === 'function') _fidsReloadWhenHidden('self-update');
+          else location.reload();
         }).catch(function () {});
     } catch (e) {}
   }, 5 * 60000);
@@ -67739,20 +68469,31 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // Picking while hidden means the new gate is already rendered
     //    before it fades in — no visible gate-to-gate switch.
     //  • Standalone gids (no rotator, no oc messages): cycle on a plain interval.
-    var _timer = null, _pickTimer = null;
+    var _timer = null, _pickWait = null;
     function stopTimer() { if (_timer) { clearInterval(_timer); _timer = null; } }
     window.addEventListener('message', function (ev) {
       var d = ev && ev.data;
       if (!d || (d.oc !== 'active' && d.oc !== 'inactive')) return;
       stopTimer();                          // a rotator drives us → not timed
-      if (_pickTimer) { clearTimeout(_pickTimer); _pickTimer = null; }
+      // any message cancels a pick still waiting (an active one keeps the gate shown)
+      if (_pickWait) { _pickWait(); _pickWait = null; }
       if (d.oc === 'inactive') {
-        // Swap to the next gate only AFTER the cross-fade OUT completes (~0.45s),
+        // Swap to the next gate only AFTER the cross-fade OUT completes,
         // so the board is FULLY hidden when its content changes. Picking on the
         // instant it goes inactive changed the gate mid-fade — a visible, abrupt
         // gate-to-gate switch. It stays hidden through the other screens, so by
         // the time it fades back in it's already the new gate — no visible swap.
-        _pickTimer = setTimeout(function () { _pickTimer = null; pickGate(); }, 650);
+        // v24188 — the end of the fade is read off the frame, not timed from this
+        // message (_ocWhenFrameHidden: its computed visibility turns hidden when the
+        // fade of the rotator, --oc-fade, 0.6 s by default, is over, however late it
+        // began), 3 s at the most, or the fade and 2.4 s more where a ?fade= of the
+        // rotator makes it longer (_fidsRotFadeMs: a fixed 3 s cut a fade of 4 or 5 s
+        // short, and the next gate was drawn while the old one was still faintly
+        // seen). The fixed 650 ms it replaces was written for a fade of about 0.45 s:
+        // with the fade at 0.6 s and begun late on a busy box, the next gate was drawn
+        // while the board could still be seen. Where the frame cannot be read (no
+        // frame around the board) the 650 ms stands, as before.
+        _pickWait = _ocWhenFrameHidden(function () { _pickWait = null; pickGate(); }, Math.max(3000, _fidsRotFadeMs() + 2400), 650);
       }
     });
     // Standalone default: plain interval. If a rotator message arrives the handler
@@ -70745,7 +71486,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24187" src="/textures/gate-sky-shelf.mp4?v=24187"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24188" src="/textures/gate-sky-shelf.mp4?v=24188"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
