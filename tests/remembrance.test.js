@@ -439,5 +439,6 @@ test('a look other than Thanksgiving makes none of Thanksgiving\'s layers', () =
     return made;
   };
   assert.ok(run('thanksgiving-ca') > 0, 'Thanksgiving makes its layers');
+  assert.ok(run('thanksgiving-us') > 0, 'American Thanksgiving makes them too (v24188)');
   for (const look of ['remembrance-ca', 'remembrance-gb', 'remembrance-au', 'veterans-us', 'remembrance']) assert.equal(run(look), 0, look);
 });

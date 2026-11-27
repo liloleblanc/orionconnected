@@ -35,6 +35,42 @@ test('not the day before or after, not other years\' wrong Mondays, not outside 
   assert.equal(holidayFor('DUB', new Date('2026-10-12T15:00:00Z')), '');
 });
 
+// v24188 — American Thanksgiving, the fourth Thursday of November, at US
+// airports (territories included). The country comes from the real lookup
+// (airportCountry and its tables, lifted from fids-core), as on a board.
+const COUNTRY = (() => {
+  const a = CORE.indexOf('const _IATA_CC_GROUPS');
+  const b = CORE.indexOf('\n', CORE.indexOf('const _US_Y_IATA'));
+  assert.ok(a > 0 && b > a, 'the country tables');
+  return new Function(CORE.slice(a, b) + '\n' + fn('airportCountry') + '\nreturn airportCountry;')();
+})();
+const AP_US = Object.assign({}, AP, { LAS: { tz: 'America/Los_Angeles' }, SJU: { tz: 'America/Puerto_Rico' } });
+const holidayForUs = new Function('AP', 'location', 'airportCountry', HELPERS() + 'return _fidsHolidayFor;')(AP_US, { search: '' }, COUNTRY);
+
+test('American Thanksgiving (Thursday Nov 26 2026) at US airports, in their own time zone', () => {
+  assert.equal(COUNTRY('ORD'), 'US');
+  assert.equal(COUNTRY('SJU'), 'US', 'Puerto Rico folds into the US');
+  assert.equal(COUNTRY('YQM'), 'CA');
+  assert.equal(holidayForUs('ORD', new Date('2026-11-26T18:00:00Z')), 'thanksgiving-us');
+  assert.equal(holidayForUs('LAS', new Date('2026-11-27T07:30:00Z')), 'thanksgiving-us', '11:30 pm in Las Vegas is still the 26th');
+  assert.equal(holidayForUs('ORD', new Date('2026-11-27T06:30:00Z')), '', '00:30 in Chicago is the 27th');
+  assert.equal(holidayForUs('SJU', new Date('2026-11-26T18:00:00Z')), 'thanksgiving-us');
+});
+
+test('only the fourth Thursday, every year, and only in the US', () => {
+  assert.equal(holidayForUs('ORD', new Date('2025-11-27T18:00:00Z')), 'thanksgiving-us', '2025: Nov 27');
+  assert.equal(holidayForUs('ORD', new Date('2027-11-25T18:00:00Z')), 'thanksgiving-us', '2027: Nov 25');
+  assert.equal(holidayForUs('ORD', new Date('2029-11-22T18:00:00Z')), 'thanksgiving-us', '2029: Nov 22, the earliest');
+  assert.equal(holidayForUs('ORD', new Date('2030-11-28T18:00:00Z')), 'thanksgiving-us', '2030: Nov 28, the latest');
+  assert.equal(holidayForUs('ORD', new Date('2026-11-19T18:00:00Z')), '', 'third Thursday');
+  assert.equal(holidayForUs('ORD', new Date('2026-11-27T18:00:00Z')), '', 'the Friday after');
+  assert.equal(holidayForUs('ORD', new Date('2029-11-29T18:00:00Z')), '', '2029: the fifth Thursday');
+  assert.equal(holidayForUs('ORD', new Date('2026-10-12T18:00:00Z')), '', 'not on the Canadian day');
+  assert.equal(holidayForUs('YQM', new Date('2026-11-26T18:00:00Z')), '', 'not in Canada');
+  assert.equal(holidayForUs('DUB', new Date('2026-11-26T18:00:00Z')), '', 'not in Ireland');
+  assert.equal(holidayForUs('YQM', new Date('2026-10-12T15:00:00Z')), 'thanksgiving-ca', 'Canada keeps its own day');
+});
+
 test('?holiday= previews a look and ?holiday=none turns it off', () => {
   const withQ = (q) => new Function('AP', 'location', HELPERS() + 'return _fidsHolidayFor;')(AP, { search: q });
   assert.equal(withQ('?holiday=thanksgiving-ca')('ORD', new Date('2026-03-01T12:00:00Z')), 'thanksgiving-ca');
@@ -49,7 +85,7 @@ test('the banner pass stamps the attribute on every board render', () => {
 const CSS = fs.readFileSync(path.join(__dirname, '..', 'fids-current/css/display-overrides.css'), 'utf8');
 
 test('the harvest band goes in through the palette hook, after an operator\'s own palette', () => {
-  assert.match(CORE, /var HOLIDAY_BAND = \{\s*'thanksgiving-ca': \['#9E2A1B', '#D4561F', '#E8A93A', '#8F4A12'\]\s*\};/);
+  assert.match(CORE, /var HOLIDAY_BAND = \{\s*'thanksgiving-ca': \['#9E2A1B', '#D4561F', '#E8A93A', '#8F4A12'\],\s*'thanksgiving-us': \['#9E2A1B', '#D4561F', '#E8A93A', '#8F4A12'\]\s*\};/);
   const pick = CORE.slice(CORE.indexOf("try { pal = JSON.parse(localStorage.getItem('fids_banner_palette_'"), CORE.indexOf('if (pal && pal.length >= 4) { _applyBandPalette(pal); }'));
   assert.ok(pick.indexOf('HOLIDAY_BAND') > pick.indexOf('fids_banner_palette_'), 'a stored palette still wins');
   assert.ok(pick.indexOf('HOLIDAY_BAND') < pick.indexOf('BANNER_PALETTE[ap]'), 'the holiday beats the registry');
@@ -60,7 +96,7 @@ test('the look is keyed on the holiday, uses no words, and never a box behind a 
   assert.ok(at > 0);
   const block = CSS.slice(at, CSS.indexOf('/* ══', at + 10) > at ? CSS.indexOf('/* ══', at + 10) : undefined);
   const rules = block.split('}').filter((r) => r.includes('{'));
-  for (const r of rules) if (!/^\s*@media/.test(r.trim()) && r.includes('.')) assert.match(r, /\[data-fids-holiday="thanksgiving-ca"\]|^\s*$/, r.slice(0, 80));
+  for (const r of rules) if (!/^\s*@media/.test(r.trim()) && r.includes('.')) assert.match(r, /\[data-fids-holiday\^="thanksgiving-"\]|^\s*$/, r.slice(0, 80));
   assert.doesNotMatch(block, /content:\s*['"][^'"]+['"]/, 'no words drawn by CSS');
   assert.match(block, /\.fids-board-icon \{[^}]*background: transparent !important;/, 'the badge loses its white disc');
 });
@@ -70,7 +106,7 @@ test('the gate and baggage layers exist only while Thanksgiving is set', () => {
   // Thanksgiving's own layers, for thanksgiving-ca only: made for any look,
   // they sat unstyled in the gate's flow under another one (the bouquet
   // alone squashed the gate by ~172px)
-  assert.match(layers, /var on = document\.body\.dataset\.fidsHoliday === 'thanksgiving-ca';/);
+  assert.match(layers, /var on = \/\^thanksgiving-\/\.test\(document\.body\.dataset\.fidsHoliday \|\| ''\);/);
   assert.doesNotMatch(layers, /var on = !!document\.body\.dataset\.fidsHoliday;/);
   assert.match(layers, /if \(!on\) \{ if \(el\) el\.parentNode\.removeChild\(el\); continue; \}/);
   assert.match(CORE, /_ocEvery\(_fidsHolidayLayers, 2000\)/);

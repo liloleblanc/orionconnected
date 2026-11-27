@@ -28957,7 +28957,11 @@ function _autoBandPalette(ap, _tries) {
 // Thanksgiving (the second Monday of October) gives Canadian airports'
 // boards body[data-fids-holiday="thanksgiving-ca"] for that day in the
 // airport's own time zone; the look itself is CSS keyed on the attribute,
-// so a board on any other day, or outside Canada, is untouched. Canadian
+// so a board on any other day, or outside Canada, is untouched.
+// v24188 — American Thanksgiving (the fourth Thursday of November) gives US
+// airports, territories included, thanksgiving-us for that day, the same
+// way. It wears the same harvest look: the CSS and the layers are keyed on
+// the thanksgiving- prefix, and HOLIDAY_BAND carries the same four colours. Canadian
 // airports are the Y-codes on the roster (as _heritageIsCanadian reads them
 // when AP carries no country). ?holiday=<id> previews a look and
 // ?holiday=none turns it off, for review only.
@@ -29000,6 +29004,12 @@ function _fidsHolidayFor(iata, now) {
       if (rem) return rem;
     }
   } catch (eR) {}
+  // the fourth Thursday of November at US airports: the first Thursday
+  // falls on day 1..7, so the fourth on day 22..28
+  if (cc === 'US' && t.m === 11) {
+    var dowUs = new Date(Date.UTC(t.y, 10, t.d)).getUTCDay();
+    if (dowUs === 4 && t.d >= 22 && t.d <= 28) return 'thanksgiving-us';
+  }
   if (cc !== 'CA') return '';
   // the second Monday of October: the first Monday falls on day 1..7
   if (t.m === 10) {
@@ -29012,7 +29022,8 @@ function _fidsHolidayFor(iata, now) {
 // cognac for Thanksgiving (the harvest), read by the palette pick in
 // _applyBannerStyle.
 var HOLIDAY_BAND = {
-  'thanksgiving-ca': ['#9E2A1B', '#D4561F', '#E8A93A', '#8F4A12']
+  'thanksgiving-ca': ['#9E2A1B', '#D4561F', '#E8A93A', '#8F4A12'],
+  'thanksgiving-us': ['#9E2A1B', '#D4561F', '#E8A93A', '#8F4A12']
 };
 // The few layers a look adds outside the band (display-overrides.css,
 // "A HOLIDAY LOOK"). Every leaf is real artwork, trimmed out of two licensed
@@ -29411,7 +29422,8 @@ function _fidsHolidayLayers() {
     // These layers are Thanksgiving's own: made for thanksgiving-ca only.
     // (Made for any look, they sat unstyled in the gate's flow under
     // another one, and the bouquet alone squashed the gate by ~172px.)
-    var on = document.body.dataset.fidsHoliday === 'thanksgiving-ca';
+    // v24188 — and for thanksgiving-us, which wears the same look
+    var on = /^thanksgiving-/.test(document.body.dataset.fidsHoliday || '');
     for (var i = 0; i < _HOLIDAY_LAYERS.length; i++) {
       var L = _HOLIDAY_LAYERS[i], hosts = document.querySelectorAll(L[0]);
       for (var j = 0; j < hosts.length; j++) {
