@@ -146,12 +146,16 @@ test('the stylesheet: behind the switch, Orlando and the belts untouched, still,
 
 test('the Customize choice travels: panel, cloud, and the board layers', () => {
   const menuHtml = rd('fids-current/menu.html'), menuJs = rd('fids-current/js/menu.js'), proxy = rd('workers/fids-proxy.js');
-  assert.match(menuHtml, /<select class="sm-select" id="cuFloor" onchange="cuApplyAndSave\(\)">/);
+  // a pick is marked as made in the panel (cuAirportOnlyChanged), then saved
+  assert.match(menuHtml, /<select class="sm-select" id="cuFloor" onchange="cuAirportOnlyChanged\(this\)">/);
   assert.match(menuHtml, /<option value="">Earth, now \(default\)/);
   assert.match(menuHtml, /<option value="classic">Classic/);
-  // the panel reads the field only once it has painted it, and carries it forward otherwise
-  assert.match(menuJs, /if \(fl && fl\.dataset\.painted === '1'\) p\.floor = fl\.value;/);
-  assert.match(menuJs, /fl\.dataset\.painted = '1';/);
+  // an airport choice only: the panel reads the field only while the control
+  // shows the airport config itself or a pick made in the panel, and carries
+  // no device copy forward (run end to end in tests/rows-airport-colours.test.js)
+  assert.match(menuJs, /if \(_cuAirportOnlySends\(fl\)\) p\.floor = fl\.value;/);
+  assert.match(menuJs, /\['cuFloor', 'cuFloorNote', \(typeof _fidsAirportFloor === 'function'\) \? _fidsAirportFloor : null\]/, 'painted from the airport choice');
+  assert.match(menuJs, /el\.dataset\.painted = '1';\s*el\.dataset\.fromConfig = inCfg \? code : '';/, 'and marked as the airport config only once it is in');
   assert.match(menuJs, /if \(prefs\.floor !== undefined\) body\.floor = prefs\.floor;/, 'the cloud save sends it');
   assert.match(menuJs, /_cuSyncNote\('floorDropped'\)/, 'a cloud that did not keep it says so');
   assert.match(menuJs, /floorDropped: \[/);

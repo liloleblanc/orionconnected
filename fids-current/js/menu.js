@@ -2640,11 +2640,12 @@ function _cuSave(prefs) {
   // v24144 — the bottom of the board is the airport choice only: it travels
   // to the cloud (_cuCloudPush reads prefs.floor) and is never kept in this
   // device copy, which the boards no longer read for it (_fidsAirportFloor).
+  // The row colours the same way (prefs.rowPalette, _fidsAirportRowPal).
   var local = prefs;
   try {
-    if (prefs && prefs.floor !== undefined) {
+    if (prefs && (prefs.floor !== undefined || prefs.rowPalette !== undefined)) {
       local = {};
-      for (var k in prefs) if (Object.prototype.hasOwnProperty.call(prefs, k) && k !== 'floor') local[k] = prefs[k];
+      for (var k in prefs) if (Object.prototype.hasOwnProperty.call(prefs, k) && k !== 'floor' && k !== 'rowPalette') local[k] = prefs[k];
     }
   } catch (e) { local = prefs; }
   try { localStorage.setItem(_cuStorageKey(), JSON.stringify(local)); } catch (e) {}
@@ -2672,10 +2673,15 @@ function _cuSyncNote(kind) {
     local:  ['#fbbf24', '⚠ Not signed in — this look is saved on THIS device only. Sign in (Login) and save again to apply it to every screen at this airport.'],
     saved:  ['#34d399', '✓ Saved to the airport cloud — every screen picks it up within ~10 seconds.'],
     failed: ['#f87171', '⚠ Cloud save failed — the look is on this device only for now. Check the connection or sign-in and try again.'],
+    // a failed save that carried the bottom of the board or the row colours:
+    // no device keeps a copy of either (_cuSave), so nothing changed anywhere
+    airportFailed: ['#f87171', '⚠ Cloud save failed — the airport choice did not change: the bottom of the board and the row colours stay as the airport has them, on every screen. Anything else in this look is on this device only for now. Check the connection or sign-in and try again.'],
     // v24042 — the save went through but the cloud did not keep the weather
     // icons' look it was sent (see _cuCloudPush)
     wxDropped: ['#f87171', '⚠ Saved to the airport cloud, except the weather icons: the cloud server does not know this look yet and did not keep it. Every screen, this one too, shows Day & night (the default) until the server is updated.'],
-    floorDropped: ['#f87171', '⚠ Saved to the airport cloud, except the bottom of the board: the cloud server does not know this choice yet and did not keep it. Every screen, this one too, shows Earth, now (the default) until the server is updated.']
+    floorDropped: ['#f87171', '⚠ Saved to the airport cloud, except the bottom of the board: the cloud server does not know this choice yet and did not keep it. Every screen, this one too, shows Earth, now (the default) until the server is updated.'],
+    // the row colours, the same way
+    rowPaletteDropped: ['#f87171', '⚠ Saved to the airport cloud, except the row colours: the cloud server does not know this choice yet and did not keep it. Every screen, this one too, keeps the theme rows (the default) until the server is updated.']
   }[kind];
   if (!m) { el.style.display = 'none'; return; }
   el.style.color = m[0];
@@ -2696,6 +2702,8 @@ function _cuCloudPush(code, prefs) {
         .forEach(function (k) { if (prefs[k] !== undefined) body[k] = prefs[k]; });
       // the bottom of the departures and arrivals boards: '' (Earth, now) | 'classic'
       if (prefs.floor !== undefined) body.floor = prefs.floor;
+      // the rows of the departures and arrivals boards: '' (the theme) | 'airport' (the airport logo colours)
+      if (prefs.rowPalette !== undefined) body.rowPalette = prefs.rowPalette;
       // A custom theme saved as a preset ID must travel as its colours.
       if (prefs.theme === 'custom' && !body.customColors && prefs.themePresetId) {
         try {
@@ -2720,13 +2728,23 @@ function _cuCloudPush(code, prefs) {
         } catch (e) {}
       }
       if (!Object.keys(body).length) return;
+      // The bottom of the board and the row colours are the airport choice
+      // only, kept on no device: when a save that carried either fails or is
+      // refused, the note says the airport choice did not change, never that
+      // it is on this device.
+      var _airportPick = body.floor !== undefined || body.rowPalette !== undefined;
       _acFetch(_AC_WORKER_URL + '/api/airport-config/' + encodeURIComponent(code), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       }).then(function (res) { return res.ok ? res.json() : null; })
         .then(function (out) {
-          if (!out || !out.config || !out.config.updatedAt) { _cuSyncNote('failed'); return; }
+          if (!out || !out.config || !out.config.updatedAt) {
+            _cuSyncNote(_airportPick ? 'airportFailed' : 'failed');
+            // the airport choice did not change, and the controls say so
+            if (_airportPick) _cuAirportOnlyBack(body);
+            return;
+          }
           // v24042 — the cloud must have KEPT the weather icons' look it was
           // sent. The airport-config worker deploys on its own, and one older
           // than the 'classic' value accepts the save, deletes a look it does
@@ -2758,10 +2776,35 @@ function _cuCloudPush(code, prefs) {
             try { console.warn('[FIDS Customize] The cloud did not keep floor "' + body.floor + '" for ' + code); } catch (e) {}
             return;
           }
+          // The row colours, the same way.
+          if (body.rowPalette !== undefined && (out.config.rowPalette || '') !== body.rowPalette) {
+            _cuSyncNote('rowPaletteDropped');
+            try {
+              var _rpSel = document.getElementById('cuRowPalette');
+              if (_rpSel && _rpSel.value === body.rowPalette) _rpSel.value = '';
+            } catch (e) {}
+            try { console.warn('[FIDS Customize] The cloud did not keep rowPalette "' + body.rowPalette + '" for ' + code); } catch (e) {}
+            return;
+          }
           _cuSyncNote('saved');
+          // The airport now holds the picks this save carried: a control that
+          // still shows its pick shows the airport choice again (data-dirty
+          // off), so a change saved later on another screen is painted in it
+          // (_cuPaintAirportOnly, on fids-airport-config-ready).
+          try {
+            [['cuFloor', 'floor'], ['cuRowPalette', 'rowPalette']].forEach(function (f) {
+              var el = document.getElementById(f[0]);
+              if (el && el.dataset && body[f[1]] !== undefined && el.dataset.dirty === code && el.value === body[f[1]]) {
+                el.dataset.dirty = '';
+                el.dataset.fromConfig = code;
+              }
+            });
+          } catch (e) {}
           // v24144 — the bottom of the board is read from the airport config
           // only, so this screen re-reads it now rather than at the next 10 s poll.
-          if (body.floor !== undefined) {
+          // The row colours are too: turning them off shows at once, whether
+          // or not the floor travelled with them.
+          if (_airportPick) {
             try { if (typeof refreshAirportConfig === 'function') refreshAirportConfig(code); } catch (e) {}
           }
           // Align this device's stamp with the cloud's so the newer-wins
@@ -2773,7 +2816,12 @@ function _cuCloudPush(code, prefs) {
           } catch (e) {}
           try { console.log('[FIDS Customize] Saved to cloud for ' + code); } catch (e) {}
         })
-        .catch(function (e) { try { console.warn('[FIDS Customize] Cloud save failed:', e && e.message); } catch (e2) {} });
+        .catch(function (e) {
+          // no answer at all (offline, or no JSON back): say so, as for a refusal
+          try { _cuSyncNote(_airportPick ? 'airportFailed' : 'failed'); } catch (e2) {}
+          if (_airportPick) _cuAirportOnlyBack(body);
+          try { console.warn('[FIDS Customize] Cloud save failed:', e && e.message); } catch (e2) {}
+        });
     }, 900);
   } catch (e) {}
 }
@@ -2858,10 +2906,16 @@ function _cuReadForm() {
   if (wi && wi.dataset.painted === '1') p.wxIcons = wi.value;
   else { var _pv3 = _cuLoad(); if (_pv3 && _pv3.wxIcons !== undefined) p.wxIcons = _pv3.wxIcons; }
   // The bottom of the board: '' is nothing chosen (Earth, now); 'classic'.
-  // Unpainted → carry forward.
+  // The airport choice only: read when the control shows the airport config
+  // itself or a pick made in this panel, and left out otherwise, so the
+  // airport keeps its own (_cuAirportOnlySends). No device copy is kept, so
+  // there is none to carry forward.
   var fl = document.getElementById('cuFloor');
-  if (fl && fl.dataset.painted === '1') p.floor = fl.value;
-  else { var _pv4 = _cuLoad(); if (_pv4 && _pv4.floor !== undefined) p.floor = _pv4.floor; }
+  if (_cuAirportOnlySends(fl)) p.floor = fl.value;
+  // The row colours: '' is nothing chosen (the theme rows); 'airport' paints
+  // the rows in the airport logo colours. Read the same way.
+  var rp = document.getElementById('cuRowPalette');
+  if (_cuAirportOnlySends(rp)) p.rowPalette = rp.value;
   // Font selection (v218.6+)
   var fontSel = document.getElementById('cuFontSelect');
   if (fontSel && fontSel.value) p.font = fontSel.value;
@@ -2918,32 +2972,10 @@ function _cuPaintForm(prefs) {
     }
     wi.value = _wiv || ''; if (wi.selectedIndex < 0) wi.value = ''; wi.dataset.painted = '1';
   }
-  // The bottom of the board: the airport choice, so the next save of anything
-  // else never resets the airport to the default.
-  var fl = document.getElementById('cuFloor');
-  if (fl) {
-    // v24144 — the airport choice, which is all the boards read for it
-    // (_fidsAirportFloor); a device copy is no longer kept.
-    var _flv = '';
-    try {
-      _flv = (typeof _fidsAirportFloor === 'function') ? _fidsAirportFloor(_acCurrentCode())
-        : (((typeof getAirportConfig === 'function') ? getAirportConfig(_acCurrentCode()) : null) || {}).floor || '';
-    } catch (e) { _flv = ''; }
-    if (_flv === 'earth') _flv = '';
-    fl.value = _flv || ''; if (fl.selectedIndex < 0) fl.value = ''; fl.dataset.painted = '1';
-    // v24145 — the bottom of the board is the airport choice only, and only
-    // a signed-in save reaches the airport. Signed out, a pick did nothing
-    // anyone could see, so the control is shown, disabled, with the reason.
-    try {
-      var _flSigned = !!_acGetToken();
-      fl.disabled = !_flSigned;
-      var _flNote = document.getElementById('cuFloorNote');
-      if (_flNote) {
-        _flNote.textContent = _flSigned ? '' : 'Set for the whole airport. Sign in (Login) to change it.';
-        _flNote.style.display = _flSigned ? 'none' : '';
-      }
-    } catch (e) {}
-  }
+  // The bottom of the board and the row colours: the airport choice, painted
+  // and locked as the airport-only controls are (_cuPaintAirportOnly), so the
+  // next save of anything else never resets the airport to the default.
+  try { _cuPaintAirportOnly(); } catch (e) {}
   // Font picker
   var fontSel = document.getElementById('cuFontSelect');
   if (fontSel) fontSel.value = prefs.font || '';
@@ -2964,6 +2996,165 @@ function _cuPaintForm(prefs) {
   // Display mode pill UI
   cuSetDisplayModeUI(prefs.displayMode || 'auto');
 }
+
+// ── THE AIRPORT-ONLY CONTROLS: Bottom of the board, Row colours ──────────
+// The boards read both from the airport config alone (fids-core.js
+// _fidsAirportFloor, _fidsAirportRowPal), no screen keeps a copy (_cuSave),
+// and the worker takes an airport save from an admin only (fids-proxy.js
+// isAdmin). So, for both controls (cuFloor, cuRowPalette):
+// - each is painted from the airport config, and marked data-from-config
+//   with the airport code only once that config has been read
+//   (_fidsAirportConfigLoaded). Painted before then, it shows the default,
+//   and a save of anything else leaves the field out of the PUT, so the
+//   airport keeps its own choice (_cuAirportOnlySends).
+// - a pick by the user marks it data-dirty with the airport code
+//   (cuAirportOnlyChanged, the onchange of both in menu.html), and the pick
+//   is sent whatever the config was. Every paint keeps it until its save
+//   is answered: a kept save clears the mark, and so does a refused save or
+//   one with no answer, which paints the airport choice back (_cuCloudPush,
+//   _cuAirportOnlyBack).
+// - when the airport config arrives or changes (fids-airport-config-ready),
+//   a control the user has not touched is painted again (_cuAirportConfigIn).
+// - unless the signed-in role is admin, both are disabled with the reason
+//   (_cuAirportOnlyWhy).
+//
+// The role the panel goes by: the role in the sign-in token, the one the
+// worker checks (fids-proxy.js isAdmin reads the role the token carries).
+// A board page loads no auth.js, so a tab opened fresh holds no fids_user of
+// its own while the token on this screen is still good: the token alone
+// says who signed in, in every tab. Only when the token cannot be read is
+// the role read as editor-roles.js reads it: the signed-in user
+// (sessionStorage fids_user) when it holds a role editor-roles.js knows,
+// else the lock of this screen, admin when none is set. Read through
+// EditorRoles itself once it is loaded; without it no lock applies, and the
+// signed-in role alone is read.
+function _cuEditorRole() {
+  var known = ['demo', 'viewer', 'operator', 'admin'];
+  try {
+    var t = _acGetToken();
+    var p = t ? JSON.parse(atob(String(t).split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) : null;
+    if (p && typeof p.role === 'string' && known.indexOf(p.role) >= 0) return p.role;
+  } catch (e) {}
+  try {
+    if (window.EditorRoles && typeof window.EditorRoles.current === 'function') return window.EditorRoles.current() || 'admin';
+  } catch (e) {}
+  try {
+    var u = JSON.parse(sessionStorage.getItem('fids_user') || 'null');
+    if (u && typeof u.role === 'string' && known.indexOf(u.role) >= 0) return u.role;
+  } catch (e) {}
+  return 'admin';
+}
+// Why the airport-only controls may not be changed on this screen, or an
+// empty string when they may: signed out, or signed in with a role below
+// admin, a pick could reach no screen.
+function _cuAirportOnlyWhy() {
+  if (!_acGetToken()) return 'Set for the whole airport. Sign in (Login) to change it.';
+  if (_cuEditorRole() !== 'admin') return 'Set for the whole airport. Only an admin can change it.';
+  return '';
+}
+// Whether a save reads an airport-only control: only while it shows the
+// airport config of this airport, or a pick made here for this airport.
+function _cuAirportOnlySends(el) {
+  var code = _acCurrentCode();
+  return !!(el && el.dataset && (el.dataset.fromConfig === code || el.dataset.dirty === code));
+}
+// Paints both from the airport config, and locks them. A control holding a
+// pick of the user for this airport keeps it until its save is answered
+// (_cuCloudPush): the tab opened again, or the late repaint, while the pick
+// is on its way would otherwise paint the old choice back, and the save the
+// tab opening makes (_cuInitTheme) would then send that. The whole panel
+// painted (the tab opened, the late repaint) and the config coming in paint
+// them the same way; a reset drops the picks first (_cuAirportOnlyForget).
+function _cuPaintAirportOnly() {
+  var code = _acCurrentCode();
+  var inCfg = false;
+  try { inCfg = (typeof _fidsAirportConfigLoaded === 'function') && !!_fidsAirportConfigLoaded(code); } catch (e) { inCfg = false; }
+  var why = '';
+  try { why = _cuAirportOnlyWhy(); } catch (e) { why = ''; }
+  var ctl = [
+    ['cuFloor', 'cuFloorNote', (typeof _fidsAirportFloor === 'function') ? _fidsAirportFloor : null],
+    ['cuRowPalette', 'cuRowPaletteSignNote', (typeof _fidsAirportRowPal === 'function') ? _fidsAirportRowPal : null]
+  ];
+  for (var i = 0; i < ctl.length; i++) {
+    var el = document.getElementById(ctl[i][0]);
+    if (!el) continue;
+    if (el.dataset.dirty !== code) {
+      var v = '';
+      try { v = ctl[i][2] ? (ctl[i][2](code) || '') : ''; } catch (e) { v = ''; }
+      el.value = v; if (el.selectedIndex < 0) el.value = '';
+      el.dataset.painted = '1';
+      el.dataset.fromConfig = inCfg ? code : '';
+      el.dataset.dirty = '';
+    }
+    el.disabled = !!why;
+    var note = document.getElementById(ctl[i][1]);
+    if (note) {
+      note.textContent = why;
+      note.style.display = why ? '' : 'none';
+    }
+  }
+  try { _cuRowPaletteNote(); } catch (e) {}
+}
+// Drops the picks of the user in the airport-only controls, so the next
+// paint shows the airport choice in them again. sent (a save that was
+// refused or got no answer): only the fields it carried, while the control
+// still shows the value it sent, so a pick made since is kept. Without it
+// (a reset): every pick.
+function _cuAirportOnlyForget(sent) {
+  [['cuFloor', 'floor'], ['cuRowPalette', 'rowPalette']].forEach(function (f) {
+    var el = document.getElementById(f[0]);
+    if (!el || !el.dataset) return;
+    if (sent && (sent[f[1]] === undefined || el.value !== sent[f[1]])) return;
+    el.dataset.dirty = '';
+  });
+}
+// A save that carried the airport choice was refused or got no answer: the
+// note says the airport choice did not change, so the controls show it again.
+function _cuAirportOnlyBack(sent) {
+  try { _cuAirportOnlyForget(sent); } catch (e) {}
+  try { _cuPaintAirportOnly(); } catch (e) {}
+}
+// A pick in an airport-only control (its onchange in menu.html): marked as
+// made here for this airport, then saved like any other change.
+function cuAirportOnlyChanged(el) {
+  try { if (el && el.dataset) el.dataset.dirty = _acCurrentCode(); } catch (e) {}
+  cuApplyAndSave();
+}
+// The airport config came in or changed: the airport-only controls the user
+// has not touched show it, when it is the config of this airport.
+function _cuAirportConfigIn(ev) {
+  var code = ev && ev.detail && ev.detail.code;
+  if (code && String(code).toUpperCase() !== _acCurrentCode()) return;
+  _cuPaintAirportOnly();
+}
+try { window.addEventListener('fids-airport-config-ready', function (ev) { try { _cuAirportConfigIn(ev); } catch (e) {} }); } catch (e) {}
+
+// The row colours: what this board did with the choice, under the control.
+// The board says it on the body (fids-core.js _fidsRowPalPaint) and tells
+// the page with a fids-row-palette event whenever that changes.
+function _cuRowPaletteNote() {
+  var el = document.getElementById('cuRowPaletteNote');
+  if (!el) return;
+  var b = document.body;
+  var on = !!(b && b.getAttribute('data-fids-row-palette') === 'airport');
+  var st = (b && b.getAttribute('data-fids-row-palette-state')) || '';
+  var colour = (b && b.getAttribute('data-fids-row-palette-colour')) || '';
+  var why = (b && b.getAttribute('data-fids-row-palette-why')) || '';
+  var msg = '';
+  if (on && st === 'rows') {
+    msg = 'On this board the rows take the logo colour ' + colour + ', darkened so every word reads.'
+      + (why === 'status' ? ' A red, orange or yellow of the logo is held back: on a row it would read as a status.' : '');
+  } else if (on && st === 'head') {
+    msg = 'The logo colours read as status colours here (a red as Cancelled, an orange or a yellow green turns brown or olive when darkened), so the rows keep the theme and only the column titles take the logo colour ' + colour + '.';
+  } else if (on && st === 'wait') {
+    msg = 'Reading the colours of the airport logo…';
+  } else if (on && st === 'none') {
+    msg = 'The airport logo gives no colour the rows can take (no logo, only greys, or it could not be read), so the rows keep the theme.';
+  }
+  el.textContent = msg;
+  el.style.display = msg ? '' : 'none';
+}
+try { window.addEventListener('fids-row-palette', function () { try { _cuRowPaletteNote(); } catch (e) {} }); } catch (e) {}
 
 // ── Day & night scheduling
 // — toggle reveals the schedule; any change saves through the
@@ -3281,6 +3472,11 @@ function cuApplyAndSave() {
   try { saved = JSON.parse(localStorage.getItem(_cuStorageKey()) || '{}') || {}; } catch (e) {}
   var form = _cuReadForm();
   var prefs = Object.assign({}, saved, form);
+  // The bottom of the board and the row colours travel from this panel
+  // alone (_cuAirportOnlySends), never from a copy on this device: none is
+  // kept (_cuSave), and one left from before would reset the airport.
+  if (form.floor === undefined) delete prefs.floor;
+  if (form.rowPalette === undefined) delete prefs.rowPalette;
   // Picking a NON-preset theme must retire a stale saved preset id. The
   // merge kept themePresetId forever, and the Customize repaint paths give
   // it priority over prefs.theme — so choosing Teal / Teal Deep flipped
@@ -3310,6 +3506,8 @@ function cuApplyAndSave() {
 // Wipe local overrides for this airport so admin defaults take over
 function cuResetAll() {
   try { localStorage.removeItem(_cuStorageKey()); } catch (e) {}
+  // a pick in the airport-only controls is dropped too: they show the airport choice
+  try { _cuAirportOnlyForget(); } catch (e) {}
   _cuPaintForm({});
   try {
     var code = _acCurrentCode();
@@ -3338,6 +3536,11 @@ window._fidsPersistTheme = function (name) {
     prefs.theme = name;
     delete prefs.themePresetId;
     delete prefs.customColors;
+    // The bottom of the board and the row colours travel from the Customize
+    // panel alone (_cuAirportOnlySends): a copy left on this device from
+    // before they became the airport choice would reset the airport.
+    delete prefs.floor;
+    delete prefs.rowPalette;
     _cuSave(prefs);
     _cuCloudPush(_acCurrentCode(), prefs);
   } catch (e) {}

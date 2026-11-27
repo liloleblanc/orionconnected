@@ -223,6 +223,15 @@ function _fidsAirportFloor(code) {
   var norm = _normAirportCode(code);
   return norm ? _fidsAirportFloorOf(_airportConfigCache[norm]) : '';
 }
+// Whether the airport config of a code has been read: a config, or none at
+// all (a 404, kept as null). Until then _fidsAirportFloor and
+// _fidsAirportRowPal give the default and not the airport choice, so the
+// Customize panel sends neither choice from a control painted that early
+// (menu.js _cuAirportOnlySends).
+function _fidsAirportConfigLoaded(code) {
+  var norm = _normAirportCode(code);
+  return !!norm && (norm in _airportConfigCache);
+}
 
 // Async loader — fetches from Worker, caches in memory.
 // Returns a promise that resolves to the config object (or null on 404/error).
@@ -28917,9 +28926,7 @@ function _autoBandPalette(ap, _tries) {
     // and that config arrives asynchronously — on a cold load the banner is
     // styled before it lands. So when there is no logo yet, come back for it
     // rather than concluding the airport has none.
-    var cfg = (typeof getAirportConfig === 'function') ? getAirportConfig(ap) : null;
-    var logo = (cfg && cfg.logo && cfg.logo.url) ? cfg.logo.url : '';
-    if (!logo) { try { logo = localStorage.getItem('fids_airport_logo_' + ap) || ''; } catch (e) {} }
+    var logo = _fidsAirportLogoUrl(ap);
     if (!logo) {
       var t = _tries || 0;
       if (t < 12) { setTimeout(function () { _autoBandPalette(ap, t + 1); }, 700); return; }
@@ -28935,23 +28942,294 @@ function _autoBandPalette(ap, _tries) {
     // is wrong now. Re-keying discards them without a migration step —
     // otherwise a screen that has already been up keeps painting the muddy
     // sampled colours forever and only a cleared cache would ever fix it.
-    var ck = 'fids_logo_palette3_' + ap;
-    try {
-      var cached = JSON.parse(localStorage.getItem(ck) || 'null');
-      if (cached && cached.url === logo && cached.pal && cached.pal.length === 4) {
-        _applyBandPalette(cached.pal);
-        return;
-      }
-    } catch (e2) {}
+    var cachedPal = _fidsLogoPaletteCached(ap, logo);
+    if (cachedPal) { _applyBandPalette(cachedPal); return; }
     if (_bandPaletteBusy[ap]) return;
-    _bandPaletteBusy[ap] = 1;
-    _extractLogoPalette(logo, function (pal) {
-      _bandPaletteBusy[ap] = 0;
+    _fidsLogoPaletteRead(ap, logo, function (pal) {
       if (!pal) { _clearBandPalette(); return; }
-      try { localStorage.setItem(ck, JSON.stringify({ url: logo, pal: pal })); } catch (e3) {}
       _applyBandPalette(pal);
     });
   } catch (e) { _clearBandPalette(); }
+}
+// ONE READER FOR THE LOGO PALETTE. The banner (above) and the rows in the
+// airport logo colours (below) read the same four colours: the logo the
+// airport config names, the palette cached against exactly that logo URL
+// (the v3 key above), and one read of the logo at a time per airport,
+// whichever of the two asked first. Every caller waiting on that read is
+// handed its result, null when the logo gave no palette.
+function _fidsAirportLogoUrl(ap) {
+  var cfg = (typeof getAirportConfig === 'function') ? getAirportConfig(ap) : null;
+  var logo = (cfg && cfg.logo && cfg.logo.url) ? cfg.logo.url : '';
+  if (!logo) { try { logo = localStorage.getItem('fids_airport_logo_' + ap) || ''; } catch (e) {} }
+  return logo;
+}
+function _fidsLogoPaletteCached(ap, logo) {
+  try {
+    var cached = JSON.parse(localStorage.getItem('fids_logo_palette3_' + ap) || 'null');
+    if (cached && cached.url === logo && cached.pal && cached.pal.length === 4) return cached.pal;
+  } catch (e) {}
+  return null;
+}
+var _bandPaletteWaiting = {};
+function _fidsLogoPaletteRead(ap, logo, cb) {
+  (_bandPaletteWaiting[ap] = _bandPaletteWaiting[ap] || []).push(cb);
+  if (_bandPaletteBusy[ap]) return;
+  _bandPaletteBusy[ap] = 1;
+  _extractLogoPalette(logo, function (pal) {
+    _bandPaletteBusy[ap] = 0;
+    if (pal) { try { localStorage.setItem('fids_logo_palette3_' + ap, JSON.stringify({ url: logo, pal: pal })); } catch (e3) {} }
+    var waiting = _bandPaletteWaiting[ap] || [];
+    _bandPaletteWaiting[ap] = [];
+    for (var i = 0; i < waiting.length; i++) { try { waiting[i](pal, logo); } catch (e4) {} }
+  });
+}
+// ── ROWS IN THE AIRPORT LOGO COLOURS (Customize: Row colours) ─────────────
+// An airport choice only, off by default, like the bottom of the board:
+// rowPalette in the airport config (never a copy on a screen, see
+// _fidsAirportRowPal), empty for nothing chosen (the theme rows), airport
+// for the colours of the airport logo, the palette the banner wears.
+// applyAirportConfigToBoard stamps the choice on the body as
+// data-fids-row-palette="airport"; ?rowpal=on or ?rowpal=off decides it for
+// one load, for review. render() then runs _fidsRowPalPaint, which writes
+// the grounds and inks below as variables on the body. The rules that read
+// them are in display-overrides.css (ROWS IN THE AIRPORT LOGO COLOURS) and
+// leave the seven state rows to the status grammar.
+//
+// THE ROWS. One band colour paints both stripes: the first that may, in
+// band order 1, 4, 2, 3 (the anchor the banner starts on, then its other
+// end). It is moved along its own hue, every channel scaled by one factor,
+// to L* 23.7 for the even rows (luminance 0.04: white reads at 11.7 to 1),
+// and 9 L* below that for the odd rows (about 1.3 to 1 between the two), so
+// a navy logo, a bright blue one and a near black one all land on the same
+// two depths. The light art of the airline marks keeps the dark ground it
+// was drawn for, and the board stays a dark board.
+//
+// WHAT MAY NOT PAINT A ROW, judged on the two shades that would paint:
+//   grey  less than C* 12 in the logo or in the lighter shade, or a darker
+//         shade within dE76 6 of the slate the Departed, Arrived and Gate
+//         closed rows are painted in (FIDS_ROWPAL_SLATE, #262D36): a grey
+//         row reads as a past flight and hides the dark airline tiles. The
+//         darker shade is held off that slate, not to C* 12: darkened that
+//         far, a turquoise, a mid teal or a sky blue falls under C* 12 and
+//         still reads as its own colour, while a muted steel blue lands on
+//         the slate
+//   warm  an HSL hue from 340 round to 95: a red reads as Cancelled, an
+//         orange or an amber darkens into brown, a yellow green into olive
+//   red   any other colour within dE76 60 of a red a Cancelled or Diverted
+//         row is painted in (wines, plums)
+// A deep true green may paint: no state row on this board has a green
+// ground, and the Early word keeps its own green at 7 to 1 on it. When no
+// band colour may paint, the rows keep the theme and the column titles alone
+// take the first colour held back as a status colour (band 1 of an all red
+// logo: the titles are not a row), and the menu says why. A logo of greys
+// only changes nothing.
+//
+// THE INKS. Every word on the rows reads at 7 to 1 on the lighter of the two
+// grounds: white, and the status grammar colours (Boarding amber, Early
+// green, the revised time) moved toward white in small steps, hue kept, where
+// they fall short.
+// The column titles are the band end the banner wears, deepened until white
+// reads at 7 to 1 on them too.
+var FIDS_ROWPAL_L = 23.7;
+var FIDS_ROWPAL_STEP = 9;
+var FIDS_ROWPAL_MIN_C = 12;
+var FIDS_ROWPAL_MIN_RED_DE = 60;
+// the slate of the Departed, Arrived and Gate closed rows, and how far from
+// it the darker shade must stay
+var FIDS_ROWPAL_SLATE = '#262D36';
+var FIDS_ROWPAL_MIN_SLATE_DE = 6;
+var FIDS_ROWPAL_INK = 7;
+// the reds a Cancelled or Diverted row is painted in, odd and even
+var FIDS_ROWPAL_REDS = ['#A50D24', '#D42341', '#A61B2B', '#DA3544', '#C8102E'];
+var FIDS_ROWPAL_VARS = ['--fids-rowpal-odd', '--fids-rowpal-even', '--fids-rowpal-head',
+  '--fids-rowpal-amber', '--fids-rowpal-green', '--fids-rowpal-rev'];
+// CIE L*, a*, b* and the chroma C* of a colour (sRGB, D65)
+function _fidsRowPalLab(hex) {
+  var c = _rc2Rgb(hex);
+  if (!c) return null;
+  c = c.map(_rc2Lin);
+  var X = (0.4124 * c[0] + 0.3576 * c[1] + 0.1805 * c[2]) / 0.95047;
+  var Y = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  var Z = (0.0193 * c[0] + 0.1192 * c[1] + 0.9505 * c[2]) / 1.08883;
+  var f = function (t) { return t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116; };
+  var L = 116 * f(Y) - 16, a = 500 * (f(X) - f(Y)), b = 200 * (f(Y) - f(Z));
+  return [L, a, b, Math.sqrt(a * a + b * b)];
+}
+// The colour moved along its own hue to lightness L: every channel scaled by
+// one factor, so hue and saturation are kept. A colour with no light in it
+// at all has no hue to keep and gives an empty string.
+function _fidsRowPalShade(hex, L) {
+  var c = _rc2Rgb(hex);
+  if (!c) return '';
+  var mx = Math.max(c[0], c[1], c[2]);
+  if (!mx) return '';
+  var lo = 0, hi = 255 / mx;
+  for (var i = 0; i < 30; i++) {
+    var k = (lo + hi) / 2;
+    var t = _fidsRowPalLab(_hex(c[0] * k, c[1] * k, c[2] * k));
+    if (t && t[0] > L) hi = k; else lo = k;
+  }
+  return _hex(c[0] * lo, c[1] * lo, c[2] * lo);
+}
+// Why a band colour may not paint a row (grey, warm or red), or an empty
+// string when it may. See WHAT MAY NOT PAINT A ROW above.
+function _fidsRowPalRefusal(hex) {
+  var hi = _fidsRowPalShade(hex, FIDS_ROWPAL_L);
+  var lo = _fidsRowPalShade(hex, FIDS_ROWPAL_L - FIDS_ROWPAL_STEP);
+  var src = _fidsRowPalLab(hex), a = _fidsRowPalLab(hi), b = _fidsRowPalLab(lo);
+  if (!src || !a || !b) return 'grey';
+  // C* 12 in the logo colour and on the lighter stripe
+  if (src[3] < FIDS_ROWPAL_MIN_C || a[3] < FIDS_ROWPAL_MIN_C) return 'grey';
+  // the darker stripe off the slate of a past flight: a muted steel blue
+  // lands on it, a turquoise or a teal keeps its colour there though its
+  // chroma falls under C* 12
+  if (_rc2DeltaE(lo, FIDS_ROWPAL_SLATE) < FIDS_ROWPAL_MIN_SLATE_DE) return 'grey';
+  var rgb = _rc2Rgb(hi);
+  var h = _rgbToHsl(rgb[0], rgb[1], rgb[2])[0];
+  if (h >= 340 || h < 95) return 'warm';
+  for (var i = 0; i < FIDS_ROWPAL_REDS.length; i++) {
+    if (_rc2DeltaE(hi, FIDS_ROWPAL_REDS[i]) < FIDS_ROWPAL_MIN_RED_DE
+        || _rc2DeltaE(lo, FIDS_ROWPAL_REDS[i]) < FIDS_ROWPAL_MIN_RED_DE) return 'red';
+  }
+  return '';
+}
+// The column titles: the band end the banner wears for this colour,
+// deepened along its hue until white reads at FIDS_ROWPAL_INK on it.
+function _fidsRowPalHead(hex) {
+  var c = _rc2Rgb(_fidsBandEnd(hex));
+  if (!c) return '';
+  var r = c[0], g = c[1], b = c[2];
+  for (var i = 0; i < 80 && _fidsContrast('#ffffff', _hex(r, g, b)) < FIDS_ROWPAL_INK; i++) {
+    r *= 0.95; g *= 0.95; b *= 0.95;
+  }
+  return _hex(r, g, b);
+}
+// The plan for one band palette (four colours): rows true with the two
+// grounds, the column titles and the inks; or rows false with the column
+// titles alone, in the first band colour held back as a status colour, when
+// no band colour may paint a row. why is status when a colour was held back
+// as a status colour (warm or red), grey when only greys were. null when
+// nothing may be painted at all: not four colours, or greys only.
+function _fidsRowPalPlan(pal) {
+  if (!pal || pal.length < 4) return null;
+  var order = [0, 3, 1, 2], main = '', held = '', why = '';
+  for (var i = 0; i < order.length && !main; i++) {
+    var r = _fidsRowPalRefusal(pal[order[i]]);
+    if (!r) main = String(pal[order[i]]).toLowerCase();
+    else if (r !== 'grey') { why = 'status'; if (!held) held = String(pal[order[i]]).toLowerCase(); }
+    else if (!why) why = 'grey';
+  }
+  if (!main) {
+    var head0 = held ? _fidsRowPalHead(held) : '';
+    return head0 ? { rows: false, main: '', held: held, head: head0, why: why } : null;
+  }
+  var even = _fidsRowPalShade(main, FIDS_ROWPAL_L);
+  var odd = _fidsRowPalShade(main, FIDS_ROWPAL_L - FIDS_ROWPAL_STEP);
+  var head = _fidsRowPalHead(main);
+  // the light inks have the least room on the lighter ground
+  var g = (_fidsRelLum(even) >= _fidsRelLum(odd)) ? even : odd;
+  return {
+    rows: true, main: main, why: why, odd: odd, even: even, head: head,
+    amber: _fidsStatusInk('#FFB000', g, FIDS_ROWPAL_INK),
+    green: _fidsStatusInk('#2FD467', g, FIDS_ROWPAL_INK),
+    rev: _fidsStatusInk('#ffae42', g, FIDS_ROWPAL_INK)
+  };
+}
+// The palette the rows take, found the way the banner finds its own with
+// the holiday looks left out: a palette stored for the banner on this
+// screen, the registry (BANNER_PALETTE), then the palette read out of the
+// airport logo, from the cache when it was read from the same logo URL.
+// A holiday recolours the banner for one day; the rows keep the airport
+// colours under it. Returns pal (four colours or null) and wait (true while
+// the logo is being read; the rows are painted once it is in).
+var _fidsRowPalRead = {};
+function _fidsRowPalSource(ap) {
+  var own = null;
+  try { own = JSON.parse(localStorage.getItem('fids_banner_palette_' + ap) || 'null'); } catch (e) {}
+  if (!(own && own.length >= 4)) own = BANNER_PALETTE[ap] || null;
+  if (own && own.length >= 4) return { pal: own.slice(0, 4), wait: false };
+  var logo = _fidsAirportLogoUrl(ap);
+  if (!logo) return { pal: null, wait: false };
+  var key = ap + '|' + logo;
+  var cached = _fidsLogoPaletteCached(ap, logo) || (_fidsRowPalRead[key] && _fidsRowPalRead[key].pal) || null;
+  if (cached) return { pal: cached, wait: false };
+  if (_fidsRowPalRead[key]) return { pal: null, wait: !_fidsRowPalRead[key].done };
+  _fidsRowPalRead[key] = { done: false, pal: null };
+  _fidsLogoPaletteRead(ap, logo, function (pal, from) {
+    // a read of another logo of this airport answered first: ask again
+    if (from !== logo) delete _fidsRowPalRead[key];
+    else _fidsRowPalRead[key] = { done: true, pal: pal || null };
+    setTimeout(function () { try { render(); } catch (e2) {} }, 0);
+  });
+  return { pal: null, wait: true };
+}
+// ?rowpal=on or ?rowpal=off, for review; an empty string otherwise
+function _fidsRowPalUrl() {
+  try {
+    var v = String(new URLSearchParams(location.search).get('rowpal') || '').toLowerCase();
+    return (v === 'on' || v === 'off') ? v : '';
+  } catch (e) { return ''; }
+}
+// THE AIRPORT CHOICE, as the bottom of the board is (_fidsAirportFloor):
+// airport only when the airport config itself, the cloud copy saved from
+// Customize by a signed-in operator, says airport; anything else is empty
+// (the theme rows). Neither the Customize copy of a screen nor a per-browser
+// fids_airport_override_ is read. Both live on one origin of one browser,
+// and with the screen copy read first, a screen holding nothing chosen fell
+// through to the airport choice: it could turn the rows on but never off.
+function _fidsAirportRowPalOf(cfg) {
+  return (cfg && cfg.rowPalette === 'airport') ? 'airport' : '';
+}
+function _fidsAirportRowPal(code) {
+  var norm = _normAirportCode(code);
+  return norm ? _fidsAirportRowPalOf(_airportConfigCache[norm]) : '';
+}
+// Stamps the choice on the body. pref is the airport choice
+// (_fidsAirportRowPal, read by applyAirportConfigToBoard).
+function _fidsRowPalSetting(pref) {
+  var u = _fidsRowPalUrl();
+  var on = u ? (u === 'on') : (pref === 'airport');
+  if (on) document.body.setAttribute('data-fids-row-palette', 'airport');
+  else document.body.removeAttribute('data-fids-row-palette');
+  return on;
+}
+// Paints the choice on the board and says what it painted in
+// body[data-fids-row-palette-state]: rows (the rows and the column titles),
+// head (the column titles only), wait (the logo is being read) or none (no
+// palette: nothing changes, the theme rows stay). render() runs it before
+// it measures the rows for the light board flag and the wordmark art. When
+// the answer changes the rows are rebuilt in that same pass, so every ink a
+// painter measured off the old ground is measured again. Returns true when
+// it changed anything.
+var _fidsRowPalLast = '';
+function _fidsRowPalPaint() {
+  var b = document.body;
+  if (!b) return false;
+  var on = b.getAttribute('data-fids-row-palette') === 'airport';
+  var ap = on ? String(((document.getElementById('apSel') || {}).value) || '').toUpperCase() : '';
+  var src = (on && ap) ? _fidsRowPalSource(ap) : null;
+  var plan = (src && src.pal) ? _fidsRowPalPlan(src.pal) : null;
+  var state = !on ? '' : (plan ? (plan.rows ? 'rows' : 'head') : ((src && src.wait) ? 'wait' : 'none'));
+  var vals = plan ? [plan.odd, plan.even, plan.head, plan.amber, plan.green, plan.rev] : [];
+  // off is the empty key the board starts with, so a board that never
+  // chose the logo colours is never touched here
+  var key = state ? (state + '|' + ap + '|' + vals.join(',') + '|' + (plan ? plan.why : '')) : '';
+  if (key === _fidsRowPalLast) return false;
+  _fidsRowPalLast = key;
+  for (var i = 0; i < FIDS_ROWPAL_VARS.length; i++) {
+    if (vals[i]) b.style.setProperty(FIDS_ROWPAL_VARS[i], vals[i]);
+    else b.style.removeProperty(FIDS_ROWPAL_VARS[i]);
+  }
+  if (state) b.setAttribute('data-fids-row-palette-state', state);
+  else b.removeAttribute('data-fids-row-palette-state');
+  var colour = plan ? (plan.main || plan.held || '') : '';
+  if (colour) b.setAttribute('data-fids-row-palette-colour', colour);
+  else b.removeAttribute('data-fids-row-palette-colour');
+  if (plan && plan.why) b.setAttribute('data-fids-row-palette-why', plan.why);
+  else b.removeAttribute('data-fids-row-palette-why');
+  try { _lastTbodyHtml = ''; } catch (e) {}
+  try { window.dispatchEvent(new CustomEvent('fids-row-palette', { detail: { state: state, ap: ap } })); } catch (e2) {}
+  return true;
 }
 // v24041 — A HOLIDAY LOOK, ON THE AIRPORT'S OWN HOLIDAY. Canadian
 // Thanksgiving (the second Monday of October) gives Canadian airports'
@@ -40638,6 +40916,11 @@ function render() {
   tbl.style.display = allFiltered.length ? '' : 'none';
   if (!allFiltered.length) return;
 
+  // The rows in the airport logo colours (Customize: Row colours), painted
+  // before the rows are measured below for the light board flag, the
+  // wordmark art and the typed airline names.
+  try { _fidsRowPalPaint(); } catch (eRp) {}
+
   // Light/dark board flag — same luminance measurement as the wordmark ink.
   // CSS keys off body.fids-light-board so headers (and anything else that
   // must flip with the background) adapt on EVERY theme automatically.
@@ -40725,6 +41008,9 @@ function render() {
   //   - 12-hour AM/PM time format throughout
   //   - Inline weather icon comes from the fidsWxIcon() helper in fids-v2.js
   //     (the animated set, or the Solid / Colour looks)
+  // the rows in the airport logo colours hold every word at 7 to 1, typed
+  // airline names in their own colour included (see the floor below)
+  const _nameFloor = (document.body.getAttribute('data-fids-row-palette-state') === 'rows') ? FIDS_ROWPAL_INK : 4.5;
   // the stripes the typed airline names sit on (_boardRowGrounds), read once for the page
   const _nameGrounds = _boardRowGrounds();
   const _newHtml = pageFlights.map(f => {
@@ -40881,6 +41167,12 @@ function render() {
       if (_brandColor && _nameGrounds.length === 2) {
         if (!_nameGrounds.every(function (g) { var c = _fidsContrast(_brandColor, g); return c !== null && c >= 4.5; })) _brandColor = '';
       } else if (_brandColor && wordmarkVariant() === 'light' && _hexLum(_brandColor) < 0.30) _brandColor = '';
+    } catch (e) {}
+    // On the rows in the airport logo colours the accent types the name only
+    // where it reads at 7 to 1 on both stripes, like every other word there.
+    try {
+      if (_brandColor && _nameFloor > 4.5 && _nameGrounds.length === 2
+          && !_nameGrounds.every(function (g) { var c = _fidsContrast(_brandColor, g); return c !== null && c >= _nameFloor; })) _brandColor = '';
     } catch (e) {}
     // State-tinted rows (yellow DELAYED / orange FINAL) keep the row ink —
     // brand colours clash there (TAP green/red on yellow) and the
@@ -48449,6 +48741,21 @@ function applyAirportConfigToBoard(iata) {
       }
     }
   } catch (eFlRetire) {}
+  // The row colours are an airport choice only too (_fidsAirportRowPal), so
+  // a device copy of rowPalette is retired the same way, and a later save
+  // from a Customize panel that was never opened has none to send back.
+  try {
+    if (_userCfg && _userCfg.rowPalette !== undefined) {
+      delete _userCfg.rowPalette;
+      var _rpKey = 'fids_customize_' + String(iata || '').toUpperCase();
+      var _rpRaw = localStorage.getItem(_rpKey);
+      var _rpObj = _rpRaw ? JSON.parse(_rpRaw) : null;
+      if (_rpObj && _rpObj.rowPalette !== undefined) {
+        delete _rpObj.rowPalette;
+        localStorage.setItem(_rpKey, JSON.stringify(_rpObj));
+      }
+    }
+  } catch (eRpRetire) {}
   // Convenience: read field from layered config — user prefs win, then admin, then null
   function _pref(field) {
     if (_userCfg && _userCfg[field] !== undefined && _userCfg[field] !== '' && _userCfg[field] !== null) return _userCfg[field];
@@ -48898,6 +49205,15 @@ function applyAirportConfigToBoard(iata) {
     var _fl = _flUrl !== null ? _flUrl : _fidsAirportFloor(iata);
     document.documentElement.setAttribute('data-fids-floor-pref', _fl === 'classic' ? 'classic' : 'earth');
   } catch (eFl) {}
+  // The rows of the departures and arrivals boards (Customize: Row colours):
+  // empty (nothing chosen) keeps the theme rows, airport paints them in the
+  // airport logo colours (_fidsRowPalPaint, run by the render below). THE
+  // AIRPORT CHOICE ONLY (_fidsAirportRowPal), like the bottom of the board:
+  // read with _pref, a device holding an empty choice fell through to the
+  // airport choice, so a screen could turn the rows on but never off. The
+  // device copy of the field is shed where it was loaded above; ?rowpal=on
+  // or off decides it for review.
+  try { _fidsRowPalSetting(_fidsAirportRowPal(iata)); } catch (eRp) {}
   var _aStyle = _toggleVal('airlineStyle');
   if (_aStyle && _aStyle !== 'full') {
     document.body.dataset.fidsAirlineStyle = _aStyle;

@@ -30,9 +30,10 @@
 //
 // Part 1 locks the structure of the fix by reading the source (runs anywhere).
 // Part 2 drives the real board in headless Chrome against fixture data — no
-// network — on a dark palette and on a light one, and asserts the computed
-// ink of every cell across the unit toggle, the language toggle, a forced
-// rebuild and the painters' own heartbeats, and the contrast of every word.
+// network — on a dark palette, on a light one, and with the rows in the
+// airport logo colours over the light one, and asserts the computed ink of
+// every cell across the unit toggle, the language toggle, a forced rebuild
+// and the painters' own heartbeats, and the contrast of every word.
 // It skips when no Chrome or Chromium is installed.
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -410,10 +411,15 @@ const PALETTES = {
   light: { accent: '#eab308', hdr: '#27272a', hdrText: '#ffffff', bg: '#e8eef2',
            rowOdd: '#ffffff', rowEven: '#e3eaf0', text: '#18181b' },
 };
-const airportConfig = (palette) => ({
+// And the rows in the airport logo colours (Customize: Row colours) over that
+// light palette: the airport chose them, and its logo is a vector mark the board
+// reads its colours out of (fids-core.js _fidsRowPalPaint). The rows turn dark,
+// so the board turns dark, and every word on a plain row reads at 7 to 1.
+const ROWS_LOGO = '/logos/airports/mark-CYQM-colour.svg';
+const airportConfig = (palette) => Object.assign({
   hideAirlinePrefix: true, hideWeather: false, airlineStyle: 'full', font: 'bricolage', logoSize: 'small',
-  theme: 'custom', customColors: PALETTES[palette],
-});
+  theme: 'custom', customColors: PALETTES[palette === 'rows' ? 'light' : palette],
+}, palette === 'rows' ? { rowPalette: 'airport', logo: { url: ROWS_LOGO } } : {});
 
 function fixtureFor(url, palette, now) {
   const u = new URL(url);
@@ -584,6 +590,7 @@ async function boardPass(t, chrome, palette) {
           && !!document.querySelector('#fidsTable tbody tr.row-diverted .gate-changed-badge')
           && !!document.querySelector('#fidsTable .fids-cell-weather span')
           && document.body.classList.contains('fids-light-board') === ${lightWanted}
+          && (${palette !== 'rows'} || document.body.getAttribute('data-fids-row-palette-state') === 'rows')
           && document.body.getAttribute('data-fids-theme') === 'custom'`);
       } catch (e) { ready = false; }
     }
@@ -661,6 +668,10 @@ async function boardPass(t, chrome, palette) {
         if (!A.sep) {
           const cr = cellRatio(A);
           if (cr < 4.5) problems.push(`${at} ${A.ink} on ${A.ground}${A.rowOp < 1 ? ' faded to ' + A.rowOp : ''} is ${cr.toFixed(2)}:1`);
+          // the rows in the airport logo colours hold every word of a plain row at 7 to 1
+          else if (palette === 'rows' && (row === '' || row === 'row-early') && !A.badge && !A.pill && cr < 7) {
+            problems.push(`${at} ${A.ink} on ${A.ground} is ${cr.toFixed(2)}:1, under 7:1 on the rows in the logo colours`);
+          }
         }
       }
     }
@@ -672,9 +683,10 @@ async function boardPass(t, chrome, palette) {
   }
 }
 
-test('every cell keeps one legible ink through the unit, language, rebuild and heartbeat passes', { timeout: 180000 }, async (t) => {
+test('every cell keeps one legible ink through the unit, language, rebuild and heartbeat passes', { timeout: 270000 }, async (t) => {
   const chrome = findChrome();
   if (!chrome) { t.skip('no Chrome or Chromium installed'); return; }
   await t.test('dark palette (Ottawa)', async (tt) => boardPass(tt, chrome, 'dark'));
   await t.test('light palette', async (tt) => boardPass(tt, chrome, 'light'));
+  await t.test('the rows in the airport logo colours, over the light palette', async (tt) => boardPass(tt, chrome, 'rows'));
 });

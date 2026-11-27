@@ -75,12 +75,32 @@ test('a device copy of the floor is retired where it is read, and Customize no l
   assert.match(MENU, /if \(prefs\.floor !== undefined\) body\.floor = prefs\.floor;/);
 });
 
-test('signed out, the floor control is shown disabled with the reason, since only a signed-in save reaches the airport', () => {
-  // v24145 — review note on #1141: Classic picked while signed out did nothing visible
-  const at = MENU.indexOf('function _cuPaintForm(prefs) {');
-  const fn = MENU.slice(at, MENU.indexOf('\n}\n', at));
-  assert.match(fn, /var _flSigned = !!_acGetToken\(\);\s*fl\.disabled = !_flSigned;/);
-  assert.match(fn, /_flNote\.textContent = _flSigned \? '' : 'Set for the whole airport\. Sign in \(Login\) to change it\.';/);
+test('the floor control is shown disabled with the reason unless an admin is signed in, since only an admin save reaches the airport', () => {
+  // v24145 — review note on #1141: Classic picked while signed out did nothing visible.
+  // Signed in without admin rights the worker refuses the save (isAdmin) the same way.
+  const lift = (name) => {
+    const at = MENU.indexOf('function ' + name + '(');
+    assert.ok(at >= 0, name);
+    return MENU.slice(at, MENU.indexOf('\n}\n', at) + 2);
+  };
+  assert.match(lift('_cuPaintForm'), /try \{ _cuPaintAirportOnly\(\); \} catch \(e\) \{\}/);
+  const paint = lift('_cuPaintAirportOnly');
+  assert.match(paint, /\['cuFloor', 'cuFloorNote', /, 'the floor and its note');
+  assert.match(paint, /el\.disabled = !!why;/);
+  assert.match(paint, /note\.textContent = why;/);
+  // the reason, for the role read as editor-roles.js reads it (sessionStorage fids_user)
+  const why = (token, user) => {
+    const box = {
+      _acGetToken: () => token, window: {},
+      sessionStorage: { getItem: (k) => (k === 'fids_user' && user ? JSON.stringify(user) : null) },
+    };
+    vm.runInNewContext(lift('_cuEditorRole') + lift('_cuAirportOnlyWhy') + '\nthis.r = _cuAirportOnlyWhy();', box);
+    return box.r;
+  };
+  assert.equal(why(null, null), 'Set for the whole airport. Sign in (Login) to change it.');
+  assert.equal(why('token', { role: 'operator' }), 'Set for the whole airport. Only an admin can change it.');
+  assert.equal(why('token', { role: 'viewer' }), 'Set for the whole airport. Only an admin can change it.');
+  assert.equal(why('token', { role: 'admin' }), '');
   const MENU_HTML = rd('menu.html');
   assert.ok(MENU_HTML.indexOf('id="cuFloorNote"') > MENU_HTML.indexOf('id="cuFloor"'), 'the note sits under the control');
 });
