@@ -2640,11 +2640,12 @@ function _cuSave(prefs) {
   // v24144 — the bottom of the board is the airport choice only: it travels
   // to the cloud (_cuCloudPush reads prefs.floor) and is never kept in this
   // device copy, which the boards no longer read for it (_fidsAirportFloor).
+  // The row colours the same way (prefs.rowPalette, _fidsAirportRowPal).
   var local = prefs;
   try {
-    if (prefs && prefs.floor !== undefined) {
+    if (prefs && (prefs.floor !== undefined || prefs.rowPalette !== undefined)) {
       local = {};
-      for (var k in prefs) if (Object.prototype.hasOwnProperty.call(prefs, k) && k !== 'floor') local[k] = prefs[k];
+      for (var k in prefs) if (Object.prototype.hasOwnProperty.call(prefs, k) && k !== 'floor' && k !== 'rowPalette') local[k] = prefs[k];
     }
   } catch (e) { local = prefs; }
   try { localStorage.setItem(_cuStorageKey(), JSON.stringify(local)); } catch (e) {}
@@ -2775,7 +2776,9 @@ function _cuCloudPush(code, prefs) {
           _cuSyncNote('saved');
           // v24144 — the bottom of the board is read from the airport config
           // only, so this screen re-reads it now rather than at the next 10 s poll.
-          if (body.floor !== undefined) {
+          // The row colours are too: turning them off shows at once, whether
+          // or not the floor travelled with them.
+          if (body.floor !== undefined || body.rowPalette !== undefined) {
             try { if (typeof refreshAirportConfig === 'function') refreshAirportConfig(code); } catch (e) {}
           }
           // Align this device's stamp with the cloud's so the newer-wins
@@ -2877,7 +2880,8 @@ function _cuReadForm() {
   if (fl && fl.dataset.painted === '1') p.floor = fl.value;
   else { var _pv4 = _cuLoad(); if (_pv4 && _pv4.floor !== undefined) p.floor = _pv4.floor; }
   // The row colours: '' is nothing chosen (the theme rows); 'airport' paints
-  // the rows in the airport logo colours. Unpainted → carry forward.
+  // the rows in the airport logo colours. Unpainted → carry forward (as for
+  // the floor, no device copy is kept, so an unpainted panel sends none).
   var rp = document.getElementById('cuRowPalette');
   if (rp && rp.dataset.painted === '1') p.rowPalette = rp.value;
   else { var _pv5 = _cuLoad(); if (_pv5 && _pv5.rowPalette !== undefined) p.rowPalette = _pv5.rowPalette; }
@@ -2963,18 +2967,27 @@ function _cuPaintForm(prefs) {
       }
     } catch (e) {}
   }
-  // The row colours, painted like the weather icons: this device's choice
-  // when it holds one, otherwise the airport's (the layers the board reads).
+  // The row colours, painted like the bottom of the board: the airport
+  // choice, which is all the boards read for it (_fidsAirportRowPal); a device
+  // copy is not kept. Only a signed-in save reaches the airport, so signed
+  // out the control is shown, disabled, with the reason.
   var rp = document.getElementById('cuRowPalette');
   if (rp) {
-    var _rpv = prefs.rowPalette;
-    if (_rpv === undefined || _rpv === null || _rpv === '') {
-      try {
-        var _rpCfg = (typeof getAirportConfig === 'function') ? getAirportConfig(_acCurrentCode()) : null;
-        _rpv = (_rpCfg && _rpCfg.rowPalette) || '';
-      } catch (e) { _rpv = ''; }
-    }
+    var _rpv = '';
+    try {
+      _rpv = (typeof _fidsAirportRowPal === 'function') ? _fidsAirportRowPal(_acCurrentCode())
+        : (((typeof getAirportConfig === 'function') ? getAirportConfig(_acCurrentCode()) : null) || {}).rowPalette || '';
+    } catch (e) { _rpv = ''; }
     rp.value = _rpv || ''; if (rp.selectedIndex < 0) rp.value = ''; rp.dataset.painted = '1';
+    try {
+      var _rpSigned = !!_acGetToken();
+      rp.disabled = !_rpSigned;
+      var _rpSignNote = document.getElementById('cuRowPaletteSignNote');
+      if (_rpSignNote) {
+        _rpSignNote.textContent = _rpSigned ? '' : 'Set for the whole airport. Sign in (Login) to change it.';
+        _rpSignNote.style.display = _rpSigned ? 'none' : '';
+      }
+    } catch (e) {}
     try { _cuRowPaletteNote(); } catch (e) {}
   }
   // Font picker

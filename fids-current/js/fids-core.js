@@ -28975,10 +28975,11 @@ function _fidsLogoPaletteRead(ap, logo, cb) {
   });
 }
 // ── ROWS IN THE AIRPORT LOGO COLOURS (Customize: Row colours) ─────────────
-// An airport choice, off by default: rowPalette in the airport config or in
-// the Customize prefs of a screen, empty for nothing chosen (the theme
-// rows), airport for the colours of the airport logo, the palette the banner
-// wears. applyAirportConfigToBoard stamps the choice on the body as
+// An airport choice only, off by default, like the bottom of the board:
+// rowPalette in the airport config (never a copy on a screen, see
+// _fidsAirportRowPal), empty for nothing chosen (the theme rows), airport
+// for the colours of the airport logo, the palette the banner wears.
+// applyAirportConfigToBoard stamps the choice on the body as
 // data-fids-row-palette="airport"; ?rowpal=on or ?rowpal=off decides it for
 // one load, for review. render() then runs _fidsRowPalPaint, which writes
 // the grounds and inks below as variables on the body. The rules that read
@@ -28995,8 +28996,9 @@ function _fidsLogoPaletteRead(ap, logo, cb) {
 // was drawn for, and the board stays a dark board.
 //
 // WHAT MAY NOT PAINT A ROW, judged on the two shades that would paint:
-//   grey  less than C* 12 (in the logo or in the shade): a grey row reads
-//         as a Departed or Gate closed row and hides the dark airline tiles
+//   grey  less than C* 12 in the logo or in either shade, the lighter and
+//         the darker stripe: a grey row reads as a Departed or Gate closed
+//         row and hides the dark airline tiles
 //   warm  an HSL hue from 340 round to 95: a red reads as Cancelled, an
 //         orange or an amber darkens into brown, a yellow green into olive
 //   red   any other colour within dE76 60 of a red a Cancelled or Diverted
@@ -29058,7 +29060,10 @@ function _fidsRowPalRefusal(hex) {
   var lo = _fidsRowPalShade(hex, FIDS_ROWPAL_L - FIDS_ROWPAL_STEP);
   var src = _fidsRowPalLab(hex), a = _fidsRowPalLab(hi), b = _fidsRowPalLab(lo);
   if (!src || !a || !b) return 'grey';
-  if (src[3] < FIDS_ROWPAL_MIN_C || a[3] < FIDS_ROWPAL_MIN_C) return 'grey';
+  // the logo colour and both stripes, the darker one too: a muted steel blue
+  // keeps C* 12 on the lighter stripe and loses it on the darker, which then
+  // reads like the slate of a past flight
+  if (src[3] < FIDS_ROWPAL_MIN_C || a[3] < FIDS_ROWPAL_MIN_C || b[3] < FIDS_ROWPAL_MIN_C) return 'grey';
   var rgb = _rc2Rgb(hi);
   var h = _rgbToHsl(rgb[0], rgb[1], rgb[2])[0];
   if (h >= 340 || h < 95) return 'warm';
@@ -29145,8 +29150,22 @@ function _fidsRowPalUrl() {
     return (v === 'on' || v === 'off') ? v : '';
   } catch (e) { return ''; }
 }
-// Stamps the choice on the body. pref is the rowPalette the airport config
-// and the Customize prefs give (applyAirportConfigToBoard reads it).
+// THE AIRPORT CHOICE, as the bottom of the board is (_fidsAirportFloor):
+// airport only when the airport config itself, the cloud copy saved from
+// Customize by a signed-in operator, says airport; anything else is empty
+// (the theme rows). Neither the Customize copy of a screen nor a per-browser
+// fids_airport_override_ is read. Both live on one origin of one browser,
+// and with the screen copy read first, a screen holding nothing chosen fell
+// through to the airport choice: it could turn the rows on but never off.
+function _fidsAirportRowPalOf(cfg) {
+  return (cfg && cfg.rowPalette === 'airport') ? 'airport' : '';
+}
+function _fidsAirportRowPal(code) {
+  var norm = _normAirportCode(code);
+  return norm ? _fidsAirportRowPalOf(_airportConfigCache[norm]) : '';
+}
+// Stamps the choice on the body. pref is the airport choice
+// (_fidsAirportRowPal, read by applyAirportConfigToBoard).
 function _fidsRowPalSetting(pref) {
   var u = _fidsRowPalUrl();
   var on = u ? (u === 'on') : (pref === 'airport');
@@ -48645,7 +48664,6 @@ function applyAirportConfigToBoard(iata) {
         'logoPosition', 'logoSize', 'hideAirlinePrefix', 'hideWeather',
         'airlineStyle', 'displayMode', 'wxIcons'];
       _cloudOwned.push('floor');   // the bottom of the departures and arrivals (Earth, now | Classic)
-      _cloudOwned.push('rowPalette');   // the rows of the departures and arrivals (the theme | the airport logo colours)
       var _shed = false;
       for (var _coI = 0; _coI < _cloudOwned.length; _coI++) {
         if (_userCfg[_cloudOwned[_coI]] !== undefined) { delete _userCfg[_cloudOwned[_coI]]; _shed = true; }
@@ -48703,6 +48721,21 @@ function applyAirportConfigToBoard(iata) {
       }
     }
   } catch (eFlRetire) {}
+  // The row colours are an airport choice only too (_fidsAirportRowPal), so
+  // a device copy of rowPalette is retired the same way, and a later save
+  // from a Customize panel that was never opened has none to send back.
+  try {
+    if (_userCfg && _userCfg.rowPalette !== undefined) {
+      delete _userCfg.rowPalette;
+      var _rpKey = 'fids_customize_' + String(iata || '').toUpperCase();
+      var _rpRaw = localStorage.getItem(_rpKey);
+      var _rpObj = _rpRaw ? JSON.parse(_rpRaw) : null;
+      if (_rpObj && _rpObj.rowPalette !== undefined) {
+        delete _rpObj.rowPalette;
+        localStorage.setItem(_rpKey, JSON.stringify(_rpObj));
+      }
+    }
+  } catch (eRpRetire) {}
   // Convenience: read field from layered config — user prefs win, then admin, then null
   function _pref(field) {
     if (_userCfg && _userCfg[field] !== undefined && _userCfg[field] !== '' && _userCfg[field] !== null) return _userCfg[field];
@@ -49154,10 +49187,13 @@ function applyAirportConfigToBoard(iata) {
   } catch (eFl) {}
   // The rows of the departures and arrivals boards (Customize: Row colours):
   // empty (nothing chosen) keeps the theme rows, airport paints them in the
-  // airport logo colours (_fidsRowPalPaint, run by the render below). Read
-  // with _pref like the weather icons, so a device holding an empty choice
-  // never hides the airport choice; ?rowpal=on or off decides it for review.
-  try { _fidsRowPalSetting(_pref('rowPalette')); } catch (eRp) {}
+  // airport logo colours (_fidsRowPalPaint, run by the render below). THE
+  // AIRPORT CHOICE ONLY (_fidsAirportRowPal), like the bottom of the board:
+  // read with _pref, a device holding an empty choice fell through to the
+  // airport choice, so a screen could turn the rows on but never off. The
+  // device copy of the field is shed where it was loaded above; ?rowpal=on
+  // or off decides it for review.
+  try { _fidsRowPalSetting(_fidsAirportRowPal(iata)); } catch (eRp) {}
   var _aStyle = _toggleVal('airlineStyle');
   if (_aStyle && _aStyle !== 'full') {
     document.body.dataset.fidsAirlineStyle = _aStyle;

@@ -3,21 +3,25 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // ROWS IN THE AIRPORT LOGO COLOURS (Customize → Display Options → Row colours)
 //
-// An airport choice, off by default. With it on, the plain rows of the
-// departures and arrivals table take the colour the banner reads out of the
-// airport logo: one band colour, moved along its own hue to two fixed depths
-// (L* 23.7 for the even rows, 9 L* below for the odd ones), with the column
-// titles in that colour at full strength. Every word on those rows reads at
-// 7 to 1. A band colour that would read as a status never paints a row: a red
-// reads as Cancelled, an orange or amber darkens into brown, a yellow green
-// into olive, a wine or plum sits too close to the Cancelled and Diverted
-// reds, and a grey reads as a past flight. When nothing may paint, the rows
-// keep the theme and only the column titles take the logo colour; a logo with
-// no palette at all changes nothing.
+// An airport choice only, off by default, like the bottom of the board: the
+// board reads it from the airport config, never from a copy on a screen, and
+// signed out Customize shows it disabled with the reason. With it on, the
+// plain rows of the departures and arrivals table take the colour the banner
+// reads out of the airport logo: one band colour, moved along its own hue to
+// two fixed depths (L* 23.7 for the even rows, 9 L* below for the odd ones),
+// with the column titles in that colour at full strength. Every word on those
+// rows reads at 7 to 1. A band colour that would read as a status never paints
+// a row: a red reads as Cancelled, an orange or amber darkens into brown, a
+// yellow green into olive, a wine or plum sits too close to the Cancelled and
+// Diverted reds, and a grey (under C* 12 in the logo or on either stripe)
+// reads as a past flight. When nothing may paint, the rows keep the theme and
+// only the column titles take the logo colour; a logo with no palette at all
+// changes nothing.
 //
-// The functions run here are lifted out of fids-core.js and menu.js as they
-// are written; only the page around them (body, storage, the logo reader) is
-// a stand-in. The rules are read out of display-overrides.css.
+// The functions run here are lifted out of fids-core.js, menu.js and
+// workers/fids-proxy.js as they are written; only the page around them (body,
+// elements, storage, the network, the logo reader) is a stand-in. The rules
+// are read out of display-overrides.css.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -64,7 +68,8 @@ const PLANNER = () => [fn('_relLum'), fn('_hex'), fn('_rgbToHsl'), v('_FIDS_BAND
   fn('_fidsContrast'), fn('_fidsInk'), fn('_fidsStatusInk'), v('FIDS_ROWPAL_L'), v('FIDS_ROWPAL_STEP'),
   v('FIDS_ROWPAL_MIN_C'), v('FIDS_ROWPAL_MIN_RED_DE'), v('FIDS_ROWPAL_INK'), v('FIDS_ROWPAL_REDS'),
   fn('_fidsRowPalLab'), fn('_fidsRowPalShade'), fn('_fidsRowPalRefusal'), fn('_fidsRowPalHead'), fn('_fidsRowPalPlan')].join('\n');
-const lib = () => new Function(PLANNER() + '\nreturn { plan: _fidsRowPalPlan, refusal: _fidsRowPalRefusal, shade: _fidsRowPalShade, reds: FIDS_ROWPAL_REDS, dE: _rc2DeltaE, lab: _fidsRowPalLab };')();
+const lib = () => new Function(PLANNER() + '\nreturn { plan: _fidsRowPalPlan, refusal: _fidsRowPalRefusal, shade: _fidsRowPalShade, reds: FIDS_ROWPAL_REDS, dE: _rc2DeltaE, lab: _fidsRowPalLab,'
+  + ' evenL: FIDS_ROWPAL_L, step: FIDS_ROWPAL_STEP, minC: FIDS_ROWPAL_MIN_C };')();
 
 // ── one board: the body, storage and the logo reader are stand-ins ──────────
 function board({ ap = 'YQM', search = '', store = {}, cfg = null, registry = {} } = {}) {
@@ -101,6 +106,119 @@ function board({ ap = 'YQM', search = '', store = {}, cfg = null, registry = {} 
 }
 const LOGO = 'https://assets.example/logo-yqm.svg';
 const warm = (ap, pal) => ({ ['fids_logo_palette3_' + ap]: JSON.stringify({ url: LOGO, pal }) });
+
+// ── one screen with Customize, end to end ───────────────────────────────────
+// The code of all three files as it is written: in fids-core.js the airport
+// config cache and its refresh, the head of applyAirportConfigToBoard (the
+// layers it reads) with its row colours line, and the row painter; in menu.js
+// the Customize save, the cloud push and the paint of the form; in
+// workers/fids-proxy.js the airport-config PUT and GET. Only the page around
+// them is a stand-in: the elements, storage, timers, the network and the store
+// of the worker.
+const afn = (name, src) => 'async ' + fn(name, src);
+const line = (re, src) => { const m = re.exec(src); assert.ok(m, String(re) + ' must exist'); return m[0]; };
+const mv = (name) => line(new RegExp('var ' + name + ' = [^;]+;'), MENU);
+// applyAirportConfigToBoard up to the languages (its layers: the device copy,
+// the airport config, the copies it retires and _pref), then its row colours
+// line, and the render it ends on (which runs the row painter). The readers
+// that line calls are lifted with it.
+function applyBoard() {
+  const A = fn('applyAirportConfigToBoard');
+  const langs = A.indexOf('\n  // Board languages per airport, layered:');
+  assert.ok(langs > 0, 'applyAirportConfigToBoard reads its layers before the languages');
+  const rp = /\n  try \{ _fidsRowPalSetting\([^\n]*\); \} catch \(eRp\) \{\}/.exec(A);
+  assert.ok(rp && rp.index > langs, 'and stamps the row colours after them');
+  assert.match(A, /if \(typeof render === 'function'\) render\(\);\n  \} catch \(e\) \{\}\n\}$/, 'it ends by drawing the board again');
+  const readers = rp[0].includes('_fidsAirportRowPal(') ? [fn('_fidsAirportRowPalOf'), fn('_fidsAirportRowPal')] : [];
+  return readers.concat([A.slice(0, langs) + rp[0] + "\n  try { if (typeof render === 'function') render(); } catch (e) {}\n}"]).join('\n');
+}
+const SCREEN_SRC = () => [
+  line(/const _airportConfigCache = \{\};/, CORE), fn('_normAirportCode'), fn('getAirportConfig'),
+  fn('_fidsAirportFloorOf'), fn('_fidsAirportFloor'), afn('refreshAirportConfig'),
+  PLANNER(), v('_bandPaletteBusy'), v('_bandPaletteWaiting'), v('_fidsRowPalRead'), v('_fidsRowPalLast'), v('FIDS_ROWPAL_VARS'),
+  "var _lastTbodyHtml = '';",
+  fn('_fidsAirportLogoUrl'), fn('_fidsLogoPaletteCached'), fn('_fidsLogoPaletteRead'), fn('_fidsRowPalSource'),
+  fn('_fidsRowPalUrl'), fn('_fidsRowPalSetting'), fn('_fidsRowPalPaint'), applyBoard(),
+  fn('_acCurrentCode', MENU), mv('_AC_WORKER_URL'), fn('_acGetToken', MENU), afn('_acFetch', MENU),
+  fn('_cuStorageKey', MENU), fn('_cuLoad', MENU), fn('_cuSave', MENU), fn('_cuSyncNote', MENU),
+  line(/var _cuCloudTimer = null;/, MENU), fn('_cuCloudPush', MENU), fn('_cuReadForm', MENU), fn('_cuPaintForm', MENU),
+  fn('_cuRowPaletteNote', MENU), line(/try \{ window\.addEventListener\('fids-row-palette'[^\n]+/, MENU),
+  mv('_cuCurrentPos'), fn('cuSetPositionUI', MENU), mv('_cuCurrentMode'), fn('cuSetDisplayModeUI', MENU),
+  mv('_cuThemeExplicitDefault'), mv('_cuFontExplicitDefault'), mv('_cuCurrentSize'), fn('cuApplyAndSave', MENU),
+  MENU.slice(MENU.indexOf('window.FIDS_CUSTOMIZE = {'), MENU.indexOf('\n};\n', MENU.indexOf('window.FIDS_CUSTOMIZE = {')) + 3),
+].join('\n');
+const WORKER_SRC = () => [line(/function isAdmin\(payload\) \{[^\n]+/, PROXY), line(/function normIata\(code\) \{[^\n]+/, PROXY),
+  afn('handlePutAirport', PROXY), afn('handleGetAirport', PROXY)].join('\n');
+// role: null (signed out), 'operator' or 'admin'; cloud: the airport config the
+// worker holds for YQM; device: this screen's Customize copy; floorControl:
+// false for a panel without the Bottom of the board control
+function screen({ role = null, cloud = null, device = null, search = '', floorControl = true } = {}) {
+  const ls = new Map();
+  if (device) ls.set('fids_customize_YQM', JSON.stringify(device));
+  ls.set('fids_banner_palette_YQM', JSON.stringify(BAND.YQM));   // the banner palette this screen holds
+  if (role) ls.set('fids_token', 'token-' + role);
+  const storage = (m) => ({ getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, x) => { m.set(k, String(x)); }, removeItem: (k) => { m.delete(k); } });
+  const attrs = {}, vars = {};
+  const body = {
+    getAttribute: (k) => (Object.prototype.hasOwnProperty.call(attrs, k) ? attrs[k] : null),
+    setAttribute: (k, x) => { attrs[k] = String(x); },
+    removeAttribute: (k) => { delete attrs[k]; },
+    style: { setProperty: (k, x) => { vars[k] = x; }, removeProperty: (k) => { delete vars[k]; } },
+    dataset: {}, classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
+  };
+  // a select: a value it has no option for leaves it on no option, read back as ''
+  const select = (opts) => {
+    const el = { dataset: {}, style: {}, disabled: false, _v: '', _i: 0 };
+    Object.defineProperty(el, 'value', { get() { return this._v; }, set(x) { const i = opts.indexOf(String(x)); this._i = i; this._v = i < 0 ? '' : String(x); } });
+    Object.defineProperty(el, 'selectedIndex', { get() { return this._i; } });
+    return el;
+  };
+  const note = () => ({ style: { display: 'none' }, textContent: '' });
+  const box = () => ({ checked: false, dataset: {} });
+  const els = {
+    apSel: { value: 'YQM' }, cuThemeSelect: select(['', 'tus-teal']), cuFontSelect: select(['']),
+    cuWxIcons: select(['', 'classic', 'colour', 'solid']), cuRowPalette: select(['', 'airport']),
+    cuRowPaletteNote: note(), cuRowPaletteSignNote: note(), cuCloudSyncNote: note(),
+    cuHidePrefix: box(), cuHideWeather: box(), cuAirlineEmblem: box(),
+  };
+  if (floorControl) Object.assign(els, { cuFloor: select(['', 'classic']), cuFloorNote: note() });
+  const listeners = {};
+  const timers = [], net = [];
+  const kv = new Map(cloud ? [['airport:YQM', JSON.stringify(cloud)]] : []);
+  const env = { FIDS_USERS: { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, x) => { kv.set(k, x); } } };
+  const jsonResponse = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => JSON.parse(JSON.stringify(data)) });
+  const W = new Function('jsonResponse', WORKER_SRC() + '\nreturn { put: handlePutAirport, get: handleGetAirport };')(jsonResponse);
+  const g = {
+    document: { body, documentElement: { setAttribute() {}, removeAttribute() {}, getAttribute: () => null }, getElementById: (id) => els[id] || null },
+    window: {
+      addEventListener: (t, f) => { (listeners[t] = listeners[t] || []).push(f); },
+      dispatchEvent: (e) => { (listeners[e.type] || []).forEach((f) => f(e)); return true; },
+    },
+    localStorage: storage(ls), sessionStorage: storage(new Map()), location: { search }, URLSearchParams,
+    CustomEvent: function (type, init) { this.type = type; this.detail = init && init.detail; },
+    console: { log() {}, warn() {} }, setTimeout: (f) => { timers.push(f); return timers.length; }, clearTimeout() {},
+    fetch: async (url, opts = {}) => {
+      const method = opts.method || 'GET';
+      net.push(method);
+      const code = url.split('/').pop();
+      if (method === 'PUT') return W.put({ json: async () => JSON.parse(opts.body) }, env, { sub: 'someone', role }, '', code);
+      return W.get(env, '', code);
+    },
+    AP: {}, BANNER_PALETTE: {}, FIDS_API_BASE: 'https://worker.example',
+    _extractLogoPalette: () => { throw new Error('no logo read: the banner palette of this screen is at hand'); },
+  };
+  const names = Object.keys(g);
+  const api = new Function(...names, SCREEN_SRC() + `
+    function render() { _fidsRowPalPaint(); }   // the board render runs the row painter first
+    return { apply: applyAirportConfigToBoard, refresh: refreshAirportConfig, save: cuApplyAndSave,
+             paintForm: function () { _cuPaintForm(_cuLoad()); } };
+  `)(...names.map((n) => g[n]));
+  const flush = async () => { for (let n = 0; n < 50; n++) { while (timers.length) timers.shift()(); await new Promise((r) => setImmediate(r)); } };
+  const deviceCopy = () => JSON.parse(ls.get('fids_customize_YQM') || '{}');
+  const cloudCopy = () => JSON.parse(kv.get('airport:YQM') || '{}');
+  return Object.assign(api, { els, attrs, vars, net, flush, deviceCopy, cloudCopy });
+}
+const shown = (el) => (el.style.display === 'none' ? '' : el.textContent);
 
 // ── the rules, read out of display-overrides.css ────────────────────────────
 function block() {
@@ -153,8 +271,9 @@ test('off by default: nothing chosen is the theme rows, and nothing is painted',
     assert.equal(b.reads.length, 0, 'and the logo is not even read for the rows');
     assert.equal(b.rebuilt(), false, 'the rows on screen are left as they are');
   }
-  // the board reads the choice like the weather icons: the device, else the airport
-  assert.match(fn('applyAirportConfigToBoard'), /try \{ _fidsRowPalSetting\(_pref\('rowPalette'\)\); \} catch \(eRp\) \{\}/);
+  // the board reads the airport choice alone, like the bottom of the board: never a copy on a screen
+  assert.match(fn('applyAirportConfigToBoard'), /try \{ _fidsRowPalSetting\(_fidsAirportRowPal\(iata\)\); \} catch \(eRp\) \{\}/);
+  assert.doesNotMatch(CORE, /_pref\('rowPalette'\)/);
   // every rule of the block needs the choice on the body
   const BLOCK = block();
   for (const r of rules(BLOCK)) for (const s of r.sels) assert.match(s, /body\[data-fids-row-palette="airport"\]\[data-fids-row-palette-state="(rows|head)"\]/, s.slice(0, 120));
@@ -197,19 +316,23 @@ test('the body attribute is set and cleared as the choice changes, and the rows 
   assert.ok(paint > render.indexOf('if (!allFiltered.length) return;'), 'only when there are rows to paint');
 });
 
-test('Customize saves the choice, sends it to the airport cloud, and says when the cloud did not keep it', async () => {
-  // read from the form once painted, carried forward otherwise (the weather icon pattern)
+test('Customize sends the choice to the airport cloud, reads a kept one back at once, and says when the cloud did not keep it', async () => {
+  // read from the form once painted, carried forward otherwise (the floor pattern: with no copy kept on a screen, nothing is carried)
   assert.match(MENU, /if \(rp && rp\.dataset\.painted === '1'\) p\.rowPalette = rp\.value;\n\s*else \{ var _pv5 = _cuLoad\(\); if \(_pv5 && _pv5\.rowPalette !== undefined\) p\.rowPalette = _pv5\.rowPalette; \}/);
-  // painted as the board reads it: this device, else the airport
+  // painted as the board reads it: the airport choice alone
   const paint = fn('_cuPaintForm', MENU);
-  assert.match(paint, /var _rpv = prefs\.rowPalette;/);
-  assert.match(paint, /_rpv = \(_rpCfg && _rpCfg\.rowPalette\) \|\| '';/);
+  assert.match(paint, /_rpv = \(typeof _fidsAirportRowPal === 'function'\) \? _fidsAirportRowPal\(_acCurrentCode\(\)\)/);
+  assert.doesNotMatch(paint, /prefs\.rowPalette/, 'never a copy on this screen');
   assert.match(paint, /rp\.dataset\.painted = '1';/);
+  // only a signed-in save reaches the airport: signed out the control is shown disabled, with the reason, as the floor is
+  assert.match(paint, /var _rpSigned = !!_acGetToken\(\);\s*rp\.disabled = !_rpSigned;/);
+  assert.match(paint, /_rpSignNote\.textContent = _rpSigned \? '' : 'Set for the whole airport\. Sign in \(Login\) to change it\.';/);
+  assert.ok(MENU_HTML.indexOf('id="cuRowPaletteSignNote"') > MENU_HTML.indexOf('id="cuRowPalette"'), 'the note sits under the control');
   // the worker keeps it, and only a value the boards know
   assert.match(PROXY, /\n\s*"rowPalette",/);
   assert.match(PROXY, /if \(cfg\.rowPalette !== undefined && !\["", "airport"\]\.includes\(cfg\.rowPalette\)\) delete cfg\.rowPalette;/);
-  // a newer cloud save sheds the copy of a device
-  assert.match(CORE, /_cloudOwned\.push\('rowPalette'\);/);
+  // no copy on a screen is read, so a newer cloud save has none to shed
+  assert.doesNotMatch(CORE, /_cloudOwned\.push\('rowPalette'\);/);
 
   // the cloud push and its note, run as written against the worker in this
   // repository and one deployed before the field existed
@@ -222,7 +345,7 @@ test('Customize saves the choice, sends it to the airport cloud, and says when t
     const store = { fids_customize_YQM: JSON.stringify(Object.assign({}, prefs, { savedAt: 100 })) };
     const ls = { getItem: (k) => (k in store ? store[k] : null), setItem: (k, x) => { store[k] = String(x); } };
     const doc = { getElementById: (id) => (id === 'cuCloudSyncNote' ? note : id === 'cuRowPalette' ? sel : null) };
-    let sent = null;
+    let sent = null, reread = 0;
     const fetch = (url, opts) => {
       sent = JSON.parse(opts.body);
       const cfg = Object.assign({}, sent);
@@ -231,23 +354,145 @@ test('Customize saves the choice, sends it to the airport cloud, and says when t
       cfg.updatedAt = 200;
       return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true, config: cfg }) });
     };
-    new Function('document', 'localStorage', '_acGetToken', '_acFetch', '_AC_WORKER_URL', 'setTimeout', 'clearTimeout', 'console',
+    new Function('document', 'localStorage', '_acGetToken', '_acFetch', '_AC_WORKER_URL', 'setTimeout', 'clearTimeout', 'console', 'refreshAirportConfig',
       MENU.slice(at, MENU.indexOf('\n}\n', at) + 3) + MENU.slice(MENU.indexOf('var _cuCloudTimer = null;'), end) + '\n_cuCloudPush("YQM", ' + JSON.stringify(prefs) + ');')(
-      doc, ls, () => 'token', fetch, '', (f) => { f(); return 1; }, () => {}, { log() {}, warn() {} });
+      doc, ls, () => 'token', fetch, '', (f) => { f(); return 1; }, () => {}, { log() {}, warn() {} }, (code) => { if (code === 'YQM') reread++; });
     for (let i = 0; i < 5; i++) await new Promise((r) => setImmediate(r));
-    return { sent, note: note.textContent, savedAt: JSON.parse(store.fids_customize_YQM).savedAt, sel: sel.value };
+    return { sent, note: note.textContent, savedAt: JSON.parse(store.fids_customize_YQM).savedAt, sel: sel.value, reread };
   }
   const NEW_WORKER = JSON.parse(/!(\[[^\]]+\])\.includes\(cfg\.rowPalette\)/.exec(PROXY)[1]);
   let r = await push({ rowPalette: 'airport', font: 'bricolage' }, NEW_WORKER);
   assert.equal(r.sent.rowPalette, 'airport', 'the choice travels to the airport config');
   assert.match(r.note, /^✓ Saved to the airport cloud/);
   assert.equal(r.savedAt, 200, 'the stamp of this device is aligned with the cloud');
+  // the board reads the airport choice alone, so this screen reads the kept
+  // choice back at once, not at the next 10 s poll, the floor sent with it or not
+  assert.equal(r.reread, 1, 'a kept choice is read back at once');
   r = await push({ rowPalette: '' }, NEW_WORKER);
   assert.equal(r.sent.rowPalette, '', 'turning it off reaches the airport too');
+  assert.equal(r.reread, 1, 'and shows at once');
   r = await push({ rowPalette: 'airport' }, null);
   assert.match(r.note, /^⚠ Saved to the airport cloud, except the row colours/, 'a worker without the field: not "Saved"');
   assert.equal(r.savedAt, 100, 'the newer cloud copy wins on the next read');
   assert.equal(r.sel, '', 'the select goes back to the default entry');
+  assert.equal(r.reread, 0, 'nothing kept, nothing to read back');
+});
+
+test('the row colours are the airport choice alone, like the bottom of the board: a copy on a screen never turns them on or off', async () => {
+  // run: the airport config arrives and the board applies it
+  const T0 = 1764000000000;
+  const boot = async (cloud, device, search = '') => {
+    const s = screen({ cloud, device, search });
+    if (cloud) await s.refresh('YQM'); else s.apply('YQM');
+    return s;
+  };
+  // a copy on this screen newer than the airport save, so nothing sheds it, still decides nothing
+  let s = await boot({ rowPalette: '', updatedAt: T0 }, { theme: 'tus-teal', rowPalette: 'airport', savedAt: T0 + 1000 });
+  assert.equal(s.attrs['data-fids-row-palette'], undefined, 'a copy of airport on a screen does not turn the rows on');
+  assert.equal(s.attrs['data-fids-row-palette-state'], undefined);
+  assert.equal(s.deviceCopy().rowPalette, undefined, 'and is retired where the board reads it');
+  assert.equal(s.deviceCopy().theme, 'tus-teal', 'every other field of it stays');
+  s = await boot({ rowPalette: 'airport', updatedAt: T0 }, { theme: 'tus-teal', rowPalette: '', savedAt: T0 + 1000 });
+  assert.equal(s.attrs['data-fids-row-palette'], 'airport', 'the airport choice, whatever the screen holds');
+  assert.equal(s.attrs['data-fids-row-palette-state'], 'rows');
+  s = await boot(null, { rowPalette: 'airport', savedAt: T0 });
+  assert.equal(s.attrs['data-fids-row-palette'], undefined, 'no airport config: nothing chosen');
+  // the review switch still decides one load
+  s = await boot({ rowPalette: '', updatedAt: T0 }, null, '?rowpal=on');
+  assert.equal(s.attrs['data-fids-row-palette'], 'airport');
+  s = await boot({ rowPalette: 'airport', updatedAt: T0 }, null, '?rowpal=off');
+  assert.equal(s.attrs['data-fids-row-palette'], undefined);
+
+  // the reader: airport only when the airport config itself says airport
+  const of = new Function(fn('_fidsAirportRowPalOf') + '\nreturn _fidsAirportRowPalOf;')();
+  assert.equal(of({ rowPalette: 'airport' }), 'airport');
+  for (const cfg of [null, undefined, {}, { rowPalette: '' }, { rowPalette: 'Airport' }, { rowPalette: 'on' }, { rowPalette: true }]) assert.equal(of(cfg), '', JSON.stringify(cfg));
+  // read from the cloud copy itself: never getAirportConfig (a per-browser override would win), _pref or storage
+  const reader = fn('_fidsAirportRowPal');
+  assert.match(reader, /_airportConfigCache\[norm\]/);
+  assert.doesNotMatch(reader, /getAirportConfig|_pref|localStorage/);
+});
+
+test('Customize keeps no copy of the row colours on the screen, and still sends them to the airport', () => {
+  const at = MENU.indexOf('function _cuSave(prefs) {');
+  const store = {};
+  const save = new Function('localStorage', '_cuStorageKey', MENU.slice(at, MENU.indexOf('\n}\n', at) + 2) + '\nreturn _cuSave;')(
+    { setItem: (k, x) => { store[k] = x; } }, () => 'fids_customize_YQM');
+  const prefs = { theme: 'navy', rowPalette: 'airport', floor: 'classic', wxIcons: '' };
+  save(prefs);
+  const kept = JSON.parse(store.fids_customize_YQM);
+  assert.equal(kept.rowPalette, undefined, 'not in the copy on this screen');
+  assert.equal(kept.floor, undefined, 'nor the floor');
+  assert.equal(kept.theme, 'navy');
+  assert.equal(kept.wxIcons, '');
+  assert.equal(prefs.rowPalette, 'airport', 'still there for the cloud push');
+  save({ theme: 'navy', rowPalette: '' });
+  assert.equal(JSON.parse(store.fids_customize_YQM).rowPalette, undefined, 'nothing chosen is not kept either');
+});
+
+// ═══ turning the rows off while the airport holds airport ════════════════════
+// The airport chose the logo colours; Customize opens on a screen of it.
+async function airportOn(role, opts = {}) {
+  const T0 = 1764000000000;
+  const s = screen(Object.assign({
+    role,
+    cloud: { theme: 'tus-teal', floor: '', rowPalette: 'airport', updatedAt: T0, updatedBy: 'someone' },
+    device: { theme: 'tus-teal', savedAt: T0 },
+  }, opts));
+  await s.refresh('YQM');
+  s.paintForm();
+  assert.equal(s.attrs['data-fids-row-palette-state'], 'rows', 'the airport chose the logo colours');
+  assert.equal(s.els.cuRowPalette.value, 'airport', 'and the control shows the airport choice');
+  s.net.length = 0;
+  return s;
+}
+
+test('turning the rows off, signed out: the control is shown disabled with the reason, and a save keeps no copy and sends nothing', async () => {
+  const s = await airportOn(null);
+  assert.equal(s.els.cuRowPalette.disabled, true, 'signed out, a pick could not reach the airport');
+  assert.equal(shown(s.els.cuRowPaletteSignNote), 'Set for the whole airport. Sign in (Login) to change it.');
+  s.save(); await s.flush();   // a save of anything else on the panel
+  assert.deepEqual(s.net, []);
+  assert.equal(s.deviceCopy().rowPalette, undefined, 'no copy on this screen');
+  assert.equal(s.attrs['data-fids-row-palette'], 'airport', 'the rows stay as the airport chose');
+});
+
+test('turning the rows off, signed in without the right to change the airport: the refused save (403) changes nothing and leaves no copy', async () => {
+  const s = await airportOn('operator');
+  assert.equal(s.els.cuRowPalette.disabled, false, 'signed in, the control is live');
+  assert.equal(shown(s.els.cuRowPaletteSignNote), '');
+  s.els.cuRowPalette.value = '';
+  s.save(); await s.flush();
+  assert.deepEqual(s.net, ['PUT']);
+  assert.match(shown(s.els.cuCloudSyncNote), /^⚠ Cloud save failed/, 'the note the floor gets');
+  assert.equal(s.cloudCopy().rowPalette, 'airport');
+  assert.equal(s.attrs['data-fids-row-palette'], 'airport', 'the board stays as the airport chose');
+  assert.equal(s.deviceCopy().rowPalette, undefined, 'no copy on this screen');
+  s.paintForm();
+  assert.equal(s.els.cuRowPalette.value, 'airport', 'reopened, the control shows the airport choice');
+});
+
+test('turning the rows off as an admin: the cloud keeps nothing chosen and this screen shows it at once', async () => {
+  const s = await airportOn('admin');
+  s.els.cuRowPalette.value = '';
+  s.save(); await s.flush();
+  assert.deepEqual(s.net, ['PUT', 'GET'], 'saved, then read back');
+  assert.equal(s.cloudCopy().rowPalette, '', 'the airport holds nothing chosen');
+  assert.match(shown(s.els.cuCloudSyncNote), /^✓ Saved to the airport cloud/);
+  assert.equal(s.attrs['data-fids-row-palette'], undefined, 'the rows are off on this screen at once');
+  assert.equal(s.attrs['data-fids-row-palette-state'], undefined);
+  assert.deepEqual(s.vars, {}, 'the theme rows are back');
+  assert.equal(s.deviceCopy().rowPalette, undefined, 'no copy on this screen');
+  s.paintForm();
+  assert.equal(s.els.cuRowPalette.value, '', 'reopened, the control shows nothing chosen');
+});
+
+test('turning the rows off as an admin: the read back does not wait on the floor travelling with the choice', async () => {
+  const s = await airportOn('admin', { floorControl: false });
+  s.els.cuRowPalette.value = '';
+  s.save(); await s.flush();
+  assert.deepEqual(s.net, ['PUT', 'GET'], 'saved, then read back');
+  assert.equal(s.attrs['data-fids-row-palette'], undefined, 'off at once');
 });
 
 test('the menu says what the board did with the choice', () => {
@@ -458,19 +703,37 @@ test('what may not paint a row: reds, browns, olives, wines and plums, and greys
   for (const c of ['#ffb114', '#ef9600', '#fbca00', '#812a00', '#76bd21', '#97e000', '#96c262']) assert.equal(L.refusal(c), 'warm', c);
   // greys, black, silver and the grey band of Moncton read as past flights
   for (const c of ['#000000', '#333333', '#c0c0c0', '#5b5b65', '#d5d5eb', '#0b1220']) assert.equal(L.refusal(c), 'grey', c);
+  // so does a muted steel blue: its lighter stripe holds C* 12, its darker one
+  // falls under it and sits next to the slate of the past flight rows (#262D36)
+  for (const c of ['#3e5f7a', '#4a6a8a', '#36485d']) assert.equal(L.refusal(c), 'grey', c);
   // a deep true green, teal green, blue, indigo and purple may paint
   for (const c of ['#2d7e00', '#329a3d', '#004131', '#00426f', '#001338', '#3920a7', '#48117d']) assert.equal(L.refusal(c), '', c);
-  // every ground that paints holds those lines, on both rows
+  // every ground that paints holds those lines, on both rows: the grey line is
+  // the documented C* 12, on the darker stripe as on the lighter one
+  assert.equal(L.minC, 12, 'the grey line, C* 12');
   for (const [ap, pal] of Object.entries(BAND)) {
     const p = pal && L.plan(pal);
     if (!p || !p.rows) continue;
     for (const g of [p.odd, p.even]) {
       for (const red of L.reds) assert.ok(L.dE(g, red) >= 60, ap + ': ' + g + ' is dE76 ' + L.dE(g, red).toFixed(1) + ' from ' + red);
-      assert.ok(L.lab(g)[3] >= 8, ap + ': ' + g + ' has colour (C* ' + L.lab(g)[3].toFixed(1) + ')');
+      assert.ok(L.lab(g)[3] >= 12, ap + ': ' + g + ' has colour (C* ' + L.lab(g)[3].toFixed(1) + ')');
       const h = hue(g);
       assert.ok(h >= 95 && h < 340, ap + ': ' + g + ' is not a warm hue (' + h.toFixed(1) + ')');
     }
   }
+  // and on a sweep of the colour cube: wherever a colour may paint, both of its
+  // stripes hold C* 12
+  const steps = Array.from({ length: 16 }, (_, i) => i * 17);
+  let swept = 0;
+  for (const r of steps) for (const g of steps) for (const b of steps) {
+    const c = '#' + [r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('');
+    if (L.refusal(c)) continue;
+    swept++;
+    for (const s of [L.shade(c, L.evenL), L.shade(c, L.evenL - L.step)]) {
+      assert.ok(L.lab(s)[3] >= 12, c + ' may paint, but its stripe ' + s + ' is C* ' + L.lab(s)[3].toFixed(1));
+    }
+  }
+  assert.ok(swept >= 300, swept + ' colours of the sweep may paint');
   // a logo of greys only changes nothing at all
   assert.equal(L.plan(['#000000', '#333333', '#c0c0c0', '#5b5b65']), null);
 });
