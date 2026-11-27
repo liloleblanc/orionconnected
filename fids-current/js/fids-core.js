@@ -13328,7 +13328,9 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var fbList = paths.slice(1);
   // v24184 — 209: the Rouge A320 (AC/320r.png) was cleaned, the ragged halo its
   // cut-out left cleared and its body made solid, so every screen fetches it again
-  var _imgCacheBuster = '?v=209';
+  // v24185 — 210: the WestJet 737-700 (WS/73G.png, WS/73W.png) is the new supplied
+  // drawing, sized to the old one on the shelf
+  var _imgCacheBuster = '?v=210';
   var srcWithBust = src + _imgCacheBuster;
   var cls = opts.className || 'g8-aircraft-img';
   var style = opts.style || '';
@@ -51997,8 +51999,8 @@ var _MAP_PLANE_ART = {
   rv319: { src: '/logos/map-plane-rv-319.png', len: 42.75, span: 43.08 },
   ws7m8: { src: '/logos/map-plane-ws-7m8.png', len: 42.75, span: 38.94 },
   ws738: { src: '/logos/map-plane-ws-738.png', len: 42.75, span: 38.90 },
-  ws73g: { src: '/logos/map-plane-ws-73g.png', len: 42.75, span: 45.40 },
-  ws736: { src: '/logos/map-plane-ws-736.png', len: 41.00, span: 46.89 }
+  ws73g: { src: '/logos/map-plane-ws-73g.png', len: 42.75, span: 45.34 },
+  ws736: { src: '/logos/map-plane-ws-736.png', len: 41.00, span: 46.81 }
 };
 // v24182 — WHO WEARS THEM. Only an aeroplane every row of which says Air Canada
 // colours: an Air Canada number; an operator, by the ladder the boards already
@@ -52118,14 +52120,13 @@ function _mapPlaneAcArt(code, rows) {
 // v24185 — AND WESTJET (supplied art): the 737 MAX 8, 737-800 and 737-700 in the
 // colours WestJet flies today (the white body, the teal and navy sweep aft and
 // on the tail, navy titles and winglets, white engines), the colours of the side
-// views the boards already draw for all three. The 737-700 came with its wings
-// about 7 percent short for its span (its fuselage was true), so what lies outside
-// the fuselage was stretched sideways to the real span, the fuselage kept as
-// drawn. The 737-600 came as the same drawing as the 737-700, so it was given the
-// same wings and then its own length: 2.4 m of fuselage taken out, half ahead of
-// the wing and half behind it, as Boeing builds the 737-600 (span to length 1.146
-// with the winglets WestJet fitted to its 737-600s). It is wider than it is long,
-// so it is drawn 41 px long, not 42.75, so that its winglets fit the 48 px box.
+// views the boards already draw for all three. The 737-700 is true to the type as
+// drawn (span to length 1.061, a real one 1.064). The 737-600 is that drawing
+// given its own length: 2.4 m of fuselage taken out ahead of the titles and
+// behind the wingtips, where it is plain white, as Boeing builds the 737-600
+// shorter than the 737-700 (span to length 1.142, a real one with the winglets
+// WestJet fitted 1.146), so the two look alike. It is wider than it is long, so
+// it is drawn 41 px long, not 42.75, so that its winglets fit the 48 px box.
 // Greyed by the same rule as the others,
 // with teal, blue and navy kept beside red. Every row must be a WestJet mainline
 // flight: airline WS, a WS number 1-2999 (Encore flies 3000-3999, and only Dash

@@ -357,7 +357,7 @@ function hue(r, g, b) {
 // the red of each livery (maple leaves, exit outlines) as the grey pass leaves it, less a tenth
 const RED_MIN = { ac320: 585, ac321: 142, ac7m8: 183, ac223: 225, ace75: 27, accr9: 63, acdh4: 13, rv320: 5023, rv321: 3015, rv319: 4149 };
 // v24185: WestJet paints in teal, blue and navy (and the red of its small flags); its paint is counted
-const BLUE_MIN = { ws7m8: 2319, ws738: 2638, ws73g: 3231, ws736: 3445 };
+const BLUE_MIN = { ws7m8: 2319, ws738: 2638, ws73g: 3617, ws736: 3843 };
 
 test('the fourteen pictures: light 512 px RGBA squares, framed, upright, neutral, the livery colours kept', () => {
   for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4', 'rv320', 'rv321', 'rv319', 'ws7m8', 'ws738', 'ws73g', 'ws736']) {
@@ -435,6 +435,29 @@ test('the Rouge A320 side view is solid, with no halo left by its cut-out (v2418
   // the side views carry one cache tag: it moved on, so every screen fetches the clean file
   const tag = fnSource('aircraftImgTag').match(/var _imgCacheBuster = '\?v=(\d+)';/);
   assert.ok(tag && Number(tag[1]) >= 209, 'side-view cache tag ' + (tag && tag[1]));
+});
+
+test('the WestJet 737-700 side view: the new drawing, solid, no haze, one file for 73G and 73W (v24185)', () => {
+  const g = path.join(root, 'fids-current', 'aircraft', 'WS', '73G.png');
+  assert.ok(fs.readFileSync(g).equals(fs.readFileSync(path.join(root, 'fids-current', 'aircraft', 'WS', '73W.png'))), '73G and 73W are the one drawing');
+  const { w, h, rows } = readPng(g);
+  assert.deepEqual([w, h], [2048, 550], 'the 2048 recipe, its tail a little taller than the old drawing');
+  const solidAt = (x, y) => x >= 0 && y >= 0 && x < w && y < h && rows[y][x * 4 + 3] > 128;
+  let body = 0, solid = 0, haze = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const al = rows[y][x * 4 + 3];
+      if (al >= 64) { body++; if (al === 255) solid++; continue; }
+      if (al === 0 || al > 24) continue;
+      let near = false;
+      for (let dy = -2; dy <= 2 && !near; dy++) for (let dx = -2; dx <= 2 && !near; dx++) if (solidAt(x + dx, y + dy)) near = true;
+      if (!near) haze++;
+    }
+  }
+  assert.equal(haze, 0, 'faint haze away from the drawing');
+  assert.ok(solid / body > 0.98, 'the body is solid: ' + solid + ' of ' + body);
+  const tag = fnSource('aircraftImgTag').match(/var _imgCacheBuster = '\?v=(\d+)';/);
+  assert.ok(tag && Number(tag[1]) >= 210, 'side-view cache tag ' + (tag && tag[1]));
 });
 
 test('both maps and the apron hand the rows of the aeroplane to the picker, and the apron redraws on a change of colours', () => {
