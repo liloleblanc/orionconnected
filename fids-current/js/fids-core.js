@@ -51997,7 +51997,8 @@ var _MAP_PLANE_ART = {
   rv319: { src: '/logos/map-plane-rv-319.png', len: 42.75, span: 43.08 },
   ws7m8: { src: '/logos/map-plane-ws-7m8.png', len: 42.75, span: 38.94 },
   ws738: { src: '/logos/map-plane-ws-738.png', len: 42.75, span: 38.90 },
-  ws73g: { src: '/logos/map-plane-ws-73g.png', len: 42.75, span: 45.40 }
+  ws73g: { src: '/logos/map-plane-ws-73g.png', len: 42.75, span: 45.40 },
+  ws736: { src: '/logos/map-plane-ws-736.png', len: 41.00, span: 46.89 }
 };
 // v24182 — WHO WEARS THEM. Only an aeroplane every row of which says Air Canada
 // colours: an Air Canada number; an operator, by the ladder the boards already
@@ -52120,20 +52121,25 @@ function _mapPlaneAcArt(code, rows) {
 // views the boards already draw for all three. The 737-700 came with its wings
 // about 7 percent short for its span (its fuselage was true), so what lies outside
 // the fuselage was stretched sideways to the real span, the fuselage kept as
-// drawn. Greyed by the same rule as the others,
+// drawn. The 737-600 came as the same drawing as the 737-700, so it was given the
+// same wings and then its own length: 2.4 m of fuselage taken out, half ahead of
+// the wing and half behind it, as Boeing builds the 737-600 (span to length 1.146
+// with the winglets WestJet fitted to its 737-600s). It is wider than it is long,
+// so it is drawn 41 px long, not 42.75, so that its winglets fit the 48 px box.
+// Greyed by the same rule as the others,
 // with teal, blue and navy kept beside red. Every row must be a WestJet mainline
 // flight: airline WS, a WS number 1-2999 (Encore flies 3000-3999, and only Dash
 // 8s), no other operator by the ladder, and a callsign of WJA or none (WEN is
 // Encore, SWG Sunwing, WSW Swoop). Sunwing flies as WG on the boards, never as
 // WS. An aeroplane in special colours (AIRCRAFT_LIVERY_BY_REG) keeps the plain
 // picture. WestJet flies real 737-800s, so here 738 and 73H are the 737-800,
-// never the MAX; 73G and 73W are the 737-700. The MAX 7 has no picture. Returns
-// the key, or an empty string.
+// never the MAX; 73G and 73W are the 737-700, and 736 the 737-600. The MAX 7 has
+// no picture. Returns the key, or an empty string.
 function _mapPlaneWsArt(code, rows) {
   try {
     var c = String(code || '').toUpperCase();
     var key = (c === '7M8') ? 'ws7m8' : (c === '738' || c === '73H') ? 'ws738'
-            : (c === '73G' || c === '73W') ? 'ws73g' : '';
+            : (c === '73G' || c === '73W') ? 'ws73g' : (c === '736') ? 'ws736' : '';
     if (!key) return '';
     var list = [];
     for (var k = 0; k < (rows || []).length; k++) { if (rows[k] && rows[k].flight) list.push(rows[k]); }
@@ -52197,7 +52203,7 @@ function _mapPlaneSpecFor(raw, rows) {
   // v24185 — then WestJet, in its own colours (_mapPlaneWsArt)
   if (!acArt) { try { acArt = (rows && dimCode && typeof _mapPlaneWsArt === 'function') ? _mapPlaneWsArt(dimCode, rows) : ''; } catch (eW) { acArt = ''; } }
   if (acArt) art = acArt;
-  return { code: dimCode, prop: prop, known: !!dimCode, len: use[0], span: (art === 'ac320' || art === 'rv320' || art === 'rv319') ? 34.1 : use[1], ng: use[2],
+  return { code: dimCode, prop: prop, known: !!dimCode, len: use[0], span: (art === 'ac320' || art === 'rv320' || art === 'rv319') ? 34.1 : (art === 'ws736') ? 35.8 : use[1], ng: use[2],
            art: _MAP_PLANE_ART[art], key: dimCode || (prop ? 'prop' : 'jet') };
 }
 // The type of the aeroplane the gate maps draw, from everywhere it lives.

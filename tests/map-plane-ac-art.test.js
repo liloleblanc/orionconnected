@@ -13,7 +13,7 @@
 // Dash 8-400s for Air Canada Express (under the brand and under bare numbers),
 // Toronto writes ACA for Rouge too, one A220 flies in Trans-Canada Air Lines
 // colours, and a WestJet or United aeroplane of the same type must never be
-// painted Air Canada (v24185: WestJet has its own 737 MAX 8, 737-800 and 737-700, for its
+// painted Air Canada (v24185: WestJet has its own 737 MAX 8, 737-800, 737-700 and 737-600, for its
 // mainline only, never Encore, Sunwing or Swoop). So the picture follows the operator ladder the boards
 // already read (fidsResolveOperator, as _opCode on each row), every callsign on
 // record, the special-livery table, and the number block of the type, on every
@@ -235,7 +235,7 @@ test('the Dash 8-400 wears them only on Jazz evidence on every row: PAL flies it
   assert.equal(src('DH8D', [row('PB7203')]), DH4);
 });
 
-test('WestJet: the 737 MAX 8, 737-800 and 737-700 in its own colours, mainline only (v24185)', () => {
+test('WestJet: the 737 MAX 8, 737-800, 737-700 and 737-600 in its own colours, mainline only (v24185)', () => {
   assert.equal(src('B38M', [row('WS501')]), WS('7m8'));
   assert.equal(src('B38M', [row('WS 501', { _feedCs: 'WJA501' })]), WS('7m8'));
   assert.equal(src('Boeing 737 MAX 8', [row('WS2203'), row('WS2204')]), WS('7m8'), 'both rows WestJet');
@@ -257,6 +257,8 @@ test('WestJet: the 737 MAX 8, 737-800 and 737-700 in its own colours, mainline o
   assert.equal(src('B38M', [row('WG501')]), JET, 'Sunwing is its own airline on the boards');
   assert.equal(src('B38M', [row('WS501'), row('AC800')]), JET, 'rows of two airlines');
   assert.equal(src('B737', [row('WS101')]), WS('73g'), 'the 737-700 (B737 is its ICAO code)');
+  assert.equal(src('B736', [row('WS101')]), WS('736'), 'the 737-600');
+  assert.equal(src('B736', [row('AC101')]), JET, 'not on another airline');
   assert.equal(src('73W', [row('WS101')]), WS('73g'));
   assert.equal(src('B737', [row('WS3123')]), JET, 'not in the Encore block');
   assert.equal(src('B37M', [row('WS101')]), JET, 'nor of the MAX 7');
@@ -295,6 +297,7 @@ test('the same size in flight, the true size and shape close in', () => {
     ['B38M', [row('WS501')], 'ws7m8', 39.5, 35.9],
     ['B738', [row('WS101')], 'ws738', 39.5, 35.8],
     ['B737', [row('WS101')], 'ws73g', 33.6, 35.8],
+    ['B736', [row('WS101')], 'ws736', 31.2, 35.8],
     ['BCS3', [row('AC345')], 'ac223', 38.7, 35.1],
     ['E75L', [row('AC8902', { _opCode: 'QK' })], 'ace75', 31.7, 26.0],
     ['CRJ9', [row('AC8803', { _opCode: 'QK' })], 'accr9', 36.2, 24.9],
@@ -306,7 +309,9 @@ test('the same size in flight, the true size and shape close in', () => {
     assert.equal(s.len, len, type + ' length');
     assert.equal(s.span, span, type + ' span (the A320s of Air Canada have wingtip fences: 34.1 m)');
     // in flight: exactly as long as the plain picture of that type
-    assert.equal(s.art.len, specFor(type).art.len, type + ' is as long as the picture it stands in for');
+    // (the WestJet 737-600 is wider than it is long: it is drawn shorter, so its winglets fit the 48 px box)
+    if (key === 'ws736') assert.ok(s.art.len < specFor(type).art.len && s.art.span <= 47.5, type + ' fits the box');
+    else assert.equal(s.art.len, specFor(type).art.len, type + ' is as long as the picture it stands in for');
     // the picture is true to the aeroplane: barely stretched either way
     const k = scale(s, s.art, 46.1156, 18);
     assert.ok(Math.abs(k.kx / k.ky - 1) < 0.015, type + ' kx/ky ' + (k.kx / k.ky).toFixed(4));
@@ -352,10 +357,10 @@ function hue(r, g, b) {
 // the red of each livery (maple leaves, exit outlines) as the grey pass leaves it, less a tenth
 const RED_MIN = { ac320: 585, ac321: 142, ac7m8: 183, ac223: 225, ace75: 27, accr9: 63, acdh4: 13, rv320: 5023, rv321: 3015, rv319: 4149 };
 // v24185: WestJet paints in teal, blue and navy (and the red of its small flags); its paint is counted
-const BLUE_MIN = { ws7m8: 2319, ws738: 2638, ws73g: 3231 };
+const BLUE_MIN = { ws7m8: 2319, ws738: 2638, ws73g: 3231, ws736: 3445 };
 
-test('the thirteen pictures: light 512 px RGBA squares, framed, upright, neutral, the livery colours kept', () => {
-  for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4', 'rv320', 'rv321', 'rv319', 'ws7m8', 'ws738', 'ws73g']) {
+test('the fourteen pictures: light 512 px RGBA squares, framed, upright, neutral, the livery colours kept', () => {
+  for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4', 'rv320', 'rv321', 'rv319', 'ws7m8', 'ws738', 'ws73g', 'ws736']) {
     const a = ART[key], ws = key.startsWith('ws');
     assert.ok(a && /^\/logos\/map-plane-(ac|rv|ws)-[0-9a-z]+\.png$/.test(a.src), key);
     const file = path.join(root, 'fids-current', a.src);

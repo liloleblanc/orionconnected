@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 3033,
+    "total": 3034,
     "by_category": {
       "ad": 21,
       "airline": 1222,
@@ -10,7 +10,7 @@
       "brand": 5,
       "hotel": 971,
       "livery": 96,
-      "misc": 190,
+      "misc": 191,
       "symbol": 4,
       "weather": 331
     }
@@ -28337,6 +28337,17 @@
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "map plane rv 321",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/map-plane-ws-736.png",
+      "file": "map-plane-ws-736.png",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "map plane ws 736",
       "iata": "",
       "country": "",
       "ext": "png"
