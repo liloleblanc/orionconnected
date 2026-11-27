@@ -2675,7 +2675,9 @@ function _cuSyncNote(kind) {
     // v24042 — the save went through but the cloud did not keep the weather
     // icons' look it was sent (see _cuCloudPush)
     wxDropped: ['#f87171', '⚠ Saved to the airport cloud, except the weather icons: the cloud server does not know this look yet and did not keep it. Every screen, this one too, shows Day & night (the default) until the server is updated.'],
-    floorDropped: ['#f87171', '⚠ Saved to the airport cloud, except the bottom of the board: the cloud server does not know this choice yet and did not keep it. Every screen, this one too, shows Earth, now (the default) until the server is updated.']
+    floorDropped: ['#f87171', '⚠ Saved to the airport cloud, except the bottom of the board: the cloud server does not know this choice yet and did not keep it. Every screen, this one too, shows Earth, now (the default) until the server is updated.'],
+    // the row colours, the same way
+    rowPaletteDropped: ['#f87171', '⚠ Saved to the airport cloud, except the row colours: the cloud server does not know this choice yet and did not keep it. Every screen, this one too, keeps the theme rows (the default) until the server is updated.']
   }[kind];
   if (!m) { el.style.display = 'none'; return; }
   el.style.color = m[0];
@@ -2696,6 +2698,8 @@ function _cuCloudPush(code, prefs) {
         .forEach(function (k) { if (prefs[k] !== undefined) body[k] = prefs[k]; });
       // the bottom of the departures and arrivals boards: '' (Earth, now) | 'classic'
       if (prefs.floor !== undefined) body.floor = prefs.floor;
+      // the rows of the departures and arrivals boards: '' (the theme) | 'airport' (the airport logo colours)
+      if (prefs.rowPalette !== undefined) body.rowPalette = prefs.rowPalette;
       // A custom theme saved as a preset ID must travel as its colours.
       if (prefs.theme === 'custom' && !body.customColors && prefs.themePresetId) {
         try {
@@ -2756,6 +2760,16 @@ function _cuCloudPush(code, prefs) {
               if (_flSel && _flSel.value === body.floor) _flSel.value = '';
             } catch (e) {}
             try { console.warn('[FIDS Customize] The cloud did not keep floor "' + body.floor + '" for ' + code); } catch (e) {}
+            return;
+          }
+          // The row colours, the same way.
+          if (body.rowPalette !== undefined && (out.config.rowPalette || '') !== body.rowPalette) {
+            _cuSyncNote('rowPaletteDropped');
+            try {
+              var _rpSel = document.getElementById('cuRowPalette');
+              if (_rpSel && _rpSel.value === body.rowPalette) _rpSel.value = '';
+            } catch (e) {}
+            try { console.warn('[FIDS Customize] The cloud did not keep rowPalette "' + body.rowPalette + '" for ' + code); } catch (e) {}
             return;
           }
           _cuSyncNote('saved');
@@ -2862,6 +2876,11 @@ function _cuReadForm() {
   var fl = document.getElementById('cuFloor');
   if (fl && fl.dataset.painted === '1') p.floor = fl.value;
   else { var _pv4 = _cuLoad(); if (_pv4 && _pv4.floor !== undefined) p.floor = _pv4.floor; }
+  // The row colours: '' is nothing chosen (the theme rows); 'airport' paints
+  // the rows in the airport logo colours. Unpainted → carry forward.
+  var rp = document.getElementById('cuRowPalette');
+  if (rp && rp.dataset.painted === '1') p.rowPalette = rp.value;
+  else { var _pv5 = _cuLoad(); if (_pv5 && _pv5.rowPalette !== undefined) p.rowPalette = _pv5.rowPalette; }
   // Font selection (v218.6+)
   var fontSel = document.getElementById('cuFontSelect');
   if (fontSel && fontSel.value) p.font = fontSel.value;
@@ -2944,6 +2963,20 @@ function _cuPaintForm(prefs) {
       }
     } catch (e) {}
   }
+  // The row colours, painted like the weather icons: this device's choice
+  // when it holds one, otherwise the airport's (the layers the board reads).
+  var rp = document.getElementById('cuRowPalette');
+  if (rp) {
+    var _rpv = prefs.rowPalette;
+    if (_rpv === undefined || _rpv === null || _rpv === '') {
+      try {
+        var _rpCfg = (typeof getAirportConfig === 'function') ? getAirportConfig(_acCurrentCode()) : null;
+        _rpv = (_rpCfg && _rpCfg.rowPalette) || '';
+      } catch (e) { _rpv = ''; }
+    }
+    rp.value = _rpv || ''; if (rp.selectedIndex < 0) rp.value = ''; rp.dataset.painted = '1';
+    try { _cuRowPaletteNote(); } catch (e) {}
+  }
   // Font picker
   var fontSel = document.getElementById('cuFontSelect');
   if (fontSel) fontSel.value = prefs.font || '';
@@ -2964,6 +2997,33 @@ function _cuPaintForm(prefs) {
   // Display mode pill UI
   cuSetDisplayModeUI(prefs.displayMode || 'auto');
 }
+
+// The row colours: what this board did with the choice, under the control.
+// The board says it on the body (fids-core.js _fidsRowPalPaint) and tells
+// the page with a fids-row-palette event whenever that changes.
+function _cuRowPaletteNote() {
+  var el = document.getElementById('cuRowPaletteNote');
+  if (!el) return;
+  var b = document.body;
+  var on = !!(b && b.getAttribute('data-fids-row-palette') === 'airport');
+  var st = (b && b.getAttribute('data-fids-row-palette-state')) || '';
+  var colour = (b && b.getAttribute('data-fids-row-palette-colour')) || '';
+  var why = (b && b.getAttribute('data-fids-row-palette-why')) || '';
+  var msg = '';
+  if (on && st === 'rows') {
+    msg = 'On this board the rows take the logo colour ' + colour + ', darkened so every word reads.'
+      + (why === 'status' ? ' A red, orange or yellow of the logo is held back: on a row it would read as a status.' : '');
+  } else if (on && st === 'head') {
+    msg = 'The logo colours read as status colours here (a red as Cancelled, an orange or a yellow green turns brown or olive when darkened), so the rows keep the theme and only the column titles take the logo colour ' + colour + '.';
+  } else if (on && st === 'wait') {
+    msg = 'Reading the colours of the airport logo…';
+  } else if (on && st === 'none') {
+    msg = 'The airport logo gives no colour the rows can take (no logo, only greys, or it could not be read), so the rows keep the theme.';
+  }
+  el.textContent = msg;
+  el.style.display = msg ? '' : 'none';
+}
+try { window.addEventListener('fids-row-palette', function () { try { _cuRowPaletteNote(); } catch (e) {} }); } catch (e) {}
 
 // ── Day & night scheduling
 // — toggle reveals the schedule; any change saves through the

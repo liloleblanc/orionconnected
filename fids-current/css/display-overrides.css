@@ -7676,6 +7676,68 @@ html:not(#_):not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr:not(.row-
   background-color: #DDD7D0 !important;
 }
 
+/* ══ ROWS IN THE AIRPORT LOGO COLOURS (Customize: Row colours) ═══════════
+   An airport choice, off by default. With it on, the body carries
+   data-fids-row-palette="airport", and fids-core (_fidsRowPalPaint) derives
+   the grounds from the palette the banner reads out of the airport logo,
+   with the inks that read on them, and writes them on the body:
+     --fids-rowpal-odd, --fids-rowpal-even   the two stripes, in one hue
+     --fids-rowpal-head                      the column titles
+     --fids-rowpal-amber, -green, -rev       Boarding, Early and the revised
+                                             time, held at 7 to 1
+   It says what it painted in data-fids-row-palette-state: rows (the rows and
+   the column titles) or head (the column titles alone, when the logo colours
+   read as status colours). With no palette there is no such state and none
+   of this applies: the theme rows stay.
+   The grounds carry six id levels, one more than the custom palette painter,
+   and set background-color only, so the rail and the Orlando pattern stay
+   on them. The words take white at six, and the status words and times their
+   own inks at seven, which outranks that white whatever the class count. The
+   seven state rows (Delayed, Final call, Cancelled, Diverted, Departed,
+   Arrived, Gate closed) are left to the status grammar, and the NEW GATE
+   badge, the airport code and the weather icons keep their own painters. */
+html:not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) {
+  background-color: var(--fids-rowpal-odd) !important;
+  --fids-text: #ffffff !important;
+}
+html:not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed):nth-child(even) {
+  background-color: var(--fids-rowpal-even) !important;
+}
+html:not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td,
+html:not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td *:not(.gate-changed-badge):not(.dest-iata):not(.dest-iata-sep):not(.fids-wx-cell) {
+  color: #ffffff !important;
+}
+html:not(#_):not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-status:is(.fids-status-boarding, .fids-status-final, .fids-status-now, .fids-status-delayed),
+html:not(#_):not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-status:is(.fids-status-boarding, .fids-status-final, .fids-status-now, .fids-status-delayed) * {
+  color: var(--fids-rowpal-amber) !important;
+}
+html:not(#_):not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-time-rev.has-rev,
+html:not(#_):not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-time-rev.has-rev * {
+  color: var(--fids-rowpal-rev) !important;
+}
+html:not(#_):not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-status.fids-status-early,
+html:not(#_):not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-status.fids-status-early *,
+html:not(#_):not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr.row-early:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-time-rev.has-rev,
+html:not(#_):not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr.row-early:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-time-rev.has-rev * {
+  color: var(--fids-rowpal-green) !important;
+}
+/* the superseded time stays dimmer than the revised one at 8 to 1, and the
+   time inside a portrait status cell is not dimmed at all */
+html:not(#_):not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-time-sched.is-revised {
+  opacity: 0.85 !important;
+}
+html:not(#_):not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed) td.td-status .fids-status-rev {
+  opacity: 1 !important;
+}
+/* the column titles: the band colour at full strength under the gloss of
+   the gunmetal bar, white at 7 to 1 or better */
+html:not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="rows"]:not(#_):not(#_) #fidsTable thead th,
+html:not(#_):not(#_):not(#_) body[data-fids-row-palette="airport"][data-fids-row-palette-state="head"]:not(#_):not(#_) #fidsTable thead th {
+  background-color: var(--fids-rowpal-head) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, 0.16) 100%) !important;
+  color: #ffffff !important;
+}
+
 
 /* ── v22820 — AIRPLANE DATA AT READABLE SIZE ON AIR CANADA
 AC was excluded from the v22798
