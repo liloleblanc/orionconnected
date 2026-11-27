@@ -437,7 +437,8 @@
         f.setAttribute('data-oc-ap', ap);
         f.setAttribute('data-oc-page', page);
         // when it finishes loading, tell it whether it's currently on display
-        f.addEventListener('load', function () { f._ocLoadedAt = Date.now(); ocTell(f, f.classList.contains('oc-active')); });
+        // v24186 — or the next one, told during the fade-out (advance, below)
+        f.addEventListener('load', function () { f._ocLoadedAt = Date.now(); ocTell(f, f.classList.contains('oc-active') || !!f._ocIncoming); });
         f.src = childUrl(page, ap);
         document.body.appendChild(f);
         frames[ap][page] = f;
@@ -753,7 +754,8 @@
       // fade up. Nothing is ever half-transparent over anything else, so there
       // is no dip to be seen — just one deliberate fade, which is what was asked
       // for. It also means the incoming board gets the whole fade-out to finish
-      // its own catch-up work off-screen before anyone can see it.
+      // its own catch-up work off-screen before anyone can see it (v24186: it is
+      // told it is next when the fade-out starts, so that is now what happens).
       // THIS RUNS 24/7 UNATTENDED, SO THE SECOND HALF MUST NOT DEPEND ON A
       // setTimeout
       // These boards are same-origin iframes sharing ONE main thread —
@@ -775,6 +777,7 @@
         if (!pendingShow) return;
         var f = pendingShow.frame, retire = pendingShow.retireAp;
         pendingShow = null;
+        f._ocIncoming = false;
         if (!f.classList.contains('oc-active')) {
           f.classList.add('oc-active');
           ocTell(f, true);
@@ -873,6 +876,14 @@
         //    janitors while it is on its way off screen.
         cur.classList.remove('oc-active');
         ocTell(cur, false);
+        // v24186 — 1b. and tell the incoming board NOW that it is next. Its catch-up
+        //    (the janitors it skipped while hidden, a render, the column stretch)
+        //    then runs during this fade-out, while it is still invisible, and it
+        //    fades up already fitted. Until now it was told only as it began to
+        //    fade in, so that work landed on screen (the logos moving at the
+        //    switch). showNow tells it again, which the board ignores.
+        nxt._ocIncoming = true;
+        ocTell(nxt, true);
         // 2. once it is fully out (screen is black), bring the next one up.
         pendingShow = { frame: nxt, dueAt: Date.now() + FADE_MS + HOLD_MS, retireAp: retire };
         setTimeout(showNow, FADE_MS + HOLD_MS);

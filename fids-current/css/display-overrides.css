@@ -322,7 +322,7 @@ body[data-fids-logo-size] {
   --fids-brand-slot-h: calc(var(--fids-row-h, 52px) - 2px);
   --fids-logo-tile-size: calc(var(--fids-row-h, 52px) - 2px);
   --fids-logo-inner-size: calc(var(--fids-row-h, 52px) - 6px);
-  --fids-wordmark-slot-w: 218px;
+  --fids-wordmark-slot-w: calc(218px * var(--fids-tier-k, 1)); /* v24186 — Small 218px, times the tier factor */
   --fids-wordmark-slot-pad-x: 10px;
  --fids-wordmark-optical-h: 25px; /* the +13% pass was too big — original calibration restored */
 }
@@ -374,8 +374,10 @@ body[data-fids-logo-size] {
   --wm-y: 0px;
   width: var(--wm-w) !important;
   max-width: var(--wm-w) !important;
-  height: var(--wm-h) !important;
-  max-height: var(--wm-h) !important;
+  /* v24186 — every --wm-h is a Small calibration; this is the one place it is drawn,
+     so the table is scaled here, once, by the tier factor (1 on Small) */
+  height: calc(var(--wm-h) * var(--fids-tier-k, 1)) !important;
+  max-height: calc(var(--wm-h) * var(--fids-tier-k, 1)) !important;
   object-fit: contain !important;
   object-position: left center !important;
   transform: translate(var(--wm-x), var(--wm-y)) !important;
@@ -2859,7 +2861,7 @@ html #fidsTable .td-airline .fids-airline-logo .logo-fallback { display: none; }
    fids-v3 rule lost to later clamp-based sizing. */
 html body #fidsTable tbody tr td.td-status.st-longtext,
 html body #fidsTable tbody tr td.td-status.st-longtext * {
-  font-size: 18px !important;
+  font-size: calc(18px * var(--fids-tier-k, 1)) !important;
   letter-spacing: 0.2px !important;
 }
 
@@ -8347,11 +8349,11 @@ html.fids-rot90 body, html.fids-rot270 body { min-height: 100vw !important; }
    portrait block above — this is the same design winning the cascade, not
    a new one. The column fitter re-measures from these, so the widths come
    right on their own once the type does. */
-html.fids-portrait:not(#_):not(#_) #fidsTable td { font-size: 19px !important; }
+html.fids-portrait:not(#_):not(#_) #fidsTable td { font-size: calc(19px * var(--fids-tier-k, 1)) !important; }
 html.fids-portrait:not(#_):not(#_) #fidsTable td.td-status,
-html.fids-portrait:not(#_):not(#_) #fidsTable td.td-status * { font-size: 17px !important; }
+html.fids-portrait:not(#_):not(#_) #fidsTable td.td-status * { font-size: calc(17px * var(--fids-tier-k, 1)) !important; }
 html.fids-portrait:not(#_):not(#_) #fidsTable td.td-gate,
-html.fids-portrait:not(#_):not(#_) #fidsTable td.td-gate * { font-size: 18px !important; }
+html.fids-portrait:not(#_):not(#_) #fidsTable td.td-gate * { font-size: calc(18px * var(--fids-tier-k, 1)) !important; }
 html.fids-portrait:not(#_):not(#_) #fidsTable td.td-time,
 html.fids-portrait:not(#_):not(#_) #fidsTable td.td-time *,
 html.fids-portrait:not(#_):not(#_) #fidsTable td.td-time-rev,
@@ -10387,7 +10389,7 @@ html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airli
    inside a slate grey frame. The tricolore streaks were too busy behind text on a screen;
    plate-af-tricolore.jpg stays on disk as the one-line rollback. */
 html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-af-navy-lines.jpg?v=24185');
+  --plate-tex: url('/textures/plate-af-navy-lines.jpg?v=24186');
   --plate-base: #051039;
   --plate-blend: normal;
   --plate-ink: #ffffff;
@@ -11352,25 +11354,18 @@ html body .leaflet-tile-pane img.leaflet-tile {
 
    The child doing it is the weather glyph, hard-coded 48x48 back when
    `medium` (66px) was the only size anyone ran. On `small` (44px) it is
-   4px taller than its own row. Scale it with the tier instead — `medium`
-   keeps 48px, so nothing about the current look changes — and cap every
+   4px taller than its own row. Scale it with the tier instead, and cap every
    direct child of a cell at the tier height so the next fixed-size element
    someone adds cannot reopen this.
+   v24186 — the tiers are now 36 / 42 / 48px rows (--fids-tier-k 1, 7/6, 4/3).
+   The glyph keeps its Small 38px and grows HALF as fast as the row (38 / 41 /
+   44px): the weather column does not widen, and the temperature beside the
+   glyph needs that room to grow with the row text.
    ═══════════════════════════════════════════════════════════════════════ */
-html body[data-fids-logo-size="small"] #fidsTable .td-wx .fids-cell-weather .fids-wx-cell,
-html body[data-fids-logo-size="small"] #fidsTable .td-wx .fids-cell-weather svg {
-  width: 38px !important;
-  height: 38px !important;
-}
-html body[data-fids-logo-size="medium"] #fidsTable .td-wx .fids-cell-weather .fids-wx-cell,
-html body[data-fids-logo-size="medium"] #fidsTable .td-wx .fids-cell-weather svg {
-  width: 48px !important;
-  height: 48px !important;
-}
-html body[data-fids-logo-size="large"] #fidsTable .td-wx .fids-cell-weather .fids-wx-cell,
-html body[data-fids-logo-size="large"] #fidsTable .td-wx .fids-cell-weather svg {
-  width: 64px !important;
-  height: 64px !important;
+html body[data-fids-logo-size] #fidsTable .td-wx .fids-cell-weather .fids-wx-cell,
+html body[data-fids-logo-size] #fidsTable .td-wx .fids-cell-weather svg {
+  width: calc(38px * (1 + (var(--fids-tier-k, 1) - 1) / 2)) !important;
+  height: calc(38px * (1 + (var(--fids-tier-k, 1) - 1) / 2)) !important;
 }
 /* Backstop: no direct child of a board cell may be taller than the row it
    sits in. max-height DOES apply to these (they are not table boxes). */
@@ -12623,7 +12618,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      lose anything; every carrier tuned below it (Porter 28, WestJet 30, Flair
      32) is untouched, which is the whole point of a ceiling. */
   max-height: calc(var(--fids-row-h, 58px) - 6px) !important;
-  max-width: 198px !important;
+  max-width: calc(198px * var(--fids-tier-k, 1)) !important; /* v24186 — Small 198px, times the tier factor */
   position: relative !important;
   top: -2px !important;
   object-fit: contain !important;
@@ -19319,7 +19314,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   flex: 0 0 auto !important;
   width: clamp(44px, 6.4vh, 80px) !important;
   height: clamp(44px, 6.4vh, 80px) !important;
-  background-image: url('/logos/airlines/us-major/united-100-globe.webp?v=24185');
+  background-image: url('/logos/airlines/us-major/united-100-globe.webp?v=24186');
   background-size: 5500% 100%;
   background-repeat: no-repeat;
   background-position: 0% 0%;
@@ -23125,7 +23120,7 @@ html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
    ═════════════════════════════════════════════════════════════════════════════════════════ */
 html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   right: 0 !important; width: 100% !important;
-  background: url('/textures/gate-sky-model.jpg?v=24185') 0 0 / 100% 100% no-repeat !important;
+  background: url('/textures/gate-sky-model.jpg?v=24186') 0 0 / 100% 100% no-repeat !important;
   animation: none !important;
   transform-origin: 50% 0 !important; transform: scale(-1.2, 1.2) !important;
 }
