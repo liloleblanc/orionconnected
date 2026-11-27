@@ -568,10 +568,12 @@ test('drawn at ground zoom over our field only: lighter, under the board\'s own,
   const other = mkMap([46.1158, -64.6878], 17);
   E._gateApronSync(other);
   assert.equal(other.layers.length, 0);
-  // The CSS draws them lighter; the board's own picture is not dimmed.
+  // v24182: the CSS draws them solid (they were 0.55, and the map showed through);
+  // nothing in the stylesheet dims them or the board's own picture.
   const at = CSS.indexOf('v23918 — THE OTHER AEROPLANES ON THE GROUND');
   assert.ok(at > 0);
-  assert.match(CSS.slice(at), /\.leaflet-marker-icon\.gate-apron-other img\[src\*="\/logos\/map-plane-"\] \{\s*opacity: 0\.55;\s*\}/);
+  assert.match(CSS.slice(at), /\.leaflet-marker-icon\.gate-apron-other img\[src\*="\/logos\/map-plane-"\] \{\s*opacity: 1;\s*\}/);
+  assert.doesNotMatch(CSS, /img\[src\*="\/logos\/map-plane-"\] \{[^}]*opacity: 0\./, 'no map-plane picture is see-through');
   // The board's own picture-swap never touches theirs.
   assert.match(fnSource('_mapPlaneFit'), /querySelector\('\.leaflet-marker-icon:not\(\.gate-apron-other\) img\[src\*="\/logos\/map-plane-"\]'\)/);
 });
