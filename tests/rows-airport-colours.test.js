@@ -156,27 +156,31 @@ const SCREEN_SRC = () => [
   fn('_cuStorageKey', MENU), fn('_cuLoad', MENU), fn('_cuSave', MENU), fn('_cuSyncNote', MENU),
   line(/var _cuCloudTimer = null;/, MENU), fn('_cuCloudPush', MENU), fn('_cuReadForm', MENU), fn('_cuPaintForm', MENU),
   opt('_cuEditorRole', MENU), opt('_cuAirportOnlyWhy', MENU), opt('_cuAirportOnlySends', MENU), opt('_cuPaintAirportOnly', MENU),
+  opt('_cuAirportOnlyForget', MENU), opt('_cuAirportOnlyBack', MENU),
   opt('cuAirportOnlyChanged', MENU), opt('_cuAirportConfigIn', MENU), optLine(CONFIG_IN, MENU),
   fn('_cuRowPaletteNote', MENU), line(/try \{ window\.addEventListener\('fids-row-palette'[^\n]+/, MENU),
   mv('_cuCurrentPos'), fn('cuSetPositionUI', MENU), mv('_cuCurrentMode'), fn('cuSetDisplayModeUI', MENU),
-  mv('_cuThemeExplicitDefault'), mv('_cuFontExplicitDefault'), mv('_cuCurrentSize'), fn('cuApplyAndSave', MENU),
+  mv('_cuThemeExplicitDefault'), mv('_cuFontExplicitDefault'), mv('_cuCurrentSize'), fn('cuApplyAndSave', MENU), fn('cuResetAll', MENU),
+  MENU.slice(MENU.indexOf('window._fidsPersistTheme = function'), MENU.indexOf('\n};\n', MENU.indexOf('window._fidsPersistTheme = function')) + 3),
   MENU.slice(MENU.indexOf('window.FIDS_CUSTOMIZE = {'), MENU.indexOf('\n};\n', MENU.indexOf('window.FIDS_CUSTOMIZE = {')) + 3),
 ].join('\n');
 const WORKER_SRC = () => [line(/function isAdmin\(payload\) \{[^\n]+/, PROXY), line(/function normIata\(code\) \{[^\n]+/, PROXY),
   afn('handlePutAirport', PROXY), afn('handleGetAirport', PROXY)].join('\n');
 // role: null (signed out), or the role of the token the worker reads
-// ('viewer', 'operator', 'admin'); user: the fids_user of this tab
+// ('viewer', 'operator', 'admin'); token: 'jwt', the token as the worker
+// signs it, its payload carrying that role, or 'opaque', a token this screen
+// cannot read; user: the fids_user of this tab
 // (sessionStorage), by default the signed-in user with that role, null for
 // none; lock: the screen lock of editor-roles.js (fids_editor_lock);
 // editorRoles: false for a page where editor-roles.js is not loaded; cloud:
 // the airport config the worker holds for YQM; device: this screen's
 // Customize copy; floorControl: false for a panel without the Bottom of the
 // board control; offline: the save gets no answer at all
-function screen({ role = null, user, lock = null, editorRoles = true, cloud = null, device = null, search = '', floorControl = true, offline = false } = {}) {
+function screen({ role = null, token = 'jwt', user, lock = null, editorRoles = true, cloud = null, device = null, search = '', floorControl = true, offline = false } = {}) {
   const ls = new Map(), ss = new Map();
   if (device) ls.set('fids_customize_YQM', JSON.stringify(device));
   ls.set('fids_banner_palette_YQM', JSON.stringify(BAND.YQM));   // the banner palette this screen holds
-  if (role) ls.set('fids_token', 'token-' + role);
+  if (role) ls.set('fids_token', token === 'opaque' ? 'token-' + role : 'h.' + Buffer.from(JSON.stringify({ sub: 'someone', role })).toString('base64url') + '.s');
   const signedIn = user !== undefined ? user : (role ? { username: 'someone', role } : null);
   if (signedIn) ss.set('fids_user', JSON.stringify(signedIn));
   if (lock) ls.set('fids_editor_lock', lock);
@@ -240,7 +244,8 @@ function screen({ role = null, user, lock = null, editorRoles = true, cloud = nu
   const api = new Function(...names, SCREEN_SRC() + `
     function render() { _fidsRowPalPaint(); }   // the board render runs the row painter first
     return { apply: applyAirportConfigToBoard, refresh: refreshAirportConfig, save: cuApplyAndSave,
-             paintForm: function () { _cuPaintForm(_cuLoad()); },
+             paintForm: function () { _cuPaintForm(_cuLoad()); }, reset: cuResetAll,
+             persistTheme: function (name) { window._fidsPersistTheme(name); },
              handlers: { cuApplyAndSave: cuApplyAndSave, cuAirportOnlyChanged: (typeof cuAirportOnlyChanged === 'function') ? cuAirportOnlyChanged : undefined } };
   `)(...names.map((n) => g[n]));
   const flush = async () => { for (let n = 0; n < 50; n++) { while (timers.length) timers.shift()(); await new Promise((r) => setImmediate(r)); } };
@@ -369,7 +374,7 @@ test('Customize sends the choice to the airport cloud, reads a kept one back at 
   const paint = fn('_cuPaintAirportOnly', MENU);
   assert.match(paint, /\['cuRowPalette', 'cuRowPaletteSignNote', \(typeof _fidsAirportRowPal === 'function'\) \? _fidsAirportRowPal : null\]/);
   assert.doesNotMatch(paint, /prefs|_cuLoad|localStorage|getAirportConfig/, 'never a copy on this screen');
-  assert.match(fn('_cuPaintForm', MENU), /try \{ _cuPaintAirportOnly\(true\); \} catch \(e\) \{\}/, 'the whole panel paints it');
+  assert.match(fn('_cuPaintForm', MENU), /try \{ _cuPaintAirportOnly\(\); \} catch \(e\) \{\}/, 'the whole panel paints it');
   assert.ok(MENU_HTML.indexOf('id="cuRowPaletteSignNote"') > MENU_HTML.indexOf('id="cuRowPalette"'), 'the note sits under the control');
   // the worker keeps it, and only a value the boards know
   assert.match(PROXY, /\n\s*"rowPalette",/);
@@ -552,7 +557,7 @@ const AIRPORT_ONLY = [['cuFloor', 'cuFloorNote'], ['cuRowPalette', 'cuRowPalette
 const T1 = 1764000000000;
 const CLOUD = () => ({ theme: 'tus-teal', floor: 'classic', rowPalette: 'airport', updatedAt: T1, updatedBy: 'someone' });
 
-test('both airport-only controls are disabled with the reason unless the signed-in role is admin, the role read as editor-roles.js reads it', async () => {
+test('both airport-only controls are disabled with the reason unless the signed-in role is admin, the role read from the token the worker checks', async () => {
   const lockOf = (s) => AIRPORT_ONLY.map(([id, note]) => [s.els[id].disabled, shown(s.els[note])]);
   const cases = [
     // [what, screen options, disabled and note]
@@ -562,11 +567,17 @@ test('both airport-only controls are disabled with the reason unless the signed-
     ['an operator, on a screen locked to admin', { role: 'operator', lock: 'admin' }, [true, ADMIN_ONLY]],
     ['an admin', { role: 'admin' }, [false, '']],
     ['an admin, on a screen locked to operator', { role: 'admin', lock: 'operator' }, [false, '']],
-    // editor-roles.js takes a role it does not know, or none, for no signed-in
-    // role and goes by the lock of the screen, admin when none is set: so does the panel
-    ['a role editor-roles.js does not know', { role: 'admin', user: { username: 'someone', role: 'superuser' } }, [false, '']],
+    // a board page loads no auth.js: a tab opened fresh holds no fids_user of
+    // its own, and the token on the screen still says who signed in
+    ['an operator, in a tab opened fresh', { role: 'operator', user: null }, [true, ADMIN_ONLY]],
+    ['a viewer, in a tab opened fresh', { role: 'viewer', user: null }, [true, ADMIN_ONLY]],
+    ['an admin, in a tab opened fresh', { role: 'admin', user: null }, [false, '']],
+    ['an admin, in a tab opened fresh, on a screen locked to operator', { role: 'admin', user: null, lock: 'operator' }, [false, '']],
+    // the token, not the copy of the user this tab holds
+    ['this tab says admin, the token is an operator one', { role: 'operator', user: { username: 'someone', role: 'admin' } }, [true, ADMIN_ONLY]],
+    ['a role editor-roles.js does not know in fids_user', { role: 'admin', user: { username: 'someone', role: 'superuser' } }, [false, '']],
     ['no role in fids_user', { role: 'admin', user: { username: 'someone' } }, [false, '']],
-    ['no fids_user in this tab', { role: 'admin', user: null }, [false, '']],
+    ['no role in fids_user, on a screen locked to operator', { role: 'admin', user: { username: 'someone' }, lock: 'operator' }, [false, '']],
   ];
   for (const [what, opts, want] of cases) {
     for (const editorRoles of [true, false]) {
@@ -577,21 +588,30 @@ test('both airport-only controls are disabled with the reason unless the signed-
       assert.deepEqual(lockOf(s), [want, want], label);
       assert.equal(s.els.cuFloor.value, 'classic', label + ': the floor shows the airport choice');
       assert.equal(s.els.cuRowPalette.value, 'airport', label + ': and so do the rows');
-      // the role editor-roles.js itself goes by decides it, when it is loaded
-      if (editorRoles && opts.role) assert.equal(want[0], s.editorRole() !== 'admin', label + ': editor-roles.js goes by ' + s.editorRole());
+      // the role in the token decides it, as it decides the save (fids-proxy.js isAdmin)
+      if (opts.role) assert.equal(want[0], opts.role !== 'admin', label + ': the token says ' + opts.role);
     }
   }
-  // with no role it knows, editor-roles.js goes by the lock of the screen, and so does the panel
-  const locked = screen({ role: 'admin', user: { username: 'someone' }, lock: 'operator', cloud: CLOUD() });
-  await locked.refresh('YQM');
-  locked.paintForm();
-  assert.equal(locked.editorRole(), 'operator');
-  assert.deepEqual(lockOf(locked), [[true, ADMIN_ONLY], [true, ADMIN_ONLY]]);
+  // a token this screen cannot read: the role as editor-roles.js reads it,
+  // the signed-in user of this tab, else the lock of the screen, admin when none is set
+  const unread = [
+    ['this tab says admin', { user: { username: 'someone', role: 'admin' } }, [false, '']],
+    ['this tab says operator', { user: { username: 'someone', role: 'operator' } }, [true, ADMIN_ONLY]],
+    ['no role in fids_user, on a screen locked to operator', { user: { username: 'someone' }, lock: 'operator' }, [true, ADMIN_ONLY]],
+    ['no fids_user and no lock', { user: null }, [false, '']],
+  ];
+  for (const [what, opts, want] of unread) {
+    const s = screen(Object.assign({ role: 'admin', token: 'opaque', cloud: CLOUD() }, opts));
+    await s.refresh('YQM');
+    s.paintForm();
+    assert.deepEqual(lockOf(s), [want, want], 'a token this screen cannot read, ' + what);
+    assert.equal(want[0], s.editorRole() !== 'admin', what + ': editor-roles.js goes by ' + s.editorRole());
+  }
 });
 
-test('a save that carried the airport choice and failed says the airport choice did not change; one that did not keeps the device note', async () => {
-  // refused (403): this tab says admin, the token the worker reads is an operator one
-  let s = screen({ role: 'operator', user: { username: 'someone', role: 'admin' }, cloud: CLOUD(), device: { theme: 'tus-teal', savedAt: T1 } });
+test('a save that carried the airport choice and failed says the airport choice did not change, and the controls show it again; one that did not keeps the device note', async () => {
+  // refused (403): this screen cannot read its token and this tab says admin, while the token the worker reads is an operator one
+  let s = screen({ role: 'operator', token: 'opaque', user: { username: 'someone', role: 'admin' }, cloud: CLOUD(), device: { theme: 'tus-teal', savedAt: T1 } });
   await s.refresh('YQM');
   s.paintForm();
   assert.equal(s.els.cuRowPalette.disabled, false, 'this tab believes it is an admin');
@@ -605,6 +625,14 @@ test('a save that carried the airport choice and failed says the airport choice 
   assert.equal(s.cloudCopy().rowPalette, 'airport', 'the airport choice did not change');
   assert.equal(s.attrs['data-fids-row-palette'], 'airport', 'nor this board');
   assert.equal(s.deviceCopy().rowPalette, undefined, 'and no copy is kept here');
+  // the control says what the note says
+  assert.equal(s.els.cuRowPalette.value, 'airport', 'the control shows the airport choice again');
+  assert.equal(s.els.cuRowPalette.dataset.dirty, '', 'and holds no pick');
+  s.save(); await s.flush();   // a save of anything else
+  assert.equal(s.puts[1].rowPalette, 'airport', 'it sends the airport choice as it is, never the refused pick');
+  s.cloudSet({ rowPalette: '' });   // an admin turns them off on another screen
+  await s.refresh('YQM');
+  assert.equal(s.els.cuRowPalette.value, '', 'and a change made elsewhere is painted in');
   // no answer at all (offline): the same note
   s = screen({ role: 'admin', cloud: CLOUD(), device: { theme: 'tus-teal', savedAt: T1 }, offline: true });
   await s.refresh('YQM');
@@ -616,6 +644,8 @@ test('a save that carried the airport choice and failed says the airport choice 
   assert.equal(s.puts[0].floor, '');
   assert.match(shown(s.els.cuCloudSyncNote), /^⚠ Cloud save failed — the airport choice did not change/);
   assert.equal(s.cloudCopy().floor, 'classic');
+  assert.equal(s.els.cuFloor.value, 'classic', 'the control shows the airport choice again');
+  assert.equal(s.els.cuRowPalette.value, 'airport', 'and the other one still does');
   // a failed save that carried neither (the panel painted before the airport
   // config was in): the look it carried is on this device only, and it says so
   s = screen({ role: 'admin', cloud: CLOUD(), device: { theme: 'tus-teal', savedAt: T1 }, offline: true });
@@ -679,6 +709,56 @@ test('a kept pick shows the airport config again, so a change saved on another s
   s.save(); await s.flush();   // a save of anything else here
   assert.equal(s.puts[s.puts.length - 1].rowPalette, 'airport');
   assert.equal(s.cloudCopy().rowPalette, 'airport', 'and the next save here does not undo it');
+});
+
+test('a pick on its way is kept when the panel is painted again, and a reset drops it', async () => {
+  const s = await airportOn('admin');
+  s.pick('cuRowPalette', '');   // the logo colours off, the save on its way
+  s.paintForm();                // the Customize tab opened again before the answer
+  assert.equal(s.els.cuRowPalette.value, '', 'the pick is kept');
+  s.save();                     // the save the tab opening makes (_cuInitTheme)
+  await s.flush();
+  assert.ok(s.puts.length >= 1 && s.puts.every((b) => b.rowPalette === ''), 'every save sends the pick: ' + JSON.stringify(s.puts.map((b) => b.rowPalette)));
+  assert.equal(s.cloudCopy().rowPalette, '', 'and the airport keeps it');
+  assert.equal(s.attrs['data-fids-row-palette'], undefined, 'the rows are off here');
+  // a reset drops a pick: the control shows the airport choice
+  s.cloudSet({ rowPalette: 'airport' });
+  await s.refresh('YQM');
+  assert.equal(s.els.cuRowPalette.value, 'airport');
+  s.pick('cuRowPalette', '');
+  s.reset();
+  assert.equal(s.els.cuRowPalette.value, 'airport', 'after a reset the control shows the airport choice');
+  assert.equal(s.els.cuRowPalette.dataset.dirty, '', 'and holds no pick');
+});
+
+test('a save made after switching the airport sends neither airport choice of the airport before', async () => {
+  const s = await airportOn('admin');   // YQM, both painted from its config
+  s.pick('cuFloor', 'classic');          // a pick for YQM, on its way
+  s.els.apSel.value = 'YHZ';             // the airport is switched
+  s.save(); await s.flush();             // a save of anything else, now for YHZ
+  assert.equal(s.puts.length, 2);
+  assert.equal(s.puts[0].floor, 'classic', 'the pick went to YQM');
+  assert.equal('floor' in s.puts[1], false, 'YHZ gets no floor of YQM');
+  assert.equal('rowPalette' in s.puts[1], false, 'nor its row colours');
+});
+
+test('a copy left on a screen from before never resets the airport: not from Customize, not from the theme quick pick', async () => {
+  // a device copy from before the bottom of the board and the rows became the airport choice
+  const legacy = { theme: 'tus-teal', floor: '', rowPalette: '', savedAt: T1 };
+  let s = screen({ role: 'admin', cloud: CLOUD(), device: legacy });
+  s.paintForm();   // too early: neither control read from the airport config
+  s.save(); await s.flush();
+  assert.equal('floor' in s.puts[0] || 'rowPalette' in s.puts[0], false, 'Customize leaves both out');
+  // a theme picked from the menu or a scene (setTheme, then this hook)
+  s = screen({ role: 'admin', cloud: CLOUD(), device: legacy });
+  s.persistTheme('tus-teal');
+  await s.flush();
+  assert.equal(s.puts.length, 1);
+  assert.equal(s.puts[0].theme, 'tus-teal');
+  assert.equal('floor' in s.puts[0] || 'rowPalette' in s.puts[0], false, 'the quick pick leaves both out');
+  assert.equal(s.cloudCopy().floor, 'classic', 'the airport keeps its floor');
+  assert.equal(s.cloudCopy().rowPalette, 'airport', 'and its rows');
+  assert.equal('floor' in s.deviceCopy() || 'rowPalette' in s.deviceCopy(), false, 'and the copy here sheds both');
 });
 
 test('the menu says what the board did with the choice', () => {

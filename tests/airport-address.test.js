@@ -83,7 +83,7 @@ test('the floor control is shown disabled with the reason unless an admin is sig
     assert.ok(at >= 0, name);
     return MENU.slice(at, MENU.indexOf('\n}\n', at) + 2);
   };
-  assert.match(lift('_cuPaintForm'), /try \{ _cuPaintAirportOnly\(true\); \} catch \(e\) \{\}/);
+  assert.match(lift('_cuPaintForm'), /try \{ _cuPaintAirportOnly\(\); \} catch \(e\) \{\}/);
   const paint = lift('_cuPaintAirportOnly');
   assert.match(paint, /\['cuFloor', 'cuFloorNote', /, 'the floor and its note');
   assert.match(paint, /el\.disabled = !!why;/);

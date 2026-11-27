@@ -2739,7 +2739,12 @@ function _cuCloudPush(code, prefs) {
         body: JSON.stringify(body)
       }).then(function (res) { return res.ok ? res.json() : null; })
         .then(function (out) {
-          if (!out || !out.config || !out.config.updatedAt) { _cuSyncNote(_airportPick ? 'airportFailed' : 'failed'); return; }
+          if (!out || !out.config || !out.config.updatedAt) {
+            _cuSyncNote(_airportPick ? 'airportFailed' : 'failed');
+            // the airport choice did not change, and the controls say so
+            if (_airportPick) _cuAirportOnlyBack(body);
+            return;
+          }
           // v24042 — the cloud must have KEPT the weather icons' look it was
           // sent. The airport-config worker deploys on its own, and one older
           // than the 'classic' value accepts the save, deletes a look it does
@@ -2814,6 +2819,7 @@ function _cuCloudPush(code, prefs) {
         .catch(function (e) {
           // no answer at all (offline, or no JSON back): say so, as for a refusal
           try { _cuSyncNote(_airportPick ? 'airportFailed' : 'failed'); } catch (e2) {}
+          if (_airportPick) _cuAirportOnlyBack(body);
           try { console.warn('[FIDS Customize] Cloud save failed:', e && e.message); } catch (e2) {}
         });
     }, 900);
@@ -2969,7 +2975,7 @@ function _cuPaintForm(prefs) {
   // The bottom of the board and the row colours: the airport choice, painted
   // and locked as the airport-only controls are (_cuPaintAirportOnly), so the
   // next save of anything else never resets the airport to the default.
-  try { _cuPaintAirportOnly(true); } catch (e) {}
+  try { _cuPaintAirportOnly(); } catch (e) {}
   // Font picker
   var fontSel = document.getElementById('cuFontSelect');
   if (fontSel) fontSel.value = prefs.font || '';
@@ -3003,27 +3009,38 @@ function _cuPaintForm(prefs) {
 //   airport keeps its own choice (_cuAirportOnlySends).
 // - a pick by the user marks it data-dirty with the airport code
 //   (cuAirportOnlyChanged, the onchange of both in menu.html), and the pick
-//   is sent whatever the config was; a kept save clears the mark
-//   (_cuCloudPush).
+//   is sent whatever the config was. Every paint keeps it until its save
+//   is answered: a kept save clears the mark, and so does a refused save or
+//   one with no answer, which paints the airport choice back (_cuCloudPush,
+//   _cuAirportOnlyBack).
 // - when the airport config arrives or changes (fids-airport-config-ready),
 //   a control the user has not touched is painted again (_cuAirportConfigIn).
 // - unless the signed-in role is admin, both are disabled with the reason
 //   (_cuAirportOnlyWhy).
 //
-// The role the panel goes by, read as editor-roles.js reads it: the
-// signed-in user (sessionStorage fids_user) when it holds a role
-// editor-roles.js knows, else the lock of this screen, admin when none is
-// set. A role editor-roles.js does not know, or none at all, is passed over
-// the same way, so neither is taken for a role below admin. Read through
+// The role the panel goes by: the role in the sign-in token, the one the
+// worker checks (fids-proxy.js isAdmin reads the role the token carries).
+// A board page loads no auth.js, so a tab opened fresh holds no fids_user of
+// its own while the token on this screen is still good: the token alone
+// says who signed in, in every tab. Only when the token cannot be read is
+// the role read as editor-roles.js reads it: the signed-in user
+// (sessionStorage fids_user) when it holds a role editor-roles.js knows,
+// else the lock of this screen, admin when none is set. Read through
 // EditorRoles itself once it is loaded; without it no lock applies, and the
 // signed-in role alone is read.
 function _cuEditorRole() {
+  var known = ['demo', 'viewer', 'operator', 'admin'];
+  try {
+    var t = _acGetToken();
+    var p = t ? JSON.parse(atob(String(t).split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) : null;
+    if (p && typeof p.role === 'string' && known.indexOf(p.role) >= 0) return p.role;
+  } catch (e) {}
   try {
     if (window.EditorRoles && typeof window.EditorRoles.current === 'function') return window.EditorRoles.current() || 'admin';
   } catch (e) {}
   try {
     var u = JSON.parse(sessionStorage.getItem('fids_user') || 'null');
-    if (u && typeof u.role === 'string' && ['demo', 'viewer', 'operator', 'admin'].indexOf(u.role) >= 0) return u.role;
+    if (u && typeof u.role === 'string' && known.indexOf(u.role) >= 0) return u.role;
   } catch (e) {}
   return 'admin';
 }
@@ -3041,11 +3058,14 @@ function _cuAirportOnlySends(el) {
   var code = _acCurrentCode();
   return !!(el && el.dataset && (el.dataset.fromConfig === code || el.dataset.dirty === code));
 }
-// Paints both from the airport config, and locks them. full (the whole
-// panel painted: the tab opened, the late repaint, a reset) paints them
-// whatever they hold; otherwise (the config came in) a control holding a
-// pick of the user for this airport keeps it.
-function _cuPaintAirportOnly(full) {
+// Paints both from the airport config, and locks them. A control holding a
+// pick of the user for this airport keeps it until its save is answered
+// (_cuCloudPush): the tab opened again, or the late repaint, while the pick
+// is on its way would otherwise paint the old choice back, and the save the
+// tab opening makes (_cuInitTheme) would then send that. The whole panel
+// painted (the tab opened, the late repaint) and the config coming in paint
+// them the same way; a reset drops the picks first (_cuAirportOnlyForget).
+function _cuPaintAirportOnly() {
   var code = _acCurrentCode();
   var inCfg = false;
   try { inCfg = (typeof _fidsAirportConfigLoaded === 'function') && !!_fidsAirportConfigLoaded(code); } catch (e) { inCfg = false; }
@@ -3058,7 +3078,7 @@ function _cuPaintAirportOnly(full) {
   for (var i = 0; i < ctl.length; i++) {
     var el = document.getElementById(ctl[i][0]);
     if (!el) continue;
-    if (full || el.dataset.dirty !== code) {
+    if (el.dataset.dirty !== code) {
       var v = '';
       try { v = ctl[i][2] ? (ctl[i][2](code) || '') : ''; } catch (e) { v = ''; }
       el.value = v; if (el.selectedIndex < 0) el.value = '';
@@ -3075,6 +3095,25 @@ function _cuPaintAirportOnly(full) {
   }
   try { _cuRowPaletteNote(); } catch (e) {}
 }
+// Drops the picks of the user in the airport-only controls, so the next
+// paint shows the airport choice in them again. sent (a save that was
+// refused or got no answer): only the fields it carried, while the control
+// still shows the value it sent, so a pick made since is kept. Without it
+// (a reset): every pick.
+function _cuAirportOnlyForget(sent) {
+  [['cuFloor', 'floor'], ['cuRowPalette', 'rowPalette']].forEach(function (f) {
+    var el = document.getElementById(f[0]);
+    if (!el || !el.dataset) return;
+    if (sent && (sent[f[1]] === undefined || el.value !== sent[f[1]])) return;
+    el.dataset.dirty = '';
+  });
+}
+// A save that carried the airport choice was refused or got no answer: the
+// note says the airport choice did not change, so the controls show it again.
+function _cuAirportOnlyBack(sent) {
+  try { _cuAirportOnlyForget(sent); } catch (e) {}
+  try { _cuPaintAirportOnly(); } catch (e) {}
+}
 // A pick in an airport-only control (its onchange in menu.html): marked as
 // made here for this airport, then saved like any other change.
 function cuAirportOnlyChanged(el) {
@@ -3086,7 +3125,7 @@ function cuAirportOnlyChanged(el) {
 function _cuAirportConfigIn(ev) {
   var code = ev && ev.detail && ev.detail.code;
   if (code && String(code).toUpperCase() !== _acCurrentCode()) return;
-  _cuPaintAirportOnly(false);
+  _cuPaintAirportOnly();
 }
 try { window.addEventListener('fids-airport-config-ready', function (ev) { try { _cuAirportConfigIn(ev); } catch (e) {} }); } catch (e) {}
 
@@ -3467,6 +3506,8 @@ function cuApplyAndSave() {
 // Wipe local overrides for this airport so admin defaults take over
 function cuResetAll() {
   try { localStorage.removeItem(_cuStorageKey()); } catch (e) {}
+  // a pick in the airport-only controls is dropped too: they show the airport choice
+  try { _cuAirportOnlyForget(); } catch (e) {}
   _cuPaintForm({});
   try {
     var code = _acCurrentCode();
@@ -3495,6 +3536,11 @@ window._fidsPersistTheme = function (name) {
     prefs.theme = name;
     delete prefs.themePresetId;
     delete prefs.customColors;
+    // The bottom of the board and the row colours travel from the Customize
+    // panel alone (_cuAirportOnlySends): a copy left on this device from
+    // before they became the airport choice would reset the airport.
+    delete prefs.floor;
+    delete prefs.rowPalette;
     _cuSave(prefs);
     _cuCloudPush(_acCurrentCode(), prefs);
   } catch (e) {}
