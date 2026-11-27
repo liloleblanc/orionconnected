@@ -12300,9 +12300,12 @@ html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot img.g8-r1-sta
    1680x1050). Both of its files are square (skyteam-white.png 512 x 509,
    skyteam-colour.svg 2500 x 2500): its box is the square of that height from
    the first frame. The oneworld ball and the Star tile are reserved by their
-   own rules, and the takeover band gives every badge a width of its own
-   (73 px, v23164). */
-html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap:not(.g8-takeover) img.g8-r1-star.g8-r1-alliance-skyteam {
+   own rules. The 73 px rule of the takeover band (v23164) never reaches this
+   badge: the v22601 rule outranks it on width, the img.g8-r1-star rule above
+   on height. So the takeover band (countdown, boarding, final call, gate
+   closed) takes the same reserve, and nothing there changes once the file has
+   loaded: the decoded badge was that square already. */
+html body:not(#_):not(#_):not(#_):not(#_) .g8-wrap img.g8-r1-star.g8-r1-alliance-skyteam {
   aspect-ratio: 1 / 1 !important;
   min-width: clamp(48px, 7vh, 82px) !important;
 }

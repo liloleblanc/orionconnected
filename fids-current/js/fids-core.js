@@ -68486,11 +68486,14 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         // v24188 — the end of the fade is read off the frame, not timed from this
         // message (_ocWhenFrameHidden: its computed visibility turns hidden when the
         // fade of the rotator, --oc-fade, 0.6 s by default, is over, however late it
-        // began), 3 s at the most. The fixed 650 ms it replaces was written for a fade
-        // of about 0.45 s: with the fade at 0.6 s and begun late on a busy box, the
-        // next gate was drawn while the board could still be seen. Where the frame
-        // cannot be read (no frame around the board) the 650 ms stands, as before.
-        _pickWait = _ocWhenFrameHidden(function () { _pickWait = null; pickGate(); }, 3000, 650);
+        // began), 3 s at the most, or the fade and 2.4 s more where a ?fade= of the
+        // rotator makes it longer (_fidsRotFadeMs: a fixed 3 s cut a fade of 4 or 5 s
+        // short, and the next gate was drawn while the old one was still faintly
+        // seen). The fixed 650 ms it replaces was written for a fade of about 0.45 s:
+        // with the fade at 0.6 s and begun late on a busy box, the next gate was drawn
+        // while the board could still be seen. Where the frame cannot be read (no
+        // frame around the board) the 650 ms stands, as before.
+        _pickWait = _ocWhenFrameHidden(function () { _pickWait = null; pickGate(); }, Math.max(3000, _fidsRotFadeMs() + 2400), 650);
       }
     });
     // Standalone default: plain interval. If a rotator message arrives the handler

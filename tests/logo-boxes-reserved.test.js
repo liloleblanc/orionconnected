@@ -298,9 +298,23 @@ test('the gate band: the SkyTeam badge is a square of its height before its file
   const r = body(reserve[0]);
   assert.match(r, /aspect-ratio: 1 \/ 1 !important;/);
   assert.match(r, new RegExp('min-width: ' + h[1].replace(/[()]/g, '\\$&') + ' !important;'), 'the width floor is the height clamp itself');
-  assert.match(reserve[0], /\.g8-wrap:not\(\.g8-takeover\) img\.g8-r1-star\.g8-r1-alliance-skyteam \{$/, 'the takeover band keeps its own width');
+  assert.match(reserve[0], /\.g8-wrap img\.g8-r1-star\.g8-r1-alliance-skyteam \{$/, 'every band, the takeover band included');
+  assert.doesNotMatch(reserve[0], /g8-takeover/);
   for (const l of lines.filter((x) => x !== reserve[0])) assert.ok(ids(l) < top, l);
   assert.match(body('html body .g8-wrap .g8-r1-star.g8-r1-alliance-skyteam,'), /width: auto !important;\s*min-width: 0 !important;/, 'the rule it outranks');
+  // why the takeover band needs it too (countdown, boarding, final call, gate closed): its
+  // 73 px rule never reaches the badge, which sits in the logo slot. On width the v22601
+  // rule outranks it (four classes to three, both !important), on height the rule above
+  // (three :not(#_)), so there it was width auto and min-width 0 as well
+  const tk = 'html body .g8-wrap.g8-takeover .g8-r1-star,';
+  assert.match(body(tk), /width: 73px !important;\s*height: 73px !important;/, 'the takeover rule');
+  const cls = (sel) => (sel.match(/\.[\w-]+/g) || []).length;
+  const v22601 = 'html body .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-skyteam {';
+  assert.ok(OVR.indexOf(v22601) > 0, 'the v22601 rule, its logo slot selector');
+  assert.equal(ids(tk), 0);
+  assert.ok(cls(v22601) > cls(tk), 'the v22601 rule outranks it on width');
+  assert.ok(ids(heightRule) > ids(tk), 'the height rule outranks it on height');
+  assert.match(CORE, /'<div class="g8-r1-logoslot">'/, 'the badge is drawn in the logo slot');
   // beside the reserve rules it works with, not at the end of the file
   const at = OVR.indexOf(reserve[0]);
   assert.ok(at > OVR.indexOf(heightRule) && at - OVR.indexOf(heightRule) < 4000, 'beside the height rule');

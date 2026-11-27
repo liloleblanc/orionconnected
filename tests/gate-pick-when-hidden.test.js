@@ -9,8 +9,11 @@
 // late, so the next gate was drawn while the old one was still faintly on screen: 22
 // fade-outs of one run showed the new gate at an opacity of 0.007 to 0.197, its emblem
 // jumping 506 to 593 px. rotate.html turns the visibility of a frame to hidden only when
-// its fade is over, so the gate now waits for that (_ocWhenFrameHidden), 3 s at the most.
-// A board with no frame around it, or a frame it cannot read, keeps the 650 ms.
+// its fade is over, so the gate now waits for that (_ocWhenFrameHidden), 3 s at the most,
+// or the fade and 2.4 s more where a ?fade= of the rotator (0 to 5 s) makes it longer: a
+// fixed 3 s cap drew the next gate at 3 s into a fade of 4 or 5 s, the old gate still at an
+// opacity of 0.04 to 0.2. A board with no frame around it, or a frame it cannot read, keeps
+// the 650 ms.
 //
 // The cycle is the shipped one (the gate auto-cycle block of fids-core.js), run with the
 // helper it waits with, against a fake page in a fake rotator frame.
@@ -36,11 +39,14 @@ function fnSource(src, name) {
 }
 // the helper the cycle waits with (none before v24188, when the cycle kept a timer of its own)
 const HELPER = fnSource(CORE, '_ocWhenFrameHidden');
+// and the fade of the rotator, read off its --oc-fade, which the cap of the wait follows
+const FADEFN = fnSource(CORE, '_fidsRotFadeMs');
 
 // A gate board. frame: inside a rotator frame (else a top window); search: its address;
 // the frame reads as rotate.html draws it: visible on air and through its fade-out after
 // it is told it is off screen (fade ms, begun lag ms late on a busy box), hidden from
-// then on; stuck: it never reads hidden; css false: its style cannot be read.
+// then on; stuck: it never reads hidden; css false: its style cannot be read. The rotator
+// page carries the fade as its --oc-fade, as rotate.html writes it from ?fade=.
 function gate(o) {
   o = Object.assign({ frame: true, search: '', fade: 600, lag: 0, stuck: false, css: true }, o || {});
   let now = 1e9;
@@ -50,7 +56,10 @@ function gate(o) {
   let shown = true, offAt = null;
   const frame = {};
   const vis = () => ((o.stuck || shown || offAt === null || now < offAt + o.lag + o.fade) ? 'visible' : 'hidden');
-  const parent = { getComputedStyle: o.css ? (el) => ({ visibility: el === frame ? vis() : 'visible' }) : undefined };
+  const parent = {
+    getComputedStyle: o.css ? (el) => ({ visibility: el === frame ? vis() : 'visible' }) : undefined,
+    document: { documentElement: { style: { getPropertyValue: (k) => (k === '--oc-fade' ? (o.fade / 1000) + 's' : '') } } },
+  };
   const win = { location: { search: o.search }, addEventListener: (n, f) => { if (n === 'message') listeners.push(f); } };
   win.self = win;
   win.top = o.frame ? parent : win;
@@ -68,7 +77,7 @@ function gate(o) {
     document: { getElementById: () => null },
     render: () => { renders.push({ at: now, vis: vis(), gate: ctx.subScreenVal }); },
   };
-  vm.runInNewContext(HELPER + '\n' + CYCLE, ctx);
+  vm.runInNewContext(HELPER + '\n' + FADEFN + '\n' + CYCLE, ctx);
   const tell = (on) => {
     if (!on && shown) offAt = now;                    // the class comes off as the message goes: the fade-out begins
     shown = on;
@@ -197,7 +206,8 @@ test('outside a frame, or a frame it cannot read, it waits 650 ms as before; an 
 
 test('the cycle waits through _ocWhenFrameHidden, with the fixed wait it had as the fallback', () => {
   assert.ok(HELPER, '_ocWhenFrameHidden is a top-level function of fids-core.js');
-  assert.match(CYCLE, /_pickWait = _ocWhenFrameHidden\(function \(\) \{ _pickWait = null; pickGate\(\); \}, 3000, 650\);/);
+  assert.ok(FADEFN, '_fidsRotFadeMs is a top-level function of fids-core.js');
+  assert.match(CYCLE, /_pickWait = _ocWhenFrameHidden\(function \(\) \{ _pickWait = null; pickGate\(\); \}, Math\.max\(3000, _fidsRotFadeMs\(\) \+ 2400\), 650\);/);
   assert.match(CYCLE, /if \(_pickWait\) \{ _pickWait\(\); _pickWait = null; \}/);
   assert.doesNotMatch(CYCLE, /setTimeout\([^)]*pickGate/, 'no fixed timer of its own');
   assert.doesNotMatch(CYCLE, /completes \(~0\.45s\)/, 'the comment no longer gives the fade as about 0.45 s');
@@ -208,4 +218,46 @@ test('the cycle waits through _ocWhenFrameHidden, with the fixed wait it had as 
   // and rotate.html turns the visibility of a frame hidden only when its fade is over
   const ROT = fs.readFileSync(path.join(__dirname, '..', 'fids-current', 'rotate.html'), 'utf8');
   assert.match(ROT, /transition: opacity var\(--oc-fade, \.6s\) ease, visibility 0s linear var\(--oc-fade, \.6s\);/);
+  // the fade the cap follows is the one the rotator writes from its ?fade= (0 to 5 s), on
+  // rotate.html and tour.html alike
+  assert.match(FADEFN, /window\.parent\.document\.documentElement\.style\.getPropertyValue\('--oc-fade'\)/);
+  assert.match(FADEFN, /if \(s >= 0 && s <= 5\) return Math\.round\(s \* 1000\);/);
+  for (const page of ['rotate.html', 'tour.html']) {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'fids-current', page), 'utf8');
+    assert.match(src, /if \(!\(fadeSec >= 0 && fadeSec <= 5\)\) fadeSec = 0\.6;/, page);
+    assert.match(src, /document\.documentElement\.style\.setProperty\('--oc-fade', fadeSec \+ 's'\);/, page);
+  }
+});
+
+test('a longer fade of the rotator (?fade= up to 5 s) is waited out: the gate is drawn once the frame reads hidden', () => {
+  // a fade of 3, 4 or 5 s, begun on time or late: nothing while it runs, drawn as it ends
+  // (a fixed 3 s cap drew it at 3 s, the old gate still at an opacity of up to 0.2)
+  for (const fade of [3000, 4000, 5000]) {
+    for (const lag of [0, 100, 500]) {
+      const g = gate({ fade, lag });
+      g.tell(true);
+      g.wait(60000);
+      const t = g.now();
+      g.tell(false);
+      g.wait(fade + lag - 1);
+      assert.deepEqual(g.renders, [], fade + ' ms fade begun ' + lag + ' ms late: nothing before it is over');
+      g.wait(1);
+      assert.equal(g.renders.length, 1, fade + ' ms fade begun ' + lag + ' ms late: drawn as it ends');
+      assert.equal(g.renders[0].at - t, fade + lag);
+      assert.equal(g.renders[0].vis, 'hidden');
+    }
+  }
+  // a frame that never reads hidden: the fade and 2.4 s more, and never under 3 s
+  for (const [fade, cap] of [[0, 3000], [600, 3000], [3000, 5400], [5000, 7400]]) {
+    const s = gate({ fade, stuck: true });
+    s.tell(true);
+    s.wait(60000);
+    const ts = s.now();
+    s.tell(false);
+    s.wait(cap - 1);
+    assert.deepEqual(s.renders, [], fade + ' ms fade: nothing before the cap');
+    s.wait(1);
+    assert.equal(s.renders.length, 1, fade + ' ms fade: drawn at the cap');
+    assert.equal(s.renders[0].at - ts, cap);
+  }
 });
