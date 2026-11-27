@@ -862,6 +862,13 @@ html.fids-day #baggageView .b5 .b5-row { box-shadow: 0 1px 0 rgba(13,36,64,.10),
 #baggageView .b5 .b5-emb img, #baggageView .b5 .b5-emb .full-logo {
   height: 1em !important; min-height: 0 !important; max-height: 1em !important; width: auto !important; min-width: 0 !important; max-width: 1.6em !important;
   object-fit: contain !important; display: block !important; background: none !important; padding: 0 !important; }
+/* v24188 — the art of the emblem slot is a 1em square from the first frame, as the
+   tags of the strip are (.b5-temb). An img with no size of its own was no wider than
+   nothing until its file had loaded, then pushed the lettering and the flight number
+   beside it to the right. The picture sits whole inside the square (object-fit above);
+   a monogram is type, sized at once, and keeps its own width. The lettering after it
+   takes its shape from the file before it loads (_logoBoxStyle, fids-core.js). */
+#baggageView .b5 .b5-emb img, #baggageView .b5 .b5-emb img.full-logo { width: 1em !important; min-width: 1em !important; max-width: 1em !important; }
 #baggageView .b5 .b5-wm { display: inline-grid; flex: none; height: 1em; }
 #baggageView .b5 .b5-wm img { grid-area: 1 / 1; height: 1em; width: auto; display: block; opacity: 0; }
 #baggageView .b5 .b5-wm .b5-wm-n { opacity: 1; }

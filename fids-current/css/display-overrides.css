@@ -2695,7 +2695,7 @@ html body .g8-wrap .g8-r1-logoslot {
   display: flex !important;
   align-items: center !important;
   min-width: 0 !important;
-  max-width: calc(100vw - var(--gate-rcw, 25%) - 2 * var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;
+  max-width: calc(100vw - var(--gate-rcw, 23%) - 2 * var(--g8-tab-w, var(--gate-rcw, 23%)) + 30px) !important;
   overflow: hidden !important;
 }
 html body .g8-wrap .g8-r1-logoslot > img:first-child { flex: 0 1 auto; min-width: 0; }

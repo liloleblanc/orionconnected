@@ -4789,11 +4789,11 @@ html body:not(.gate-acsky) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus.g8-plane-
      width: its right half runs under the gate block. */
   /* Right half runs under the GATE tab (full --gate-rcw, matching the
  Your Aircraft column as specified); visible half is --g8-tab-w wide. */
-  width: calc(var(--gate-rcw, 25%) + var(--g8-tab-w, var(--gate-rcw, 25%)) - 24px) !important;
+  width: calc(var(--gate-rcw, 23%) + var(--g8-tab-w, var(--gate-rcw, 23%)) - 24px) !important;
   /* Symmetric margins in the VISIBLE half: content area = tab-w - 68,
      centred exactly on the visible-half midpoint (tab-w/2 - 12). */
   padding-left: 22px !important;
-  padding-right: calc(var(--gate-rcw, 25%) + 22px) !important;
+  padding-right: calc(var(--gate-rcw, 23%) + 22px) !important;
 }
 /* AUTO-FIT: any airport logo, any shape, always inside the visible band. */
 .g8-wrap .g8-r1-apband img {
