@@ -6,8 +6,9 @@
 // white on the light street map, so it read as see-through. Seven top views in
 // Air Canada colours (supplied art: A320, A321, 737 MAX 8, A220-300, E175,
 // CRJ900, Dash 8-400) now draw an aeroplane that wears those colours. The risk
-// is the wrong colours on the wrong aeroplane: Rouge flies the A321 and the
-// 737 MAX 8 under Air Canada numbers in its own colours, PAL flies its own
+// is the wrong colours on the wrong aeroplane: Rouge flies the A320 and A321
+// under Air Canada numbers in its own colours (v24183: not its 737 MAX 8s, which
+// it paints as Air Canada does, so those share the picture), PAL flies its own
 // Dash 8-400s for Air Canada Express (under the brand and under bare numbers),
 // Toronto writes ACA for Rouge too, one A220 flies in Trans-Canada Air Lines
 // colours, and a WestJet or United aeroplane of the same type must never be
@@ -61,7 +62,7 @@ const regKey = lift('_aircraftRegKey', [], []);
 const SEEN = {};
 const resolved = (row) => (row && SEEN[row.flight] ? { cd: '', nm: '', reg: SEEN[row.flight].reg || '', seen: SEEN[row.flight] } : null);
 // the ladder for a row kept across a reload, which carries no _opCode (here: the bands by number)
-const LADDER = { AC8612: 'QK', AC8611: 'QK', AC7754: 'ACEX', AC7753: 'ACEX', AC7680: 'PB' };
+const LADDER = { AC8612: 'QK', AC8611: 'QK', AC7754: 'ACEX', AC7753: 'ACEX', AC7680: 'PB', AC1729: 'RV' };
 const opOf = (r) => LADDER[r.flight] || '';
 const acArt = lift('_mapPlaneAcArt', ['_MAP_PLANE_ART', '_acResolvedGet', 'AIRCRAFT_LIVERY_BY_REG', '_aircraftRegKey', '_gateOpOf'], [ART, resolved, LIVERY, regKey, opOf]);
 const specFor = lift('_mapPlaneSpecFor', ['aircraftCodeToIata', '_MAP_PLANE_DIMS', '_MAP_PLANE_ART', '_MAP_PLANE_UNKNOWN', '_mapPlaneAcArt'],
@@ -98,14 +99,12 @@ test('an aeroplane in special colours is never drawn in the everyday ones', () =
   assert.equal(src('BCS3', [row('AC604', { _reg: 'C-GJXN' })]), AC('223'), 'any other A220 of Air Canada');
 });
 
-test('Rouge flies the A321 and the 737 MAX 8 in its own colours: never painted Air Canada', () => {
+test('Rouge flies the A320 and A321 in its own colours: never painted Air Canada', () => {
   assert.equal(src('A321', [row('AC1986', { _opCode: 'RV' })]), JET);
-  assert.equal(src('B38M', [row('AC1726', { _opCode: 'RV' })]), JET);
   // the Rouge sun flights, AC 2100-2299, carry no band and so no operator: the number alone keeps them plain
-  assert.equal(src('B38M', [row('AC2124')]), JET);
   assert.equal(src('A321', [row('AC2246')]), JET);
   // a live Rouge callsign on a mainline number keeps it plain too
-  assert.equal(src('B38M', [row('AC800', { _feedCs: 'ROU800' })]), JET);
+  assert.equal(src('A321', [row('AC800', { _feedCs: 'ROU800' })]), JET);
   SEEN.AC845 = { cs: 'ROU845' };
   assert.equal(src('A321', [row('AC845')]), JET, 'the callsign FR24 saw counts as much as the feed');
   // Toronto writes ACA for Rouge too: an ACA on the feed must not hide the ROU FR24 saw
@@ -114,8 +113,49 @@ test('Rouge flies the A321 and the 737 MAX 8 in its own colours: never painted A
   // mainline numbers, no other operator: Air Canada colours
   assert.equal(src('A321', [row('AC845')]), AC('321'));
   assert.equal(src('A21N', [row('AC850')]), AC('321'));
+  // the Rouge A320 is in its own colours too
+  assert.equal(src('A320', [row('AC1650', { _opCode: 'RV' })]), JET);
+  assert.equal(src('A320', [row('AC306', { _feedCs: 'ROU306' })]), JET);
+  assert.equal(src('A320', [row('AC306', { _opCode: 'ROU' })]), JET);
+});
+
+test('the 737 MAX 8: Rouge paints it as Air Canada does, so both wear the one picture (v24183)', () => {
+  // Rouge by the ladder, by its callsign (the feed or FR24), and its sun flights, which carry no band
+  assert.equal(src('B38M', [row('AC1726', { _opCode: 'RV' })]), AC('7m8'));
+  assert.equal(src('B38M', [row('AC1726', { _opCode: 'RV', _feedCs: 'ROU1726' })]), AC('7m8'));
+  assert.equal(src('B38M', [row('AC2124')]), AC('7m8'), 'AC2124 to Fort-de-France, a Rouge sun flight on a 737 MAX 8');
+  assert.equal(src('B38M', [row('AC800', { _feedCs: 'ROU800' })]), AC('7m8'), 'Rouge on a mainline number');
+  SEEN.AC1727 = { cs: 'ROU1727' };
+  assert.equal(src('B38M', [row('AC1727', { _feedCs: 'ACA1727' })]), AC('7m8'), 'ACA on the feed, ROU as FR24 saw it');
+  delete SEEN.AC1727;
+  assert.equal(src('B38M', [row('AC1727', { _opCode: 'ROU' })]), AC('7m8'), 'Rouge written as its callsign code');
+  // a row the gate kept across a reload: the ladder answers for it
+  assert.equal(src('B38M', [{ flight: 'AC1729', airline: 'AC' }]), AC('7m8'), 'a remembered Rouge row');
+  assert.equal(src('B38M', [{ flight: 'AC7680', airline: 'AC' }]), JET, 'a remembered PAL row');
+  // mainline as before, and a Rouge inbound beside a mainline departure at one door: one paint either way
   assert.equal(src('B38M', [row('AC800'), row('AC801')]), AC('7m8'));
   assert.equal(src('Boeing 737 MAX 8', [row('AC 800', { _callSign: 'ACA800' })]), AC('7m8'));
+  assert.equal(src('B38M', [row('AC1727', { _opCode: 'RV' }), row('AC800')]), AC('7m8'));
+  // Air Canada flies no 737-800: the feeds and the ADB registry name its MAX 8s 738 or 73H
+  assert.equal(src('B738', [row('AC1096')]), AC('7m8'));
+  assert.equal(src('Boeing 737-800', [row('AC1096')]), AC('7m8'));
+  assert.equal(src('73H', [row('AC1726', { _opCode: 'RV' })]), AC('7m8'));
+  // never another operator, a Jazz or other callsign, special colours, a number outside the blocks or another airline
+  assert.equal(src('B38M', [row('AC8803', { _opCode: 'QK' })]), JET);
+  assert.equal(src('B38M', [row('AC7754', { _opCode: 'ACEX' })]), JET);
+  assert.equal(src('B38M', [row('AC7680', { _opCode: 'PB' })]), JET);
+  assert.equal(src('B38M', [row('AC1726', { _opCode: 'WS' })]), JET);
+  assert.equal(src('B38M', [row('AC1726', { _feedCs: 'JZA1726' })]), JET);
+  assert.equal(src('B38M', [row('AC1726', { _feedCs: 'WJA1726' })]), JET);
+  assert.equal(src('B38M', [row('AC1726', { _opCode: 'RV', _reg: 'C-GNBN' })]), JET, 'a registration in special colours');
+  assert.equal(src('B38M', [row('AC1727', { _opCode: 'RV' }), row('AC8612', { _opCode: 'QK' })]), JET, 'every row must agree');
+  assert.equal(src('B38M', [row('AC2300')]), JET, 'above the Rouge blocks');
+  assert.equal(src('B38M', [row('AC7050')]), JET, 'the extras in AC 7000-7599 are A320s');
+  assert.equal(src('B738', [row('WS501')]), JET, 'the real 737-800s of WestJet are untouched');
+  assert.equal(src('B738', [row('WS501', { _feedCs: 'WJA501' })]), JET);
+  assert.equal(src('B39M', [row('AC800')]), JET, 'no picture of the MAX 9, which Air Canada does not fly');
+  assert.equal(src('B739', [row('AC800')]), JET);
+  assert.equal(src('B737', [row('AC800')]), JET, 'a 737-700 code is another size: plain');
 });
 
 test('the CRJ900 and E175 wear Air Canada Express colours for Jazz and the Express brand', () => {
@@ -181,6 +221,8 @@ test('the same size in flight, the true size and shape close in', () => {
     ['A320', [row('AC306')], 'ac320', 37.6, 34.1],
     ['A321', [row('AC845')], 'ac321', 44.5, 35.8],
     ['B38M', [row('AC800')], 'ac7m8', 39.5, 35.9],
+    ['B38M', [row('AC1726', { _opCode: 'RV' })], 'ac7m8', 39.5, 35.9],
+    ['B738', [row('AC1096')], 'ac7m8', 39.5, 35.8],
     ['BCS3', [row('AC345')], 'ac223', 38.7, 35.1],
     ['E75L', [row('AC8902', { _opCode: 'QK' })], 'ace75', 31.7, 26.0],
     ['CRJ9', [row('AC8803', { _opCode: 'QK' })], 'accr9', 36.2, 24.9],

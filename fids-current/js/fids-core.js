@@ -20623,7 +20623,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24182" src="/textures/gate-sky-shelf.mp4?v=24182" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24183" src="/textures/gate-sky-shelf.mp4?v=24183" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -20667,7 +20667,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24182" src="/textures/gate-sky-shelf.mp4?v=24182" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24183" src="/textures/gate-sky-shelf.mp4?v=24183" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -21871,7 +21871,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24182" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24183" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt=""' + window._gateMarkAttrs(_bwPick) + '>' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -39565,7 +39565,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24182';
+var FIDS_BUILD_TAG = 'v24183';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -51982,12 +51982,26 @@ var _MAP_PLANE_ART = {
 // v24182 — WHO WEARS THEM. Only an aeroplane every row of which says Air Canada
 // colours: an Air Canada number; an operator, by the ladder the boards already
 // read (fidsResolveOperator), that is Air Canada itself, Jazz or the Express
-// brand, never Rouge, PAL or anyone else; no live callsign of another airline;
-// and a number in the block where that type flies in those colours:
+// brand, never PAL or anyone else, and never Rouge but on the 737 MAX 8; no
+// live callsign of another airline; and a number in the block where that type
+// flies in those colours:
 //   A320, A220-300           mainline, no other operator, AC 1-1599 (and the
 //                            A320 extras, AC 7000-7599)
-//   A321, 737 MAX 8          mainline below AC 1600 only: Rouge flies both, in
-//                            its own colours, under AC 1600-2299
+//   A321                     mainline below AC 1600 only: Rouge flies it in its
+//                            own colours (red engines, a red tail and a red
+//                            sweep aft, all seen from above) under AC 1600-2299
+//   737 MAX 8                v24183, Air Canada and Rouge alike: Rouge paints its
+//                            MAX 8s as Air Canada does (the white body, the black
+//                            tail, engines and winglets) but for a small rouge
+//                            mark by the front door, which is not seen from
+//                            above. AC 1-2299 (mainline below 1600, Rouge
+//                            1600-2299), with no operator or Rouge by the ladder
+//                            and a callsign of ACA, ROU or none. Air Canada flies
+//                            no 737-800, and the feeds and the ADB registry name
+//                            its MAX 8s 738 or 73H (the panel pins them to the
+//                            MAX 8 for the same reason), so on such a row those
+//                            two codes take it too: the same length, the span
+//                            0.1 m less
 //   E175, CRJ900             Jazz or the Express brand by the ladder, or an
 //                            Express number, AC 7000-8999 (PAL flies neither)
 //   Dash 8-400               Jazz only, on positive evidence on EVERY row: the
@@ -52013,7 +52027,8 @@ function _mapPlaneAcArt(code, rows) {
   try {
     var c = String(code || '').toUpperCase();
     var kind = (c === '320' || c === '223') ? 'main'
-             : (c === '321' || c === '32Q' || c === '7M8') ? 'mainLow'
+             : (c === '321' || c === '32Q') ? 'mainLow'
+             : (c === '7M8' || c === '738' || c === '73H') ? 'max'
              : (c === 'E75' || c === 'CR9' || c === 'DH4') ? 'express' : '';
     if (!kind) return '';
     var list = [];
@@ -52035,6 +52050,7 @@ function _mapPlaneAcArt(code, rows) {
       for (var q = 0; q < cso.length; q++) {
         var p = (String(cso[q] || '').replace(/\s+/g, '').toUpperCase().match(/^([A-Z]{3})\d/) || [])[1] || '';
         if (!p) continue;
+        if (p === 'ROU' && kind === 'max') continue;
         if (p !== 'ACA' && p !== 'JZA') return '';
         if (p === 'JZA') jazz = true;
       }
@@ -52049,6 +52065,9 @@ function _mapPlaneAcArt(code, rows) {
         if (c === 'DH4') {
           if (!(op === 'QK' || (jazz && (!op || op === 'ACEX')))) return '';
         } else if (!(op === 'QK' || op === 'ACEX' || (!op && fn >= 7000 && fn <= 8999))) return '';
+      } else if (kind === 'max') {
+        if (jazz || (op && op !== 'RV' && op !== 'ROU')) return '';
+        if (!(fn >= 1 && fn <= 2299)) return '';
       } else {
         if (op || jazz) return '';
         var ok = fn >= 1 && fn <= 1599;
@@ -52057,7 +52076,7 @@ function _mapPlaneAcArt(code, rows) {
       }
     }
     var key = { '320': 'ac320', '223': 'ac223', '321': 'ac321', '32Q': 'ac321', '7M8': 'ac7m8',
-                'E75': 'ace75', 'CR9': 'accr9', 'DH4': 'acdh4' }[c] || '';
+                '738': 'ac7m8', '73H': 'ac7m8', 'E75': 'ace75', 'CR9': 'accr9', 'DH4': 'acdh4' }[c] || '';
     return (key && _MAP_PLANE_ART[key]) ? key : '';
   } catch (e) { return ''; }
 }
@@ -70541,7 +70560,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24182" src="/textures/gate-sky-shelf.mp4?v=24182"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24183" src="/textures/gate-sky-shelf.mp4?v=24183"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
