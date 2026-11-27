@@ -208,6 +208,11 @@ The QR never actually crossed
      not acceptable, and the caption is not shrink-to-fit either, so the size
      is set low enough that the longest names in the portfolio still land. */
   overflow:hidden; hyphens:none; }
+/* No break of its own in the caption. The second language and the name are block lines, so the
+   <br> that fids-core writes before the name stood alone after a second language and printed an
+   empty line: four lines on every two-language board, in a bubble drawn for three. Hidden, it
+   leaves three; a one-language card keeps its two, the name being a block. */
+.axr-bubble-copy > br{ display:none; }
 /* The name is its own line and stays on ONE line: never wrapped, never cut.
    The fitter in fids-core steps the longest names down to fit the width. */
 .axr .axr-bub-name{ display:block; white-space:nowrap; overflow:hidden; font-weight:600; }

@@ -193,14 +193,22 @@
    of the card, 842x849 and 842x698 on a 1680x1050 board and 970x873 and 970x718 on a 1920x1080
    one (without and with the strip of later departures): the tile and its painted shadow stay at
    least 16 px clear of every line of the lettering and of the YESCO mark, and the tile is as
-   large as that allows (the S of VEGAS sets it, on the 842x849 card). The quiet zone is the 14 px
-   of the large code, about four modules of a code of 33, so the modules keep the rest. */
+   large as that allows (the S of VEGAS sets it, on the 842x849 card). The tile also stays 16 px
+   clear of the outline of the sign, its gold border and bulbs: 26 px on the 842x698 card, where
+   the right tip comes closest. A smaller shadow buys no larger code: by the lettering alone it
+   would allow 157 px, and the tile would then cover that tip. The quiet zone is 14 px, as on the
+   large code of a plain card: about four modules of a code of 33, so the modules keep the rest. */
 .hlc-find--pic .hlc-find-scan{ position:relative; justify-content:flex-end; align-items:flex-end; }
 .hlc-find--pic .hlc-find-scan .hlc-qr{ background:var(--hlc-cream); border-radius:calc(14 * var(--hlc-px)); padding:calc(14 * var(--hlc-px));
   width:min(calc(136 * var(--hlc-px)), 100cqw, 100cqh); height:min(calc(136 * var(--hlc-px)), 100cqw, 100cqh);
   box-shadow:0 calc(10 * var(--hlc-px)) calc(34 * var(--hlc-px)) rgba(0,0,0,.38); }
+/* the photographer, white over the picture: a close dark edge, laid twice, under the soft glow, so
+   the line reads over a pale part of the picture too (the casino tower behind it on the Las Vegas
+   card) */
 .hlc-find-credit{ position:absolute; inset-inline-start:calc(14 * var(--hlc-px)); bottom:calc(10 * var(--hlc-px)); max-width:60%;
-  font-size:calc(18 * var(--hlc-px)); line-height:1.2; color:#fff; text-shadow:0 0 calc(6 * var(--hlc-px)) rgba(0,0,0,.8); text-align:start; }
+  font-size:calc(18 * var(--hlc-px)); line-height:1.2; color:#fff;
+  text-shadow:0 0 calc(2 * var(--hlc-px)) rgba(0,0,0,.95), 0 0 calc(2 * var(--hlc-px)) rgba(0,0,0,.95), 0 0 calc(6 * var(--hlc-px)) rgba(0,0,0,.8);
+  text-align:start; }
 .hlc-find-credit .pcr-cam{ width:1em; height:1em; vertical-align:-0.14em; margin-inline-end:.3em; }
 
 /* ── a hub city (.hlc--hub): two pages, near the airport then downtown, in the faces of the board ── */

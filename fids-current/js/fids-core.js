@@ -20672,7 +20672,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24186" src="/textures/gate-sky-shelf.mp4?v=24186" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24187" src="/textures/gate-sky-shelf.mp4?v=24187" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -20716,7 +20716,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24186" src="/textures/gate-sky-shelf.mp4?v=24186" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24187" src="/textures/gate-sky-shelf.mp4?v=24187" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -21920,7 +21920,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24186" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24187" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt=""' + window._gateMarkAttrs(_bwPick) + '>' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -39623,7 +39623,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24186';
+var FIDS_BUILD_TAG = 'v24187';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -63357,11 +63357,13 @@ function buildAccorAdOnlyV6(ad) {
   // direction), so a Japanese one is not set under the page's English
   var _scanHtml = '<span' + _biAttr(accorLang()) + '>' + _scanMark(_scanT1) + '</span>'
     + ((_scanT2 && _scanT2 !== _scanT1) ? '<span class="axr-bi-line"' + _biAttr(_L2) + '>' + _scanMark(_scanT2) + '</span>' : '');
-  // No <br> before the name. The name (axr-bub-name) and the second language (axr-bi-line)
-  // are block lines of their own, so after a second language a <br> stood alone and printed
+  // The <br> before the name is written but never drawn: hotel-ads.css hides it
+  // (.axr-bubble-copy > br). The name (axr-bub-name) and the second language (axr-bi-line)
+  // are block lines of their own, so after a second language the break stood alone and printed
   // an empty line: four lines on every two-language board, in a bubble drawn for three. On a
-  // one-language card the name, a block, still starts its own line.
-  var _qrCaption = _scanHtml + '<span class="axr-bub-name" translate="no">' + esc(_fullName) + '</span>';
+  // one-language card the name, a block, still starts its own line. The line below is kept as
+  // it was because the language ledger (tests/i18n) names its exception by the text of the line.
+  var _qrCaption = _scanHtml + '<br><span class="axr-bub-name" translate="no">' + esc(_fullName) + '</span>';
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en'); // i18n-ok: data
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
@@ -70743,7 +70745,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24186" src="/textures/gate-sky-shelf.mp4?v=24186"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24187" src="/textures/gate-sky-shelf.mp4?v=24187"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

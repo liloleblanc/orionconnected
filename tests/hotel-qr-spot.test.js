@@ -74,13 +74,20 @@ function clearance(a, b) {
 
 // ── the Accor bubble ──────────────────────────────────────────────────────
 
-test('the bubble caption has no blank line: no <br> before the hotel name', () => {
+test('the bubble caption has no blank line: a break in it is never drawn', () => {
   const line = CORE.match(/var _qrCaption = [^\n]*/);
   assert.ok(line, '_qrCaption is built in fids-core.js');
   // after the second language, a block line of its own, a <br> stood alone and printed an empty
-  // line: four lines on every two-language board in a bubble drawn for three
-  assert.doesNotMatch(line[0], /<br/i);
-  assert.match(line[0], /^var _qrCaption = _scanHtml \+ '<span class="axr-bub-name" translate="no">' \+ esc\(_fullName\) \+ '<\/span>';$/);
+  // line: four lines on every two-language board in a bubble drawn for three. The line still writes
+  // it (the language ledger names its exception by the text of the line), straight into the copy,
+  // where the stylesheet hides it
+  assert.match(line[0], /^var _qrCaption = _scanHtml \+ '(<br>)?<span class="axr-bub-name" translate="no">' \+ esc\(_fullName\) \+ '<\/span>';$/);
+  assert.match(CORE, /'<div class="axr-bubble"><div class="axr-bubble-copy">'\+_qrCaption\+'<\/div>/);
+  assert.match(rule(ADS, '.axr-bubble-copy > br'), /^\.axr-bubble-copy > br\{ display:none; \}$/);
+  // and it is the only break: the first language is one inline span, the second a block line
+  const scan = CORE.match(/var _scanHtml = [^\n]*\n[^\n]*/);
+  assert.ok(scan);
+  assert.doesNotMatch(scan[0], /<br/i);
   // the second language and the name are block lines, so each still starts a line of its own, on a
   // one-language card too
   assert.match(CORE, /'<span class="axr-bi-line"' \+ _biAttr\(_L2\)/);
@@ -109,8 +116,19 @@ test('the bubble: the code is the shape inner height, from the bubble width, at 
   const copy = rule(ADS, '.axr-bubble-copy');
   const fsM = copy.match(/font-size:(clamp\([^;]+\));/), lhM = copy.match(/line-height:([\d.]+);/);
   assert.ok(gapM && fsM && lhM);
-  // the narrow board: an old rule of fids.css sets the padding of every div of the ad carousel
-  const narrow = FIDS.match(/@media \(max-width: 800px\) \{[\s\S]*?#gateAdCarousel div \{[^}]*padding: (\d+)(?:px)? (\d+)px !important;/);
+  // the narrow board: an old rule of fids.css sets the padding of every div of the ad carousel. It
+  // is read inside its own 800 px block, and it must be read: a pattern that stopped matching would
+  // otherwise skip the narrow check below without a word
+  const at800 = FIDS.indexOf('@media (max-width: 800px) {');
+  assert.ok(at800 >= 0, 'the 800 px block of fids.css');
+  let depth = 0, end800 = -1;
+  for (let j = FIDS.indexOf('{', at800); j < FIDS.length; j++) {
+    if (FIDS[j] === '{') depth++;
+    else if (FIDS[j] === '}' && --depth === 0) { end800 = j; break; }
+  }
+  const block800 = FIDS.slice(at800, end800 + 1);
+  const narrow = block800.match(/#gateAdCarousel div\s*\{[^}]*padding:\s*(\d+)(?:px)?\s+(\d+)px\s*!important/);
+  assert.ok(narrow || !/#gateAdCarousel div\s*\{[^}]*padding/.test(block800), 'the carousel padding rule of the 800 px block is there but was not read');
   // the artwork (all-bubble.svg, drawn at the box with preserveAspectRatio none): the cream spans
   // x 4.43 to 326.59 of 329.655 and the whole height of the element
   const creamRight = 326.59 / 329.655;
@@ -160,6 +178,9 @@ const SIGN = {
   NEVADA: [574, 484, 706, 501],
   YESCO: [626, 516, 664, 526]
 };
+// the outline of the sign, its gold border and bulbs, along the lower right edge from the right tip
+// down to the foot of the post, in LAS.jpg pixels: the corner the code stands in faces this edge
+const EDGE = [[882, 428], [868, 452], [845, 468], [825, 480], [792, 490], [773, 500], [751, 510], [711, 528], [689, 536], [660, 546], [645, 551]];
 // the four sizes of the card in the centre deck of the gate, measured: without and with the strip
 // of later departures, on a 1680x1050 board and on a 1920x1080 one
 const CARDS = [[1680, 1050, 842.4, 848.7], [1680, 1050, 842.4, 697.5], [1920, 1080, 970.4, 873.2], [1920, 1080, 970.4, 717.6]];
@@ -247,6 +268,22 @@ test('a photo card: the code and its shadow stay 16 px clear of the Las Vegas We
   // and no smaller than it must be: one design pixel more and the shadow comes within 16 px of the
   // lettering on one of the cards (the S of VEGAS on the 842x849 one)
   assert.ok(worstClearance(P, P.cap + 1, img).worst < GAP, 'the cap is the largest that keeps the sign clear');
+  // the tile stays clear of the outline of the sign as well (its right tip, 26 px on the 842x698
+  // card). A smaller shadow lets the lettering rule above allow a larger tile (157 px for a shadow
+  // of 0 4 13), and that tile covers the tip, so the outline is held here on its own
+  for (const [vw, vh, W, H] of CARDS) {
+    const t = tileOn(P, P.cap, vw, vh, W, H);
+    const k = Math.max(W / img.w, H / img.h), ox = (img.w * k - W) / 2, oy = (img.h * k - H) / 2;
+    const pts = EDGE.map(([x, y]) => [x * k - ox, y * k - oy]);
+    let d = Infinity;
+    for (let i = 0; i + 1 < pts.length; i++) {
+      for (let s = 0; s <= 100; s++) {
+        const p = [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * s / 100, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * s / 100];
+        d = Math.min(d, clearance(t.tile, [p[0], p[1], p[0], p[1]]));
+      }
+    }
+    assert.ok(d >= GAP, vw + 'x' + vh + ' card ' + W + 'x' + H + ': the tile is ' + d.toFixed(1) + ' px from the outline of the sign');
+  }
 });
 
 test('a photo card: the code is still a code (modules of 3 px and more, a quiet zone of four)', () => {
