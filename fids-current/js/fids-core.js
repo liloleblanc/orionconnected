@@ -20672,7 +20672,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24186" src="/textures/gate-sky-shelf.mp4?v=24186" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24187" src="/textures/gate-sky-shelf.mp4?v=24187" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -20716,7 +20716,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24186" src="/textures/gate-sky-shelf.mp4?v=24186" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24187" src="/textures/gate-sky-shelf.mp4?v=24187" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -21920,7 +21920,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24186" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24187" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt=""' + window._gateMarkAttrs(_bwPick) + '>' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -39623,7 +39623,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24186';
+var FIDS_BUILD_TAG = 'v24187';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -62286,7 +62286,10 @@ function buildGateAdHtml(ad) {
     // When property logo has the name, SKIP this line entirely (kills duplicate)
     var _miniLine = [];
     // Distance needs CONTEXT — "0.9 km" from what? It's from downtown.
-    var _kmL = (typeof accorLang === 'function' ? accorLang() : lang);
+    // the language of the card, by the same rule as the labels of buildAccorAdOnlyV6 (accorLang
+    // is local to that builder, so a test for it here never held and the line always took the
+    // board language, whatever the card was built in)
+    var _kmL = _accorCardLang(ad);
     if (!_logoHasName) {
       var _miniCity = (ad.distanceCity && ad.distanceCity.cityName) ? ad.distanceCity.cityName : (ad.address || '');
       if (_miniCity) _miniLine.push(_esc(_miniCity));
@@ -63037,8 +63040,23 @@ function _qcLockupPair(name) {
   return null;
 }
 
-function _accorFrName(name) {
-  if (typeof accorLang === 'function' && accorLang() !== 'fr') return name;
+// The language of an Accor card: the one its content was built in (ad._adLang, stamped when
+// the list was fetched), else the language the deck runs now, else the board language. One
+// rule for every reader: the labels of buildAccorAdOnlyV6 (its accorLang), the French
+// spellings of a hotel name below, and the distance line of the older layout in buildGateAdHtml.
+function _accorCardLang(ad) {
+  if (ad && typeof ad._adLang === 'string' && /^[a-z]{2}$/.test(ad._adLang)) return ad._adLang;
+  try { if (typeof _accorLangNow === 'function') return _accorLangNow(); } catch (e) {}
+  return (typeof lang !== 'undefined' && lang) ? lang : 'en';
+}
+
+// The French spellings of a hotel name (Montréal, Québec, Aéroport), only on a card whose
+// language is French. The caller passes that language in. It used to be read from a global
+// accorLang, which does not exist (accorLang is local to buildAccorAdOnlyV6), so the test
+// never held and English boards printed the French names: Novotel Montréal Aéroport for the
+// Novotel Montreal Airport of the feed. No language given, no French spelling.
+function _accorFrName(name, lg) {
+  if (lg !== 'fr') return name;
   return String(name || '')
     .replace(/\bMontreal\b/g, 'Montréal')
     .replace(/\bQuebec\b/g, 'Québec')
@@ -63067,9 +63085,8 @@ function buildAccorAdOnlyV6(ad) {
     // binding it exists to guarantee was lost on every Spanish board. Any
     // two-letter stamp counts; the point is that the labels follow the
     // language the CONTENT was built in, whichever one that is.
-    if (ad && typeof ad._adLang === 'string' && /^[a-z]{2}$/.test(ad._adLang)) return ad._adLang;
-    try { if (typeof _accorLangNow === 'function') return _accorLangNow(); } catch(e){}
-    return (typeof lang!=='undefined'&&lang)?lang:'en';
+    // The rule itself is _accorCardLang, shared with the readers outside this builder.
+    return _accorCardLang(ad);
   }
   function localized(obj,base){ var l=accorLang(); return first(obj[base+'_'+l],obj[base+l.toUpperCase()],obj[base+'-'+l],obj[base],''); }
   function bgUrl(bg){ var m=String(bg||'').match(/url\((['"]?)(.*?)\1\)/i); return (m&&m[2])?m[2]:''; }
@@ -63246,7 +63263,7 @@ function buildAccorAdOnlyV6(ad) {
   }
   // Brand policy: never print the brand twice — the logo slot ALWAYS
   // carries the brand (image or text label), so the name is always stripped.
-  var displayName=_accorFrName(stripBrand(hotelName));
+  var displayName=_accorFrName(stripBrand(hotelName), accorLang());
   // Property lockups (Fairmont/Emblems per-property art, runtime-generated or
   // brand-team file) already bake the property name INTO the logo artwork, so
   // printing the name again below it is a duplicate. Suppress the text name
@@ -63311,7 +63328,7 @@ function buildAccorAdOnlyV6(ad) {
   // (brand + location, e.g. "Novotel Toronto Centre"), for every brand.
   // Full hotel name incl. brand — the slide's `headline` is brand-stripped
   // (so the logo isn't duplicated), so use ad.nameFull for the bubble/context.
-  var _fullName = _accorFrName(first(ad.nameFull, hotelName));
+  var _fullName = _accorFrName(first(ad.nameFull, hotelName), accorLang());
   // French boards: the Fairmont Queen Elizabeth is "Fairmont Le Reine Elizabeth"
   // The feed name stays English, so localize it for the FR QR caption.
   if (accorLang() === 'fr' && /queen\s*elizabeth|reine\s*elizabeth/i.test(_fullName)) {
@@ -63340,6 +63357,12 @@ function buildAccorAdOnlyV6(ad) {
   // direction), so a Japanese one is not set under the page's English
   var _scanHtml = '<span' + _biAttr(accorLang()) + '>' + _scanMark(_scanT1) + '</span>'
     + ((_scanT2 && _scanT2 !== _scanT1) ? '<span class="axr-bi-line"' + _biAttr(_L2) + '>' + _scanMark(_scanT2) + '</span>' : '');
+  // The <br> before the name is written but never drawn: hotel-ads.css hides it
+  // (.axr-bubble-copy > br). The name (axr-bub-name) and the second language (axr-bi-line)
+  // are block lines of their own, so after a second language the break stood alone and printed
+  // an empty line: four lines on every two-language board, in a bubble drawn for three. On a
+  // one-language card the name, a block, still starts its own line. The line below is kept as
+  // it was because the language ledger (tests/i18n) names its exception by the text of the line.
   var _qrCaption = _scanHtml + '<br><span class="axr-bub-name" translate="no">' + esc(_fullName) + '</span>';
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en'); // i18n-ok: data
@@ -70722,7 +70745,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24186" src="/textures/gate-sky-shelf.mp4?v=24186"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24187" src="/textures/gate-sky-shelf.mp4?v=24187"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

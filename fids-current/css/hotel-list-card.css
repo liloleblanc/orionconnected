@@ -19,8 +19,11 @@
    scan code in the middle (as large as the card leaves room for, 420 px at most at 1680x1050);
    the invitation to search on a phone in the navy foot, beside a phone mark. No logo, no
    hotel, no price. Behind it, where the board has one, the city's own photograph, the one the
-   weather card shows (.hlc-find--pic): the heading white over a navy shade, the code on a tile of
-   the card's cream, the photographer named beside it where the licence asks.
+   weather card shows (.hlc-find--pic): the heading white over a navy shade; the code on a tile of
+   the card's cream in the bottom corner at the inline end, 136 px at most at 1680x1050, so the
+   subject in the middle of the picture stays in view (the Welcome sign of Las Vegas sets that
+   cap: see the rule of the tile below); the photographer named in the other bottom corner, where
+   the licence asks.
 
    A hub city (v24177, .hlc--hub: Toronto) has two pages instead, near the airport then
    downtown, each a column of the same paper: the city and its province in bronze capitals over
@@ -173,18 +176,39 @@
 /* the lines centred on one another: an Arabic line and a Latin one sit alike under the mark */
 .hlc-find-say{ min-width:0; font-size:calc(26 * var(--hlc-px)); font-weight:600; line-height:1.25; text-align:center; }
 /* the city's photograph behind the heading and the code (.hlc-find--pic): navy at the top for the
-   white heading, the code on a tile of the card's own paper (its quiet zone), the credit beside it */
+   white heading, the code on a tile of the card's own paper (its quiet zone) in one bottom corner,
+   the credit in the other */
 .hlc .hlc-find--pic{ isolation:isolate; }
 .hlc-find-pic{ position:absolute; inset:0; z-index:-1; background-position:center; background-size:cover; background-repeat:no-repeat; }
 .hlc-find-pic::after{ content:''; position:absolute; inset:0;
   background:linear-gradient(to bottom, rgba(20,32,60,.82) 0%, rgba(20,32,60,.55) 22%, rgba(20,32,60,.12) 48%, rgba(20,32,60,0) 70%, rgba(20,32,60,.30) 100%); }
 .hlc-find--pic .hlc-find-title{ color:#fff; text-shadow:0 calc(2 * var(--hlc-px)) calc(14 * var(--hlc-px)) rgba(0,0,0,.45); }
 .hlc-find--pic .hlc-find-title::after{ background:var(--hlc-gold); }
-.hlc-find--pic .hlc-find-scan{ position:relative; }
-.hlc-find--pic .hlc-find-scan .hlc-qr{ background:var(--hlc-cream); border-radius:calc(14 * var(--hlc-px)); padding:calc(22 * var(--hlc-px));
+/* THE CODE IN THE CORNER. The subject of a city's photograph stands in its middle (the Welcome
+   sign, the Opera House, the tower), and a code centred over it hid it: on the Las Vegas card the
+   420 px code covered all of the sign's lettering and the YESCO mark under NEVADA, the mark that
+   photograph must keep in view. So on a photo card the code stands in the bottom corner of its
+   area at the inline end, and the photographer's line takes the other bottom corner. Its cap,
+   136 px at 1680x1050, is measured on that picture (LAS.jpg, cover and centre) at the four sizes
+   of the card, 842x849 and 842x698 on a 1680x1050 board and 970x873 and 970x718 on a 1920x1080
+   one (without and with the strip of later departures): the tile and its painted shadow stay at
+   least 16 px clear of every line of the lettering and of the YESCO mark, and the tile is as
+   large as that allows (the S of VEGAS sets it, on the 842x849 card). The tile also stays 16 px
+   clear of the outline of the sign, its gold border and bulbs: 26 px on the 842x698 card, where
+   the right tip comes closest. A smaller shadow buys no larger code: by the lettering alone it
+   would allow 157 px, and the tile would then cover that tip. The quiet zone is 14 px, as on the
+   large code of a plain card: about four modules of a code of 33, so the modules keep the rest. */
+.hlc-find--pic .hlc-find-scan{ position:relative; justify-content:flex-end; align-items:flex-end; }
+.hlc-find--pic .hlc-find-scan .hlc-qr{ background:var(--hlc-cream); border-radius:calc(14 * var(--hlc-px)); padding:calc(14 * var(--hlc-px));
+  width:min(calc(136 * var(--hlc-px)), 100cqw, 100cqh); height:min(calc(136 * var(--hlc-px)), 100cqw, 100cqh);
   box-shadow:0 calc(10 * var(--hlc-px)) calc(34 * var(--hlc-px)) rgba(0,0,0,.38); }
-.hlc-find-credit{ position:absolute; inset-inline-end:calc(14 * var(--hlc-px)); bottom:calc(10 * var(--hlc-px)); max-width:60%;
-  font-size:calc(18 * var(--hlc-px)); line-height:1.2; color:#fff; text-shadow:0 0 calc(6 * var(--hlc-px)) rgba(0,0,0,.8); text-align:end; }
+/* the photographer, white over the picture: a close dark edge, laid twice, under the soft glow, so
+   the line reads over a pale part of the picture too (the casino tower behind it on the Las Vegas
+   card) */
+.hlc-find-credit{ position:absolute; inset-inline-start:calc(14 * var(--hlc-px)); bottom:calc(10 * var(--hlc-px)); max-width:60%;
+  font-size:calc(18 * var(--hlc-px)); line-height:1.2; color:#fff;
+  text-shadow:0 0 calc(2 * var(--hlc-px)) rgba(0,0,0,.95), 0 0 calc(2 * var(--hlc-px)) rgba(0,0,0,.95), 0 0 calc(6 * var(--hlc-px)) rgba(0,0,0,.8);
+  text-align:start; }
 .hlc-find-credit .pcr-cam{ width:1em; height:1em; vertical-align:-0.14em; margin-inline-end:.3em; }
 
 /* ── a hub city (.hlc--hub): two pages, near the airport then downtown, in the faces of the board ── */

@@ -147,7 +147,15 @@ Nothing announces which is
 
 /* ALL speech bubble (to standard) — light card, copy + QR, tail bottom-left */
 .axr-bubble{ position:absolute; top:clamp(20px,3vh,30px); left:clamp(20px,2.4vw,30px); z-index:4;
-  display:grid; grid-template-columns:minmax(0,1fr) auto; gap:clamp(12px,1.4vw,18px);
+  --bub-pt:clamp(10px,1.2vw,16px); --bub-pr:clamp(26px,2.9vw,40px); --bub-pl:clamp(34px,4.2vw,60px);
+  /* THE CODE HAS A PLACE OF ITS OWN. Its column is the shape's inner height, worked out from the
+     bubble's own width (the content box plus the two side insets, at the artwork's 74.46 : 329.655)
+     less the top and bottom insets: a square that fits the cream by the insets at every width,
+     whatever the caption does. Sized by its row instead (height:100%), the code took whatever
+     height the row had: on a board 800 px wide or less, where fids.css sets the padding of every
+     div of the ad carousel to 0 16px, the row was the whole bubble and the code ran into the edge
+     of the cream. The insets are named so the padding and the column read the same figures. */
+  display:grid; grid-template-columns:minmax(0,1fr) calc((100% + var(--bub-pl) + var(--bub-pr)) * 74.46 / 329.655 - 2 * var(--bub-pt)); gap:clamp(12px,1.4vw,18px);
   align-items:center; width:min(506px, 70%);
   /* The element carries the ARTWORK's box aspect (329.655 : 74.46). An SVG
      mask keeps its own aspect ratio (preserveAspectRatio defaults to 'meet'),
@@ -167,7 +175,7 @@ The QR never actually crossed
      left. Flush on one side and generous on the other reads as 'poking out'.
      The right inset now roughly doubles; the bubble was widened to pay for it
      so the caption column gains width rather than losing it. */
-  padding:clamp(10px,1.2vw,16px) clamp(26px,2.9vw,40px) clamp(10px,1.2vw,16px) clamp(34px,4.2vw,60px);
+  padding:var(--bub-pt) var(--bub-pr) var(--bub-pt) var(--bub-pl);
   --bub-bg:var(--all-light); background:transparent; color:var(--all-blue);
   border-radius:0;
   /* The shadow is cast from HERE, not from the masked ::before: a filter runs
@@ -200,12 +208,18 @@ The QR never actually crossed
      not acceptable, and the caption is not shrink-to-fit either, so the size
      is set low enough that the longest names in the portfolio still land. */
   overflow:hidden; hyphens:none; }
+/* No break of its own in the caption. The second language and the name are block lines, so the
+   <br> that fids-core writes before the name stood alone after a second language and printed an
+   empty line: four lines on every two-language board, in a bubble drawn for three. Hidden, it
+   leaves three; a one-language card keeps its two, the name being a block. */
+.axr-bubble-copy > br{ display:none; }
 /* The name is its own line and stays on ONE line: never wrapped, never cut.
    The fitter in fids-core steps the longest names down to fit the width. */
 .axr .axr-bub-name{ display:block; white-space:nowrap; overflow:hidden; font-weight:600; }
-/* Sized by the shape's inner height, and the generated code is taken OUT of
-   the grid's intrinsic sizing. qrcodejs injects a bitmap at a hard pixel size,
-   which made the grid row taller than the shape's own ratio allows; the
+/* As wide as its column (the shape's inner height, set on .axr-bubble) and
+   square: never the height of the caption's row. The generated code is taken
+   OUT of the grid's intrinsic sizing: qrcodejs injects a bitmap at a hard pixel
+   size, which made the grid row taller than the shape's own ratio allows; the
    automatic content-based minimum then won over aspect-ratio and the mask
    letterboxed again, leaving the white chip poking above the cream. It also
    meant the bubble grew ~32px a few hundred ms AFTER the ad painted — a jolt
@@ -213,7 +227,7 @@ The QR never actually crossed
    The svg/img/canvas selectors are spelled out on purpose: a bare '.axr-qr > *'
    loses to the older '.axr-qr svg, .axr-qr img' pair and the code would be
    clipped by the overflow rule — live data modules, unscannable. */
-.axr-qr{ aspect-ratio:1; height:100%; width:auto; max-height:100%; background:#fff; border-radius:7px;
+.axr-qr{ aspect-ratio:1; width:100%; height:auto; background:#fff; border-radius:7px;
   padding:0; position:relative; overflow:hidden; }
 .axr-qr > *, .axr-qr svg, .axr-qr img, .axr-qr canvas{
   position:absolute; top:5px; left:5px;
