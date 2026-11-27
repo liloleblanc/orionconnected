@@ -51996,7 +51996,8 @@ var _MAP_PLANE_ART = {
   rv321: { src: '/logos/map-plane-rv-321.png', len: 42.75, span: 34.32 },
   rv319: { src: '/logos/map-plane-rv-319.png', len: 42.75, span: 43.08 },
   ws7m8: { src: '/logos/map-plane-ws-7m8.png', len: 42.75, span: 38.94 },
-  ws738: { src: '/logos/map-plane-ws-738.png', len: 42.75, span: 38.90 }
+  ws738: { src: '/logos/map-plane-ws-738.png', len: 42.75, span: 38.90 },
+  ws73g: { src: '/logos/map-plane-ws-73g.png', len: 42.75, span: 45.40 }
 };
 // v24182 — WHO WEARS THEM. Only an aeroplane every row of which says Air Canada
 // colours: an Air Canada number; an operator, by the ladder the boards already
@@ -52113,22 +52114,26 @@ function _mapPlaneAcArt(code, rows) {
     return (key && _MAP_PLANE_ART[key]) ? key : '';
   } catch (e) { return ''; }
 }
-// v24185 — AND WESTJET (supplied art): the 737 MAX 8 and the 737-800 in the
+// v24185 — AND WESTJET (supplied art): the 737 MAX 8, 737-800 and 737-700 in the
 // colours WestJet flies today (the white body, the teal and navy sweep aft and
 // on the tail, navy titles and winglets, white engines), the colours of the side
-// views the boards already draw for both. Greyed by the same rule as the others,
+// views the boards already draw for all three. The 737-700 came with its wings
+// about 7 percent short for its span (its fuselage was true), so what lies outside
+// the fuselage was stretched sideways to the real span, the fuselage kept as
+// drawn. Greyed by the same rule as the others,
 // with teal, blue and navy kept beside red. Every row must be a WestJet mainline
 // flight: airline WS, a WS number 1-2999 (Encore flies 3000-3999, and only Dash
 // 8s), no other operator by the ladder, and a callsign of WJA or none (WEN is
 // Encore, SWG Sunwing, WSW Swoop). Sunwing flies as WG on the boards, never as
 // WS. An aeroplane in special colours (AIRCRAFT_LIVERY_BY_REG) keeps the plain
 // picture. WestJet flies real 737-800s, so here 738 and 73H are the 737-800,
-// never the MAX. The 737-700 has no picture yet. Returns the key, or an empty
-// string.
+// never the MAX; 73G and 73W are the 737-700. The MAX 7 has no picture. Returns
+// the key, or an empty string.
 function _mapPlaneWsArt(code, rows) {
   try {
     var c = String(code || '').toUpperCase();
-    var key = (c === '7M8') ? 'ws7m8' : (c === '738' || c === '73H') ? 'ws738' : '';
+    var key = (c === '7M8') ? 'ws7m8' : (c === '738' || c === '73H') ? 'ws738'
+            : (c === '73G' || c === '73W') ? 'ws73g' : '';
     if (!key) return '';
     var list = [];
     for (var k = 0; k < (rows || []).length; k++) { if (rows[k] && rows[k].flight) list.push(rows[k]); }

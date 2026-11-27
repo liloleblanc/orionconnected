@@ -13,7 +13,7 @@
 // Dash 8-400s for Air Canada Express (under the brand and under bare numbers),
 // Toronto writes ACA for Rouge too, one A220 flies in Trans-Canada Air Lines
 // colours, and a WestJet or United aeroplane of the same type must never be
-// painted Air Canada (v24185: WestJet has its own 737 MAX 8 and 737-800, for its
+// painted Air Canada (v24185: WestJet has its own 737 MAX 8, 737-800 and 737-700, for its
 // mainline only, never Encore, Sunwing or Swoop). So the picture follows the operator ladder the boards
 // already read (fidsResolveOperator, as _opCode on each row), every callsign on
 // record, the special-livery table, and the number block of the type, on every
@@ -235,7 +235,7 @@ test('the Dash 8-400 wears them only on Jazz evidence on every row: PAL flies it
   assert.equal(src('DH8D', [row('PB7203')]), DH4);
 });
 
-test('WestJet: the 737 MAX 8 and 737-800 in its own colours, mainline only (v24185)', () => {
+test('WestJet: the 737 MAX 8, 737-800 and 737-700 in its own colours, mainline only (v24185)', () => {
   assert.equal(src('B38M', [row('WS501')]), WS('7m8'));
   assert.equal(src('B38M', [row('WS 501', { _feedCs: 'WJA501' })]), WS('7m8'));
   assert.equal(src('Boeing 737 MAX 8', [row('WS2203'), row('WS2204')]), WS('7m8'), 'both rows WestJet');
@@ -256,7 +256,9 @@ test('WestJet: the 737 MAX 8 and 737-800 in its own colours, mainline only (v241
   assert.equal(src('B38M', [row('WS6501')]), JET, 'outside the mainline block');
   assert.equal(src('B38M', [row('WG501')]), JET, 'Sunwing is its own airline on the boards');
   assert.equal(src('B38M', [row('WS501'), row('AC800')]), JET, 'rows of two airlines');
-  assert.equal(src('B737', [row('WS101')]), JET, 'no picture of the 737-700 yet');
+  assert.equal(src('B737', [row('WS101')]), WS('73g'), 'the 737-700 (B737 is its ICAO code)');
+  assert.equal(src('73W', [row('WS101')]), WS('73g'));
+  assert.equal(src('B737', [row('WS3123')]), JET, 'not in the Encore block');
   assert.equal(src('B37M', [row('WS101')]), JET, 'nor of the MAX 7');
   assert.equal(src('DH8D', [row('WS3123')]), DH4, 'the Encore Dash 8-400 keeps its picture');
   // and the Air Canada rules are untouched: an Air Canada 738 is still its MAX 8
@@ -292,6 +294,7 @@ test('the same size in flight, the true size and shape close in', () => {
     ['A319', [row('AC1650', { _opCode: 'RV' })], 'rv319', 33.8, 34.1],
     ['B38M', [row('WS501')], 'ws7m8', 39.5, 35.9],
     ['B738', [row('WS101')], 'ws738', 39.5, 35.8],
+    ['B737', [row('WS101')], 'ws73g', 33.6, 35.8],
     ['BCS3', [row('AC345')], 'ac223', 38.7, 35.1],
     ['E75L', [row('AC8902', { _opCode: 'QK' })], 'ace75', 31.7, 26.0],
     ['CRJ9', [row('AC8803', { _opCode: 'QK' })], 'accr9', 36.2, 24.9],
@@ -349,10 +352,10 @@ function hue(r, g, b) {
 // the red of each livery (maple leaves, exit outlines) as the grey pass leaves it, less a tenth
 const RED_MIN = { ac320: 585, ac321: 142, ac7m8: 183, ac223: 225, ace75: 27, accr9: 63, acdh4: 13, rv320: 5023, rv321: 3015, rv319: 4149 };
 // v24185: WestJet paints in teal, blue and navy (and the red of its small flags); its paint is counted
-const BLUE_MIN = { ws7m8: 2319, ws738: 2638 };
+const BLUE_MIN = { ws7m8: 2319, ws738: 2638, ws73g: 3231 };
 
-test('the twelve pictures: light 512 px RGBA squares, framed, upright, neutral, the livery colours kept', () => {
-  for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4', 'rv320', 'rv321', 'rv319', 'ws7m8', 'ws738']) {
+test('the thirteen pictures: light 512 px RGBA squares, framed, upright, neutral, the livery colours kept', () => {
+  for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4', 'rv320', 'rv321', 'rv319', 'ws7m8', 'ws738', 'ws73g']) {
     const a = ART[key], ws = key.startsWith('ws');
     assert.ok(a && /^\/logos\/map-plane-(ac|rv|ws)-[0-9a-z]+\.png$/.test(a.src), key);
     const file = path.join(root, 'fids-current', a.src);
