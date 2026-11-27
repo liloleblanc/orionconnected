@@ -13328,8 +13328,9 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var fbList = paths.slice(1);
   // v24184 — 209: the Rouge A320 (AC/320r.png) was cleaned, the ragged halo its
   // cut-out left cleared and its body made solid, so every screen fetches it again
-  // v24185 — 210: the WestJet 737-700 (WS/73G.png, WS/73W.png) is the new supplied
-  // drawing, sized to the old one on the shelf
+  // v24185 — 210: the WestJet 737-700 (WS/73G.png, WS/73W.png) and the Air Canada
+  // A220-300 (AC/223.png, C-GROV fin 101) are new supplied drawings, each sized to
+  // the old one on the shelf and cleared of the cast of its render
   var _imgCacheBuster = '?v=210';
   var srcWithBust = src + _imgCacheBuster;
   var cls = opts.className || 'g8-aircraft-img';

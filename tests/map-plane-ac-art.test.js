@@ -468,6 +468,32 @@ test('the WestJet 737-700 side view: the new drawing, solid, no haze, one file f
   assert.ok(tag && Number(tag[1]) >= 210, 'side-view cache tag ' + (tag && tag[1]));
 });
 
+test('the Air Canada A220-300 side view: the new drawing, solid, no haze, its black neutral (v24185)', () => {
+  const { w, h, rows } = readPng(path.join(root, 'fids-current', 'aircraft', 'AC', '223.png'));
+  assert.deepEqual([w, h], [2048, 819], 'the same canvas as the drawing it replaces');
+  const solidAt = (x, y) => x >= 0 && y >= 0 && x < w && y < h && rows[y][x * 4 + 3] > 128;
+  let body = 0, solid = 0, haze = 0, dark = 0, violet = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = x * 4, al = rows[y][i + 3];
+      if (al >= 64) {
+        body++; if (al === 255) solid++;
+        const r = rows[y][i], g = rows[y][i + 1], b = rows[y][i + 2];
+        // the black of the tail, engines and belly: neutral, not the violet-black of the render
+        if (al === 255 && Math.max(r, g, b) < 64) { dark++; const hu = hue(r, g, b); if (Math.max(r, g, b) - Math.min(r, g, b) > 6 && hu >= 225 && hu < 320) violet++; }
+        continue;
+      }
+      if (al === 0 || al > 24) continue;
+      let near = false;
+      for (let dy = -2; dy <= 2 && !near; dy++) for (let dx = -2; dx <= 2 && !near; dx++) if (solidAt(x + dx, y + dy)) near = true;
+      if (!near) haze++;
+    }
+  }
+  assert.equal(haze, 0, 'faint haze away from the drawing');
+  assert.ok(solid / body > 0.98, 'the body is solid: ' + solid + ' of ' + body);
+  assert.ok(dark > 50000 && violet === 0, 'black paint ' + dark + ' px, with a violet cast ' + violet);
+});
+
 test('both maps and the apron hand the rows of the aeroplane to the picker, and the apron redraws on a change of colours', () => {
   assert.match(fnSource('_mapPlaneSpec'), /var _rows = \[inb, cf\];[\s\S]*_mapPlaneSpecFor\(raw, _rows\)/);
   assert.match(fnSource('_gateApronSpec'), /var rows = \[a, b\];[\s\S]*_mapPlaneSpecFor\(raw, rows\)/);
