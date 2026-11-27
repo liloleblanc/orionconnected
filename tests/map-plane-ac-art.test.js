@@ -7,8 +7,9 @@
 // Air Canada colours (supplied art: A320, A321, 737 MAX 8, A220-300, E175,
 // CRJ900, Dash 8-400) now draw an aeroplane that wears those colours. The risk
 // is the wrong colours on the wrong aeroplane: Rouge flies the A320 and A321
-// under Air Canada numbers in its own colours (v24183: not its 737 MAX 8s, which
-// it paints as Air Canada does, so those share the picture), PAL flies its own
+// under Air Canada numbers in its own colours (v24184: pictures of their own, and
+// never on a row that disagrees; v24183: not its 737 MAX 8s, which it paints as
+// Air Canada does, so those share the picture), PAL flies its own
 // Dash 8-400s for Air Canada Express (under the brand and under bare numbers),
 // Toronto writes ACA for Rouge too, one A220 flies in Trans-Canada Air Lines
 // colours, and a WestJet or United aeroplane of the same type must never be
@@ -72,6 +73,7 @@ const scale = lift('_mapPlaneScale', [], []);
 const row = (flight, extra) => Object.assign({ airline: flight.replace(/\s+/g, '').slice(0, 2), flight }, extra || {});
 const src = (type, rows) => specFor(type, rows).art.src;
 const AC = (c) => '/logos/map-plane-ac-' + c + '.png';
+const RV = (c) => '/logos/map-plane-rv-' + c + '.png';
 const JET = '/logos/map-plane-jet.png', DH4 = '/logos/map-plane-dh4.svg', CRJ = '/logos/map-plane-crj.svg';
 
 test('mainline Air Canada types wear the colours on mainline numbers only', () => {
@@ -79,7 +81,7 @@ test('mainline Air Canada types wear the colours on mainline numbers only', () =
   assert.equal(src('A320', [row('AC306'), row('AC307')]), AC('320'));
   assert.equal(src('Airbus A320', [row('AC 7050')]), AC('320'));
   assert.equal(src('A320', [row('AC8803', { _opCode: 'QK' })]), JET, 'an operator on record is not mainline');
-  assert.equal(src('A320', [row('AC1700', { _opCode: 'RV' })]), JET, 'never on a Rouge number');
+  assert.equal(src('A320', [row('AC1700', { _opCode: 'RV' })]), RV('320'), 'a Rouge number takes the Rouge A320');
   assert.equal(src('A320', [row('AC306', { _feedCs: 'JZA306' })]), JET, 'a Jazz callsign is not mainline');
 });
 
@@ -99,24 +101,45 @@ test('an aeroplane in special colours is never drawn in the everyday ones', () =
   assert.equal(src('BCS3', [row('AC604', { _reg: 'C-GJXN' })]), AC('223'), 'any other A220 of Air Canada');
 });
 
-test('Rouge flies the A320 and A321 in its own colours: never painted Air Canada', () => {
-  assert.equal(src('A321', [row('AC1986', { _opCode: 'RV' })]), JET);
-  // the Rouge sun flights, AC 2100-2299, carry no band and so no operator: the number alone keeps them plain
-  assert.equal(src('A321', [row('AC2246')]), JET);
-  // a live Rouge callsign on a mainline number keeps it plain too
-  assert.equal(src('A321', [row('AC800', { _feedCs: 'ROU800' })]), JET);
+test('the A320 and A321 of Rouge wear pictures of their own, the same on every row (v24184)', () => {
+  // Rouge by the ladder, its band, its sun flights (AC 2100-2299, no band), its callsign (feed or FR24)
+  assert.equal(src('A321', [row('AC1986', { _opCode: 'RV' })]), RV('321'));
+  assert.equal(src('A320', [row('AC1650', { _opCode: 'RV' })]), RV('320'));
+  assert.equal(src('A321', [row('AC2246')]), RV('321'), 'a Rouge sun flight, no band');
+  assert.equal(src('A320', [row('AC1700')]), RV('320'), 'a Rouge number with no operator on record');
+  assert.equal(src('A321', [row('AC800', { _feedCs: 'ROU800' })]), RV('321'), 'Rouge on a mainline number');
   SEEN.AC845 = { cs: 'ROU845' };
-  assert.equal(src('A321', [row('AC845')]), JET, 'the callsign FR24 saw counts as much as the feed');
+  assert.equal(src('A321', [row('AC845')]), RV('321'), 'the callsign FR24 saw counts as much as the feed');
   // Toronto writes ACA for Rouge too: an ACA on the feed must not hide the ROU FR24 saw
-  assert.equal(src('A321', [row('AC845', { _feedCs: 'ACA845' })]), JET, 'every callsign is read on its own');
+  assert.equal(src('A321', [row('AC845', { _feedCs: 'ACA845' })]), RV('321'), 'every callsign is read on its own');
   delete SEEN.AC845;
-  // mainline numbers, no other operator: Air Canada colours
+  assert.equal(src('A320', [row('AC306', { _feedCs: 'ROU306' })]), RV('320'));
+  assert.equal(src('A320', [row('AC306', { _opCode: 'ROU' })]), RV('320'), 'Rouge written as its callsign code');
+  assert.equal(src('A320', [row('AC1700', { _feedCs: 'ACA1700' })]), RV('320'), 'Toronto ACA on a Rouge number');
+  assert.equal(src('A320', [{ flight: 'AC1729', airline: 'AC' }]), RV('320'), 'a remembered Rouge row: the ladder answers');
+  assert.equal(src('A320', [row('AC1650', { _opCode: 'RV' }), row('AC1651', { _opCode: 'RV' })]), RV('320'), 'two Rouge rows');
+  // mainline numbers, no other operator: Air Canada colours, as before
   assert.equal(src('A321', [row('AC845')]), AC('321'));
   assert.equal(src('A21N', [row('AC850')]), AC('321'));
-  // the Rouge A320 is in its own colours too
-  assert.equal(src('A320', [row('AC1650', { _opCode: 'RV' })]), JET);
-  assert.equal(src('A320', [row('AC306', { _feedCs: 'ROU306' })]), JET);
-  assert.equal(src('A320', [row('AC306', { _opCode: 'ROU' })]), JET);
+  assert.equal(src('A320', [row('AC306')]), AC('320'));
+  // the gate pairs by the door: a Rouge row beside an Air Canada row may be two aeroplanes, so plain, either way round
+  assert.equal(src('A320', [row('AC1650', { _opCode: 'RV' }), row('AC306')]), JET);
+  assert.equal(src('A321', [row('AC845'), row('AC1986', { _opCode: 'RV' })]), JET);
+  // the A320 extras in AC 7000-7599 are mainline; the A321 has none
+  assert.equal(src('A320', [row('AC7050')]), AC('320'));
+  assert.equal(src('A321', [row('AC7050')]), JET);
+  // Rouge flies no A321neo, and has no A319 picture yet
+  assert.equal(src('A21N', [row('AC1986', { _opCode: 'RV' })]), JET);
+  assert.equal(src('A319', [row('AC1650', { _opCode: 'RV' })]), JET);
+  // never Jazz, PAL, the Express brand, another callsign, special colours, or a number outside the blocks
+  assert.equal(src('A320', [row('AC1650', { _opCode: 'QK' })]), JET);
+  assert.equal(src('A320', [row('AC1650', { _opCode: 'PB' })]), JET);
+  assert.equal(src('A321', [row('AC1986', { _opCode: 'ACEX' })]), JET);
+  assert.equal(src('A320', [row('AC1650', { _feedCs: 'JZA1650' })]), JET);
+  assert.equal(src('A320', [row('AC1650', { _feedCs: 'WJA1650' })]), JET);
+  assert.equal(src('A320', [row('AC1650', { _opCode: 'RV', _reg: 'C-GNBN' })]), JET, 'a registration in special colours');
+  assert.equal(src('A320', [row('AC2300')]), JET);
+  assert.equal(src('A320', [row('AC8000')]), JET);
 });
 
 test('the 737 MAX 8: Rouge paints it as Air Canada does, so both wear the one picture (v24183)', () => {
@@ -145,6 +168,10 @@ test('the 737 MAX 8: Rouge paints it as Air Canada does, so both wear the one pi
   assert.equal(src('B38M', [row('AC7754', { _opCode: 'ACEX' })]), JET);
   assert.equal(src('B38M', [row('AC7680', { _opCode: 'PB' })]), JET);
   assert.equal(src('B38M', [row('AC1726', { _opCode: 'WS' })]), JET);
+  // inside the block too: the operator alone refuses Jazz, PAL and the Express brand
+  assert.equal(src('B38M', [row('AC1234', { _opCode: 'QK' })]), JET);
+  assert.equal(src('B738', [row('AC1234', { _opCode: 'PB' })]), JET);
+  assert.equal(src('B38M', [row('AC1234', { _opCode: 'ACEX' })]), JET);
   assert.equal(src('B38M', [row('AC1726', { _feedCs: 'JZA1726' })]), JET);
   assert.equal(src('B38M', [row('AC1726', { _feedCs: 'WJA1726' })]), JET);
   assert.equal(src('B38M', [row('AC1726', { _opCode: 'RV', _reg: 'C-GNBN' })]), JET, 'a registration in special colours');
@@ -223,6 +250,8 @@ test('the same size in flight, the true size and shape close in', () => {
     ['B38M', [row('AC800')], 'ac7m8', 39.5, 35.9],
     ['B38M', [row('AC1726', { _opCode: 'RV' })], 'ac7m8', 39.5, 35.9],
     ['B738', [row('AC1096')], 'ac7m8', 39.5, 35.8],
+    ['A320', [row('AC1650', { _opCode: 'RV' })], 'rv320', 37.6, 34.1],
+    ['A321', [row('AC1986', { _opCode: 'RV' })], 'rv321', 44.5, 35.8],
     ['BCS3', [row('AC345')], 'ac223', 38.7, 35.1],
     ['E75L', [row('AC8902', { _opCode: 'QK' })], 'ace75', 31.7, 26.0],
     ['CRJ9', [row('AC8803', { _opCode: 'QK' })], 'accr9', 36.2, 24.9],
@@ -278,12 +307,12 @@ function hue(r, g, b) {
   return (h + 360) % 360;
 }
 // the red of each livery (maple leaves, exit outlines) as the grey pass leaves it, less a tenth
-const RED_MIN = { ac320: 580, ac321: 142, ac7m8: 202, ac223: 225, ace75: 27, accr9: 63, acdh4: 13 };
+const RED_MIN = { ac320: 580, ac321: 142, ac7m8: 202, ac223: 225, ace75: 27, accr9: 63, acdh4: 13, rv320: 5054, rv321: 3015 };
 
-test('the seven pictures: light 512 px RGBA squares, framed, upright, neutral, the reds kept', () => {
-  for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4']) {
+test('the nine pictures: light 512 px RGBA squares, framed, upright, neutral, the reds kept', () => {
+  for (const key of ['ac320', 'ac321', 'ac7m8', 'ac223', 'ace75', 'accr9', 'acdh4', 'rv320', 'rv321']) {
     const a = ART[key];
-    assert.ok(a && /^\/logos\/map-plane-ac-[0-9a-z]+\.png$/.test(a.src), key);
+    assert.ok(a && /^\/logos\/map-plane-(ac|rv)-[0-9a-z]+\.png$/.test(a.src), key);
     const file = path.join(root, 'fids-current', a.src);
     assert.ok(fs.statSync(file).size < 160000, key + ' stays light for the boards');
     const { w, h, rows } = readPng(file);
@@ -328,6 +357,25 @@ test('the seven pictures: light 512 px RGBA squares, framed, upright, neutral, t
     assert.equal(stray.length, 0, key + ' tinted pixels away from any red, e.g. ' + JSON.stringify(stray.slice(0, 3)));
     assert.ok(red >= RED_MIN[key], key + ' red pixels ' + red + ', at least ' + RED_MIN[key]);
   }
+});
+
+test('the Rouge A320 side view is solid, with no halo left by its cut-out (v24184)', () => {
+  // its cut-out left a ragged ring of faint white pixels round the aeroplane (white blotches on
+  // anything that shows them at full strength) and a body a few percent see-through
+  const { w, h, rows } = readPng(path.join(root, 'fids-current', 'aircraft', 'AC', '320r.png'));
+  let faint = 0, body = 0, solid = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const a = rows[y][x * 4 + 3];
+      if (a > 0 && a < 64) faint++;
+      if (a >= 64) { body++; if (a === 255) solid++; }
+    }
+  }
+  assert.equal(faint, 0, 'faint pixels round the aeroplane');
+  assert.ok(body > 300000 && solid / body > 0.98, 'the body is solid: ' + solid + ' of ' + body);
+  // the side views carry one cache tag: it moved on, so every screen fetches the clean file
+  const tag = fnSource('aircraftImgTag').match(/var _imgCacheBuster = '\?v=(\d+)';/);
+  assert.ok(tag && Number(tag[1]) >= 209, 'side-view cache tag ' + (tag && tag[1]));
 });
 
 test('both maps and the apron hand the rows of the aeroplane to the picker, and the apron redraws on a change of colours', () => {
